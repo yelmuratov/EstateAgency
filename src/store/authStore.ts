@@ -6,16 +6,21 @@ interface AuthState {
   clearToken: () => void
 }
 
-// Helper function to get token from cookies
+// Helper function to get token from cookies (client-side only)
 const getAuthTokenFromCookies = (): string | null => {
+  if (typeof window === 'undefined') {
+    // If running on the server, return null
+    return null
+  }
   return document.cookie
     .split('; ')
     .find((row) => row.startsWith('auth_token='))
     ?.split('=')[1] || null
 }
 
+// Zustand store
 export const useAuthStore = create<AuthState>((set) => ({
-  token: getAuthTokenFromCookies(), // Initialize token from cookies
+  token: null, // Default to null initially
   setToken: (token) => {
     // Save token in cookies
     document.cookie = `auth_token=${token}; path=/; secure;`
@@ -27,3 +32,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null })
   },
 }))
+
+// Initialize the token on the client side
+if (typeof window !== 'undefined') {
+  const token = getAuthTokenFromCookies()
+  useAuthStore.setState({ token })
+}

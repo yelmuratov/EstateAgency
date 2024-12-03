@@ -50,49 +50,55 @@ export default function LoginForm() {
       document.cookie = `auth_token=${access_token}; path=/; secure;`
 
       // Redirect to dashboard
-      router.push('/dashboard')
+      router.push('/')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Phone number or password is incorrect')
+      setError(err.response?.data|| 'Phone number or password is incorrect')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
+      <Card className="w-full max-w-sm sm:max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-lg sm:text-xl">Login</CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <Label htmlFor="phone" className="text-sm sm:text-base">Phone Number</Label>
               <Input 
                 id="phone" 
                 placeholder="+998"
                 {...register('phone')}
+                className="w-full"
               />
-              {errors.phone && <p className="text-red-500">{errors.phone.message}</p>}
+              {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-4">
+              <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
               <Input 
                 id="password" 
                 type="password" 
                 {...register('password')}
+                className="w-full"
               />
-              {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+              {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
             </div>
             {error && (
-              <div className="text-red-500 flex items-center gap-2">
+              <div className="text-red-500 flex items-center gap-2 text-sm">
                 <AlertCircle size={16} />
                 <span>{error}</span>
               </div>
             )}
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit" disabled={isLoading}>
+            <Button 
+              className="w-full py-2 sm:py-3 text-sm sm:text-base"
+              type="submit" 
+              disabled={isLoading}
+            >
               {isLoading ? 'Logging in...' : 'Log in'}
             </Button>
           </CardFooter>

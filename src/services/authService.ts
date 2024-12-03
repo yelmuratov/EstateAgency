@@ -26,4 +26,4 @@ export const logout = async (): Promise<void> => {
 export const getUser = async (): Promise<any> => {
   const response = await api.get('/auth/me')
   return response.data
-}
+} 
