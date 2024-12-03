@@ -6,8 +6,6 @@ const api = axios.create({
   timeout: 5000,
 })
 
-console.log(api.defaults.baseURL);
-
 // Add a request interceptor to attach the token
 api.interceptors.request.use(
   (config) => {
@@ -16,8 +14,6 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-
-    console.log('%cRequest Config:', 'color: blue', config)
     return config
   },
   (error) => {
@@ -29,7 +25,6 @@ api.interceptors.request.use(
 // Add a response interceptor to handle errors globally
 api.interceptors.response.use(
   (response) => {
-    console.log('%cResponse Data:', 'color: green', response)
     return response
   },
   (error) => {

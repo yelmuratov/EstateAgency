@@ -10,8 +10,15 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  if (pathname === '/' && !token) {
-    // Redirect unauthenticated users trying to access the dashboard to the login page
+  if (
+    (pathname === '/' || 
+     pathname.startsWith('/districts') || 
+     pathname.startsWith('/lands') || 
+     pathname.startsWith('/metros') || 
+     pathname.startsWith('/users')) 
+    && !token
+  ) {
+    // Redirect unauthenticated users trying to access protected routes to the login page
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
@@ -20,5 +27,12 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login'],
+  matcher: [
+    '/', 
+    '/login', 
+    '/districts/:path*', 
+    '/lands/:path*', 
+    '/metros/:path*', 
+    '/users/:path*'
+  ],
 }
