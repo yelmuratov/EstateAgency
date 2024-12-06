@@ -21,7 +21,6 @@ export default function LoginForm() {
   const { setToken, token } = useAuthStore();
 
   useEffect(() => {
-    // Redirect to the dashboard if already logged in
     if (token) {
       router.push('/');
     }

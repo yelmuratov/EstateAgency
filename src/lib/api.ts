@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuthToken, clearAuthToken } from './tokenHelper';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 5000,
 });
 

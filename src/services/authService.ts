@@ -1,4 +1,5 @@
 import api from '@/lib/api'
+import { useAuthStore } from '@/store/authStore';
 
 interface LoginResponse {
   access_token: string
@@ -24,6 +25,16 @@ export const logout = async (): Promise<void> => {
 }
 
 export const getUser = async (): Promise<any> => {
-  const response = await api.get('/auth/me')
-  return response.data
-} 
+  try {
+    const response = await api.get('/auth/me');
+    return response.data;
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      // Token expired or unauthorized
+      const { clearToken } = useAuthStore.getState();
+      clearToken(); // Clear token from store and cookies
+    }
+    throw err; // Re-throw the error for further handling
+  }
+};
+

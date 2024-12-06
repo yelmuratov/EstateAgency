@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useRouter } from 'next/router';
 
 interface AuthState {
   token: string | null;
@@ -30,6 +31,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Remove token from cookies (no 'secure' attribute for HTTP)
     document.cookie = `auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
     set({ token: null });
+    const router = useRouter();
+    router.push('/login');
   },
 }));
 
