@@ -2,8 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { ModeToggle } from '@/components/mode-toggle'
 
 const navItems = [
@@ -18,21 +16,10 @@ export default function Navbar() {
 
   return (
     <nav className="border-b">
-      <div className="flex h-16 items-center px-4">
+      <div className="flex h-16 items-center justify-between px-4 py-4 sm:px-6 sm:py-4">
         <Link href="/" className="font-bold text-2xl mr-6">
-          Admin
+          Emplyee's Dashboard
         </Link>
-        <div className="flex space-x-4 flex-1">
-          {navItems.map((item) => (
-            <Button
-              key={item.href}
-              asChild
-              variant={pathname === item.href ? 'secondary' : 'ghost'}
-            >
-              <Link href={item.href}>{item.label}</Link>
-            </Button>
-          ))}
-        </div>
         <ModeToggle />
       </div>
     </nav>

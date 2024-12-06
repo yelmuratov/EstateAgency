@@ -1,32 +1,23 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import '@/app/globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
-import Navbar from '@/components/navbar';
+import React, { ReactNode } from 'react'
+import Header from '@/components/Header'
+import { ThemeProvider } from '@/components/theme-provider'
 
-const inter = Inter({ subsets: ['latin'] });
-
-export const metadata: Metadata = {
-    title: 'Admin Dashboard',
-    description: 'Admin dashboard template with dark and light mode',
-};
-
-export default function RootLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            <div className={`flex h-screen flex-col ${inter.className}`}>
-                <Navbar />
-                <main className="flex-1 overflow-y-auto p-4">{children}</main>
-            </div>
-        </ThemeProvider>
-    );
+interface DashboardLayoutProps {
+  children: ReactNode
 }
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+  return (
+    <ThemeProvider>
+      <div className="min-h-screen bg-background text-foreground">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          {children}
+        </main>
+      </div>
+    </ThemeProvider>
+  )
+}
+
+export default DashboardLayout
+

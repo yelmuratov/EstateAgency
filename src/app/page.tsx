@@ -1,38 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
-import LogoutButton from "@/components/local-components/logoutButton";
 import Spinner from "@/components/local-components/spinner";
-import Head from "next/head";
 import { useTheme } from "next-themes";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast"; 
+import PropertyTable from '@/components/PropertyTable'
+import useAuth from "@/hooks/useAuth";
 
 export default function Dashboard() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const [loading, setLoading] = useState(true); // Loading state
-  const { theme, setTheme } = useTheme(); // Access theme and setTheme
+  const [loading, setLoading] = useState(true); 
+  const { theme, setTheme } = useTheme(); 
   const router = useRouter();
   const { token } = useAuthStore();
-  const { toast } = useToast(); // Destructure toast
-
+  const { toast } = useToast(); 
+  useAuth();
   useEffect(() => {
     const fetchUserData = async () => {
       if (!token) {
         router.push("/login"); // Redirect if no token
         return;
       }
-
       try {
         const userData = await getUser();
         setUser(userData); // Set the user data
       } catch (error) {
         console.error("Failed to fetch user data:", error);
 
-        // Show error toast
         toast({
           variant: "destructive",
           title: "Error!",
@@ -50,7 +48,7 @@ export default function Dashboard() {
 
   // Show spinner while loading
   if (loading) {
-    return <Spinner />;
+    return <Spinner theme={theme || 'light'} />; // Pass the current theme or default to 'light'
   }
 
   // Show error message only if loading is complete and user is still null
@@ -65,26 +63,8 @@ export default function Dashboard() {
   // Render dashboard when user is available
   return (
     <DashboardLayout>
-      <Head>
-        <title>Dashboard</title>
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-      </Head>
-      <div>
-        <h1 className="text-4xl font-bold mb-4">Welcome to the Dashboard</h1>
-        <div className="p-4 bg-white dark:bg-gray-800 shadow rounded w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-2">{user.name}</h2>
-          <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded hover:bg-gray-400 dark:hover:bg-gray-700"
-            >
-              Toggle Theme
-            </button>
-            <LogoutButton />
-          </div>
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Недвижимость</h1>
+      <PropertyTable />
     </DashboardLayout>
   );
 }

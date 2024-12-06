@@ -5,27 +5,21 @@ import { useAuthStore } from "@/store/authStore";
 const useAuth = () => {
   const router = useRouter();
   const { token } = useAuthStore();
-  const [isClient, setIsClient] = useState(false); // Ensure we're on the client side
-  const [loading, setLoading] = useState(true); // Loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsClient(true); // Set client-side flag
-
-    if (isClient) {
-      if (!token) {
-        router.push("/login"); // Redirect to login if unauthenticated
-      } else {
-        setLoading(false); // Token exists, stop loading
-      }
+    if (!token) {
+      router.push("/login");
+    } else {
+      setLoading(false);
     }
-  }, [token, router, isClient]);
+  }, [token, router]);
 
-  // While client-side check is pending or redirecting, return `loading`
-  if (loading || !isClient) {
+  if (loading) {
     return { loading: true, token: null };
   }
 
-  return { loading: false, token }; // Return token for additional use if needed
+  return { loading: false, token };
 };
 
 export default useAuth;

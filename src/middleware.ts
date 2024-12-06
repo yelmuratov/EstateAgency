@@ -12,10 +12,7 @@ export function middleware(req: NextRequest) {
 
   if (
     (pathname === '/' || 
-     pathname.startsWith('/districts') || 
-     pathname.startsWith('/lands') || 
-     pathname.startsWith('/metros') || 
-     pathname.startsWith('/users')) 
+     pathname.startsWith('/add-property'))
     && !token
   ) {
     // Redirect unauthenticated users trying to access protected routes to the login page
@@ -29,10 +26,7 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/', 
-    '/login', 
-    '/districts/:path*', 
-    '/lands/:path*', 
-    '/metros/:path*', 
-    '/users/:path*'
+    '/login',
+    '/add-property', 
   ],
 }

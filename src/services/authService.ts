@@ -30,11 +30,10 @@ export const getUser = async (): Promise<any> => {
     return response.data;
   } catch (err: any) {
     if (err.response?.status === 401) {
-      // Token expired or unauthorized
       const { clearToken } = useAuthStore.getState();
-      clearToken(); // Clear token from store and cookies
+      clearToken(); 
     }
-    throw err; // Re-throw the error for further handling
+    console.error(err.response?.data?.message || err.message);
   }
 };
 

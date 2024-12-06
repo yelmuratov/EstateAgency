@@ -27,7 +27,6 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const { status } = error.response;
-
       if (status === 401) {
         clearAuthToken(); // Centralized function to remove token from cookies/local storage
         console.warn('Session expired. Redirecting to login.');
@@ -38,7 +37,7 @@ api.interceptors.response.use(
         console.error('An error occurred:', error.response.data?.message || error.message);
       }
     }
-    return Promise.reject(error);
+    console.log('%cResponse Error:', 'color: red', error);
   }
 );
 
