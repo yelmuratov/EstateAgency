@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import Head from 'next/head';
+import {setAuthToken} from '@/lib/tokenHelper';
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -34,27 +35,26 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginFormData, event?: React.BaseSyntheticEvent) => {
+    if (event) {
+      event.preventDefault(); // Prevent the default form submission behavior
+    }
     setError(null);
     setIsLoading(true);
-
+  
     try {
       const { access_token } = await login(data.phone, data.password);
-
-      // Save token to Zustand store
       setToken(access_token);
-
-      // Save token to cookies
-      document.cookie = `auth_token=${access_token}; path=/; secure;`;
-
-      // Redirect to dashboard
+      setAuthToken(access_token);
       router.push('/');
     } catch (err: any) {
-      setError(err.response?.data || 'Phone number or password is incorrect');
+      const errorMessage = err.response?.data?.detail;
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-4">
@@ -65,7 +65,7 @@ export default function LoginForm() {
         <CardHeader className="text-center">
           <CardTitle className="text-lg sm:text-xl">Login</CardTitle>
         </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => handleSubmit(onSubmit)(e)}>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <Label htmlFor="phone" className="text-sm sm:text-base">

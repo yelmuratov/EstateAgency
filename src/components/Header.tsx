@@ -1,18 +1,26 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { Search, Filter, Plus, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import FilterDropdown from './FilterDropdown'
-import ThemeToggle from './ThemeToggle'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import React, { useState } from 'react';
+import { Search, Filter, Plus, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import FilterDropdown from './FilterDropdown';
+import ThemeToggle from './ThemeToggle';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import Spinner from '@/components/local-components/spinner'; // Assuming you have a Spinner component
 
 const Header: React.FC = () => {
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const pathname = usePathname()
-  const isAddPropertyPage = pathname === '/add-property'
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const pathname = usePathname();
+  const router = useRouter();
+  const isAddPropertyPage = pathname === '/add-property';
+
+  const handleAddPropertyClick = () => {
+    setIsLoading(true);
+    router.push('/add-property');
+  };
 
   return (
     <header className="bg-background border-b border-border">
@@ -49,10 +57,8 @@ const Header: React.FC = () => {
             {!isAddPropertyPage && (
               <>
                 <span className="text-sm text-muted-foreground">12300 объектов</span>
-                <Button variant="outline" asChild>
-                  <Link href="/add-property">
-                    <Plus className="mr-2 h-4 w-4" /> Добавить Объект
-                  </Link>
+                <Button variant="outline" onClick={handleAddPropertyClick}>
+                  <Plus className="mr-2 h-4 w-4" /> Добавить Объект
                 </Button>
               </>
             )}
@@ -61,9 +67,13 @@ const Header: React.FC = () => {
         </div>
         {isFilterOpen && !isAddPropertyPage && <FilterDropdown />}
       </div>
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <Spinner theme="light" />
+        </div>
+      )}
     </header>
-  )
-}
+  );
+};
 
-export default Header
-
+export default Header;

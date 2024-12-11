@@ -32,12 +32,12 @@ api.interceptors.response.use(
         console.warn('Session expired. Redirecting to login.');
         window.location.href = '/login'; // Or use your routing solution
       } else if (status === 403) {
-        console.error('Access denied. Insufficient permissions.');
+        return Promise.reject(new Error('You do not have permission to perform this action.'));
       } else {
-        console.error('An error occurred:', error.response.data?.message || error.message);
+        return Promise.reject(error);
       }
     }
-    console.log('%cResponse Error:', 'color: red', error);
+    return Promise.reject(error);
   }
 );
 

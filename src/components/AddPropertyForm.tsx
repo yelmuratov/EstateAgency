@@ -53,12 +53,12 @@ const AddPropertyForm: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
                     <h2 className="text-xl font-semibold">Детали Объекта</h2>
                     
                     {/* Common Fields */}
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="district">Район</Label>
                         <Select onValueChange={(value) => console.log(value)}>
                             <SelectTrigger>
@@ -72,7 +72,7 @@ const AddPropertyForm: React.FC = () => {
                     </div>
 
                     {selectedCategory === 'Квартиры' && (
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="metro">Метро</Label>
                         <Select onValueChange={(value) => console.log(value)}>
                             <SelectTrigger>
@@ -86,7 +86,7 @@ const AddPropertyForm: React.FC = () => {
                     </div>
                     )}
 
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="name">Название</Label>
                         <Input
                             id="name"
@@ -99,7 +99,7 @@ const AddPropertyForm: React.FC = () => {
                         {errors.name && <p className="text-red-500">{errors.name.message}</p>}
                     </div>
 
-                    <div>
+                    <div className="space-y-4">
                         <Label>Категории</Label>
                         <Controller
                             name="category"
@@ -130,7 +130,7 @@ const AddPropertyForm: React.FC = () => {
                     </div>
 
                     {/* Photos */}
-                    <div>
+                    <div className="space-y-4">
                         <Label>Фото</Label>
                         <div className="grid grid-cols-3 gap-4 mt-2">
                             {photos.map((photo, index) => (
@@ -142,22 +142,22 @@ const AddPropertyForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="description">Описание для клиента</Label>
                         <Textarea id="description" {...register('description', { required: 'Описание обязательно' })} />
                         {errors.description && <p className="text-red-500">{errors.description.message}</p>}
                     </div>
 
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="agentComment">Комментарий для агента</Label>
                         <Textarea id="agentComment" {...register('agentComment')} />
                     </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <h2 className="text-xl font-semibold">Дополнительная Информация</h2>
                     
-                    <div>
+                    <div className="space-y-4">
                         <Label htmlFor="price">Цена</Label>
                         <Input
                             id="price"
@@ -168,7 +168,7 @@ const AddPropertyForm: React.FC = () => {
                     </div>
                     
                     {selectedCategory === 'Квартиры' && (
-                    <div>
+                    <div className="space-y-4">
                         <Label>Тип жилья</Label>
                         <Controller
                             name="propertyType"
@@ -192,7 +192,7 @@ const AddPropertyForm: React.FC = () => {
 
                     {/* Dynamic Fields */}
                     
-                    <div>
+                    <div className="space-y-4">
                         <div>
                             <Label htmlFor="rooms">Количество комнат</Label>
                             <Input id="rooms" {...register('rooms')} />
@@ -206,7 +206,7 @@ const AddPropertyForm: React.FC = () => {
                                 <Label htmlFor="livingArea">Жилая площадь (м²)</Label>
                                 <Input id="livingArea" {...register('livingArea')} />
                             </div>
-                            
+
                         )}
                         <div>
                             <Label htmlFor="floor">Этаж</Label>
