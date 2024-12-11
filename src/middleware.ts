@@ -11,12 +11,16 @@ export function middleware(req: NextRequest) {
   }
 
   if (
-    (pathname === '/' || 
-     pathname.startsWith('/add-property'))
-    && !token
+    (pathname === '/') && !token
   ) {
     // Redirect unauthenticated users trying to access protected routes to the login page
     return NextResponse.redirect(new URL('/login', req.url))
+  }
+
+  if( pathname.startsWith('/add-property')){
+    if(!token){
+      return NextResponse.redirect(new URL('404', req.url))
+    }
   }
 
   // Allow requests to proceed
