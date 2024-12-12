@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Search, Filter, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import FilterDropdown from './FilterDropdown';
 import ThemeToggle from './ThemeToggle';
 import Link from 'next/link';
@@ -12,14 +13,18 @@ import Spinner from '@/components/local-components/spinner'; // Assuming you hav
 
 const Header: React.FC = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
+  const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const isAddPropertyPage = pathname === '/add-property';
 
-  const handleAddPropertyClick = () => {
-    setIsLoading(true);
-    router.push('/add-property');
+  const handleAddPropertySelect = (path: string) => {
+    if (pathname === path) {
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+      router.push(path);
+    }
   };
 
   return (
@@ -57,9 +62,24 @@ const Header: React.FC = () => {
             {!isAddPropertyPage && (
               <>
                 <span className="text-sm text-muted-foreground">12300 объектов</span>
-                <Button variant="outline" onClick={handleAddPropertyClick}>
-                  <Plus className="mr-2 h-4 w-4" /> Добавить Объект
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Plus className="mr-2 h-4 w-4" /> Добавить Объект
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="z-50">
+                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-apartment')}>
+                      Добавить Квартиру
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-commercial')}>
+                      Добавить Коммерческую
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-land')}>
+                      Добавить Участок
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
             <ThemeToggle />

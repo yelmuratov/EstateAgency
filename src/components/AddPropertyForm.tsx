@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import api from "@/lib/api";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+
 import {
   Select,
   SelectContent,
@@ -17,24 +20,30 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface FormData {
   district: string;
-  metro: string;
-  name: string;
+  metro_st: string;
+  title: string;
   category: "Квартиры" | "Коммерция" | "Участки";
-  description: string;
-  agentComment: string;
+  description?: string;
+  comment?: string;
   price: string;
-  propertyType?: "Новостройка" | "Вторичка";
-  rooms?: string;
-  area?: string;
-  totalFloors?: string;
-  floor?: string;
-  bathroom?: string;
-  furnished?: "Да" | "Нет";
-  condition?: string;
+  house_type: "Новостройка" | "Вторичка";   
+  action_type: "rent" | "sale";
+  rooms: string;
+  square_area: string;
+  floor_number: string;
+  floor: string;
+  bathroom: string;
+  furnished?: "Да" | "Нет" | "";
+  house_condition: string;
+  current_status: string;
+  name: string;
+  phone_number: string;
+  agent_percent: string;
   landArea?: string;
   purpose?: string;
   parking?: "Да" | "Нет";
-  livingArea?: string; // Add livingArea field
+  live_square_area: string;
+  location: string;
 }
 
 const AddPropertyForm: React.FC = () => {
@@ -45,63 +54,21 @@ const AddPropertyForm: React.FC = () => {
     formState: { errors },
     watch,
   } = useForm<FormData>();
+
+  const { metros, districts, fetchMetros, fetchDistricts, loading, error } =
+    usePropertyStore();
+
+  useEffect(() => {
+    fetchMetros();
+    fetchDistricts();
+  }, [fetchMetros, fetchDistricts]);
+
   const [photos, setPhotos] = useState<string[]>([]);
   const selectedCategory = watch("category");
 
-  const onSubmit = (data: FormData) => {
-    const { category, ...commonFields } = data;
-  
-    let apiEndpoint = "";
-    let payload = {};
-  
-    switch (category) {
-      case "Квартиры":
-        apiEndpoint = "/apartment/";
-        payload = {
-          ...commonFields,
-          propertyType: data.propertyType,
-          rooms: data.rooms,
-          area: data.area,
-          totalFloors: data.totalFloors,
-          floor: data.floor,
-          bathroom: data.bathroom,
-          furnished: data.furnished,
-          condition: data.condition,
-        };
-        break;
-  
-      case "Коммерция":
-        apiEndpoint = "/commercial/";
-        payload = {
-          ...commonFields,
-          area: data.area,
-          totalFloors: data.totalFloors,
-          floor: data.floor,
-          purpose: data.purpose,
-          parking: data.parking,
-        };
-        break;
-  
-      case "Участки":
-        apiEndpoint = "/land/";
-        payload = {
-          ...commonFields,
-          landArea: data.landArea,
-          livingArea: data.livingArea,
-          purpose: data.purpose,
-          parking: data.parking,
-        };
-        break;
-  
-      default:
-        console.error("Unknown category");
-        return;
-    }
-  
-    console.log("Submitting to:", apiEndpoint);
-    console.log("Payload:", payload);
+  const onSubmit = async (data: FormData) => {
+    console.log(data);
   };
-  
 
   const addPhoto = () => {
     setPhotos([...photos, "https://via.placeholder.com/150"]);
@@ -126,19 +93,25 @@ const AddPropertyForm: React.FC = () => {
                     <SelectValue placeholder="Выберите район" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tashkent">Ташкент</SelectItem>
-                    <SelectItem value="samarkand">Самарканд</SelectItem>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
             />
+            {errors.district && (
+              <p className="text-red-500">{errors.district.message}</p>
+            )}
           </div>
 
           {selectedCategory === "Квартиры" && (
             <div className="space-y-4">
               <Label htmlFor="metro">Метро</Label>
               <Controller
-                name="metro"
+                name="metro_st"
                 control={control}
                 rules={{ required: "Метро обязательно" }}
                 render={({ field }) => (
@@ -147,12 +120,18 @@ const AddPropertyForm: React.FC = () => {
                       <SelectValue placeholder="Выберите метро" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="chilonzor">Чиланзар</SelectItem>
-                      <SelectItem value="oybek">Ойбек</SelectItem>
+                      {metros.map((metro) => (
+                        <SelectItem key={metro.id} value={metro.name}>
+                          {metro.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
               />
+              {errors.metro_st && (
+                <p className="text-red-500">{errors.metro_st.message}</p>
+              )}
             </div>
           )}
 
@@ -160,14 +139,14 @@ const AddPropertyForm: React.FC = () => {
             <Label htmlFor="name">Название</Label>
             <Input
               id="name"
-              {...register("name", { required: "Название обязательно" })}
+              {...register("title", { required: "Название обязательно" })}
               maxLength={50}
             />
             <p className="text-sm text-muted-foreground mt-1">
-              {watch("name")?.length || 0}/50
+              {watch("title")?.length || 0}/50
             </p>
-            {errors.name && (
-              <p className="text-red-500">{errors.name.message}</p>
+            {errors.title && (
+              <p className="text-red-500">{errors.title.message}</p>
             )}
           </div>
 
@@ -184,15 +163,15 @@ const AddPropertyForm: React.FC = () => {
                   className="flex space-x-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Квартиры" id="r1" />
+                    <RadioGroupItem value="apartment" id="r1" />
                     <Label htmlFor="r1">Квартиры</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Коммерция" id="r2" />
+                    <RadioGroupItem value="commercial" id="r2" />
                     <Label htmlFor="r2">Коммерция</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="Участки" id="r3" />
+                    <RadioGroupItem value="land" id="r3" />
                     <Label htmlFor="r3">Участки</Label>
                   </div>
                 </RadioGroup>
@@ -200,6 +179,34 @@ const AddPropertyForm: React.FC = () => {
             />
             {errors.category && (
               <p className="text-red-500">{errors.category.message}</p>
+            )}
+          </div>
+          {/* Action Type */}
+          <div className="space-y-4">
+            <Label>Тип действия</Label>
+            <Controller
+              name="action_type"
+              control={control}
+              rules={{ required: "Тип действия обязателен" }}
+              render={({ field }) => (
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="rent" id="action_rent" />
+                    <Label htmlFor="action_rent">Аренда</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sale" id="action_sale" />
+                    <Label htmlFor="action_sale">Продажа</Label>
+                  </div>
+                </RadioGroup>
+              )}
+            />
+            {errors.action_type && (
+              <p className="text-red-500">{errors.action_type.message}</p>
             )}
           </div>
 
@@ -233,8 +240,8 @@ const AddPropertyForm: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <Label htmlFor="agentComment">Комментарий для агента</Label>
-            <Textarea id="agentComment" {...register("agentComment")} />
+            <Label htmlFor="comment">Комментарий для агента</Label>
+            <Textarea id="comment" {...register("comment")} />
           </div>
         </div>
 
@@ -257,7 +264,7 @@ const AddPropertyForm: React.FC = () => {
             <div className="space-y-4">
               <Label>Тип жилья</Label>
               <Controller
-                name="propertyType"
+                name="house_type"
                 control={control}
                 rules={{ required: "Тип жилья обязателен" }}
                 render={({ field }) => (
@@ -267,11 +274,11 @@ const AddPropertyForm: React.FC = () => {
                     className="flex space-x-4"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Новостройка" id="r4" />
+                      <RadioGroupItem value="new_building" id="r4" />
                       <Label htmlFor="r4">Новостройка</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="Вторичка" id="r5" />
+                      <RadioGroupItem value="seconday" id="r5" />
                       <Label htmlFor="r5">Вторичка</Label>
                     </div>
                   </RadioGroup>
@@ -292,7 +299,7 @@ const AddPropertyForm: React.FC = () => {
               selectedCategory === "Коммерция") && (
               <div>
                 <Label htmlFor="area">Общая площадь (м²)</Label>
-                <Input id="area" {...register("area")} />
+                <Input id="area" {...register("square_area")} />
               </div>
             )}
 
@@ -306,13 +313,49 @@ const AddPropertyForm: React.FC = () => {
             {selectedCategory === "Участки" && (
               <div>
                 <Label htmlFor="livingArea">Жилая площадь (м²)</Label>
-                <Input id="livingArea" {...register("livingArea")} />
+                <Input id="livingArea" {...register("house_type")} />
               </div>
             )}
 
             <div>
               <Label htmlFor="totalFloors">Этажность</Label>
-              <Input id="totalFloors" {...register("totalFloors")} />
+              <Input id="totalFloors" {...register("floor_number")} />
+            </div>
+
+            {/* Location */}
+            <div className="space-y-4">
+              <Label htmlFor="location">Расположение</Label>
+              <Controller
+                name="location"
+                control={control}
+                rules={{ required: "Расположение обязательно" }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите расположение" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="city">Город</SelectItem>
+                      <SelectItem value="suburb">Пригород</SelectItem>
+                      <SelectItem value="countryside">
+                        Сельская местность
+                      </SelectItem>
+                      <SelectItem value="along_road">Вдоль дороги</SelectItem>
+                      <SelectItem value="near_pond">Возле пруда</SelectItem>
+                      <SelectItem value="foothills">Предгорья</SelectItem>
+                      <SelectItem value="cottage_area">
+                        Коттеджный район
+                      </SelectItem>
+                      <SelectItem value="closed_area">
+                        Закрытая территория
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.location && (
+                <p className="text-red-500">{errors.location.message}</p>
+              )}
             </div>
 
             {(selectedCategory === "Квартиры" ||
@@ -365,8 +408,8 @@ const AddPropertyForm: React.FC = () => {
                       <SelectValue placeholder="Выберите" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Да">Да</SelectItem>
-                      <SelectItem value="Нет">Нет</SelectItem>
+                      <SelectItem value="true">Да</SelectItem>
+                      <SelectItem value="false">Нет</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -374,9 +417,9 @@ const AddPropertyForm: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="condition">Состояние</Label>
+              <Label htmlFor="house_condition">Состояние</Label>
               <Controller
-                name="condition"
+                name="house_condition"
                 control={control}
                 rules={{ required: "Состояние обязательно" }}
                 render={({ field }) => (
@@ -385,11 +428,9 @@ const AddPropertyForm: React.FC = () => {
                       <SelectValue placeholder="Выберите состояние" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Евроремонт">Евроремонт</SelectItem>
-                      <SelectItem value="Среднее">Среднее</SelectItem>
-                      <SelectItem value="Требует ремонта">
-                        Требует ремонта
-                      </SelectItem>
+                      <SelectItem value="euro">Евроремонт</SelectItem>
+                      <SelectItem value="notmal">Среднее</SelectItem>
+                      <SelectItem value="repair">Требует ремонта</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
@@ -421,6 +462,108 @@ const AddPropertyForm: React.FC = () => {
                 )}
               </div>
             )}
+
+            {/* Current Status */}
+            <div className="space-y-4">
+              <Label>Текущий статус</Label>
+              <Controller
+                name="current_status"
+                control={control}
+                rules={{ required: "Текущий статус обязателен" }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите статус" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="free">Свободно</SelectItem>
+                      <SelectItem value="soon">Скоро</SelectItem>
+                      <SelectItem value="busy">Занято</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.current_status && (
+                <p className="text-red-500">{errors.current_status.message}</p>
+              )}
+            </div>
+
+            {/* Name */}
+            <div className="space-y-4">
+              <Label htmlFor="name">Имя контактного лица</Label>
+              <Input
+                id="name"
+                {...register("name", {
+                  required: "Имя обязательно",
+                  minLength: {
+                    value: 3,
+                    message: "Имя должно содержать минимум 3 символа",
+                  },
+                  maxLength: {
+                    value: 100,
+                    message: "Имя должно содержать не более 100 символов",
+                  },
+                })}
+                placeholder="Введите имя"
+              />
+              {errors.name && (
+                <p className="text-red-500">{errors.name.message}</p>
+              )}
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-4">
+              <Label htmlFor="phone_number">Номер телефона</Label>
+              <Input
+                id="phone_number"
+                {...register("phone_number", {
+                  required: "Номер телефона обязателен",
+                  minLength: {
+                    value: 3,
+                    message:
+                      "Номер телефона должен содержать минимум 3 символа",
+                  },
+                  maxLength: {
+                    value: 13,
+                    message:
+                      "Номер телефона должен содержать не более 13 символов",
+                  },
+                  pattern: {
+                    value: /^[0-9+]+$/,
+                    message:
+                      "Номер телефона должен содержать только цифры и символ '+'",
+                  },
+                })}
+                placeholder="+998901234567"
+              />
+              {errors.phone_number && (
+                <p className="text-red-500">{errors.phone_number.message}</p>
+              )}
+            </div>
+
+            {/* Agent Percent */}
+            <div className="space-y-4">
+              <Label htmlFor="agent_percent">Процент агента</Label>
+              <Input
+                id="agent_percent"
+                type="number"
+                {...register("agent_percent", {
+                  required: "Процент агента обязателен",
+                  min: {
+                    value: 0,
+                    message: "Процент агента не может быть меньше 0",
+                  },
+                  max: {
+                    value: 100,
+                    message: "Процент агента не может быть больше 100",
+                  },
+                })}
+                placeholder="Введите процент агента"
+              />
+              {errors.agent_percent && (
+                <p className="text-red-500">{errors.agent_percent.message}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

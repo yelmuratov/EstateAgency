@@ -13,7 +13,6 @@ export function middleware(req: NextRequest) {
   if (
     (pathname === '/') && !token
   ) {
-    // Redirect unauthenticated users trying to access protected routes to the login page
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
