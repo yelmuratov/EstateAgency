@@ -30,8 +30,8 @@ const Header: React.FC = () => {
   return (
     <header className="bg-background border-b border-border">
       <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center w-full md:w-auto">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center w-full sm:w-auto">
             {isAddPropertyPage ? (
               <Button variant="ghost" asChild>
                 <Link href="/">
@@ -40,7 +40,7 @@ const Header: React.FC = () => {
               </Button>
             ) : (
               <>
-                <div className="relative flex-grow md:max-w-md">
+                <div className="relative flex-grow sm:max-w-md w-full">
                   <Input
                     type="text"
                     placeholder="Поиск"
@@ -50,7 +50,7 @@ const Header: React.FC = () => {
                 </div>
                 <Button
                   variant="default"
-                  className="ml-2"
+                  className="ml-2 hidden sm:flex"
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
                 >
                   <Filter className="mr-2 h-4 w-4" /> Фильтр
@@ -58,10 +58,10 @@ const Header: React.FC = () => {
               </>
             )}
           </div>
-          <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
             {!isAddPropertyPage && (
               <>
-                <span className="text-sm text-muted-foreground">12300 объектов</span>
+                <span className="text-sm text-muted-foreground hidden md:block">12300 объектов</span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline">
@@ -85,7 +85,11 @@ const Header: React.FC = () => {
             <ThemeToggle />
           </div>
         </div>
-        {isFilterOpen && !isAddPropertyPage && <FilterDropdown />}
+        {isFilterOpen && !isAddPropertyPage && (
+          <div className="w-full mt-4 sm:mt-0">
+            <FilterDropdown />
+          </div>
+        )}
       </div>
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getUser } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
 import Spinner from "@/components/local-components/spinner";
-import { useTheme } from "next-themes";
+import { ThemeProvider, useTheme } from "next-themes";
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import { useToast } from "@/hooks/use-toast"; 
 import PropertyTable from '@/components/PropertyTable';
@@ -66,9 +66,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <LandTable />
       <ApartmentTable />
-      <CommercialTable />
     </DashboardLayout>
   );
 }
