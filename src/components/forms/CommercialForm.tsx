@@ -1,78 +1,120 @@
-'use client'
+"use client";
 
-import { useState, useRef } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import axios from 'axios'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Loader2, Upload, X } from 'lucide-react'
+import { useState, useRef, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Loader2, Upload, X } from "lucide-react";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { CommercialFormData } from '@/types/commercial-form-data';
-import { commercialFormSchema } from '@/schemas/commercial-form-schema';
+} from "@/components/ui/form";
+import { CommercialFormData } from "@/types/commercial-form-data";
+import { commercialFormSchema } from "@/schemas/commercial-form-schema";
+import api from "@/lib/api";
+
 import {
   ACTION_TYPES,
   LOCATIONS,
   HOUSE_CONDITIONS,
   CURRENT_STATUSES,
   BOOLEAN_OPTIONS,
-} from '@/constants/form-options';
+} from "@/constants/form-options";
 
 export function CommercialPropertyForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { districts, fetchDistricts } = usePropertyStore();
+
+  useEffect(() => {
+    fetchDistricts(); // Fetch data on mount
+  }, [fetchDistricts]);
 
   const form = useForm<CommercialFormData>({
     resolver: zodResolver(commercialFormSchema),
     defaultValues: {
-      category: 'commercial',
+      category: "commercial",
       furnished: true,
     },
-  })
+  });
 
   const onSubmit = async (data: CommercialFormData) => {
+    const { toast } = useToast();
     setIsSubmitting(true);
     try {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        if (key === 'media') {
-          for (let i = 0; i < value.length; i++) {
-            formData.append('media', value[i]);
+        if (key === "media") {
+          for (let i = 0; i < (value as File[]).length; i++) {
+            formData.append("media", (value as File[])[i]);
           }
         } else {
           formData.append(key, value as string | Blob);
         }
       });
 
-      await axios.post('/commercial/', formData, {
+      // API Request
+      await api.post("/commercial/", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
-      // Handle success (e.g., show a success message, reset form, etc.)
+
+      // Success Toast
+      toast({
+        title: "Success",
+        description: "Коммерческая недвижимость успешно добавлена", // "Commercial property added successfully"
+        variant: "default",
+      });
+
+      // Reset form, images, and file input
+      form.reset(); // Resets the form fields
       setPreviewImages([]);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
-    } catch (error) {
-      // Handle error (e.g., show an error message)
+    } catch (error: any) {
+      const statusCode = error.response?.status;
+      const errorDetail = error.response?.data?.detail;
+
+      // Error Handling
+      if (statusCode === 400 || statusCode === 422) {
+        const errorMessage =
+          typeof errorDetail === "string"
+            ? errorDetail
+            : Array.isArray(errorDetail)
+            ? errorDetail.map((err: any) => `- ${err.msg}`).join("\n")
+            : "Invalid data submitted.";
+
+        toast({
+          title: "Validation Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Произошла ошибка. Повторите попытку позже.", // "An error occurred. Please try again later."
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +158,10 @@ export function CommercialPropertyForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-2xl mx-auto">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-8 max-w-2xl mx-auto"
+      >
         <FormField
           control={form.control}
           name="district"
@@ -124,7 +169,21 @@ export function CommercialPropertyForm() {
             <FormItem>
               <FormLabel>Район</FormLabel>
               <FormControl>
-                <Input placeholder="Введите район" {...field} className="mt-1 w-full" />
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите район" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -314,8 +373,8 @@ export function CommercialPropertyForm() {
             <FormItem>
               <FormLabel>Меблированная</FormLabel>
               <Select
-                onValueChange={(value) => field.onChange(value === 'true')}
-                defaultValue={field.value ? 'true' : 'false'}
+                onValueChange={(value) => field.onChange(value === "true")}
+                defaultValue={field.value ? "true" : "false"}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -392,8 +451,8 @@ export function CommercialPropertyForm() {
             <FormItem>
               <FormLabel>Парковка</FormLabel>
               <Select
-                onValueChange={(value) => field.onChange(value === 'true')}
-                defaultValue={field.value ? 'true' : 'false'}
+                onValueChange={(value) => field.onChange(value === "true")}
+                defaultValue={field.value ? "true" : "false"}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -491,7 +550,7 @@ export function CommercialPropertyForm() {
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="media"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
                     >
                       <span>Загрузить файлы</span>
                       <input
@@ -501,8 +560,10 @@ export function CommercialPropertyForm() {
                         multiple
                         ref={fileInputRef}
                         onChange={(e) => {
-                          field.onChange(e);
-                          handleImageChange(e);
+                          const files = e.target.files;
+                          if (files) {
+                            field.onChange(Array.from(files));
+                          }
                         }}
                       />
                     </label>
@@ -511,32 +572,14 @@ export function CommercialPropertyForm() {
                   <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
                 </div>
               </div>
-              {previewImages.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 gap-4">
-                  {previewImages.map((image, index) => (
-                    <div key={index} className="relative">
-                      <img src={image} alt={`Preview ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <FormMessage />
             </FormItem>
           )}
         />
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+          {isSubmitting ? "Сохранение..." : "Сохранить"}
         </Button>
       </form>
     </Form>
-  )
+  );
 }
-

@@ -4,10 +4,13 @@ import ApartmentForm from "@/components/forms/ApartmentForm";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster"
 
 export default function AddApartmentPage() {
   return (
     <DashboardLayout>
+      <Toaster 
+      />
       <Button
         type="button"
         variant="outline"

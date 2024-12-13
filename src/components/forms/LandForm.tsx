@@ -1,50 +1,113 @@
-'use client'
+"use client";
 
-import React, { useState, useRef } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import axios from 'axios'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+import React, { useState, useRef,useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import axios from "axios";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+import api from "@/lib/api";
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { LandFormData } from '@/types/LandFormData'
-import { Loader2, Upload, X } from 'lucide-react'
+} from "@/components/ui/select";
+import { LandFormData } from "@/types/LandFormData";
+import { Loader2, Upload, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 const schema = z.object({
-  district: z.string().nonempty('Это поле обязательно'),
-  title: z.string().min(3, 'Минимум 3 символа').max(50, 'Максимум 50 символов').nonempty('Это поле обязательно'),
-  category: z.literal('land'),
-  action_type: z.enum(['rent', 'sale'], { required_error: 'Это поле обязательно' }),
-  description: z.string().max(6000, 'Максимум 6000 символов').optional(),
-  comment: z.string().max(6000, 'Максимум 6000 символов').optional(),
-  price: z.number().int().positive('Цена должна быть положительным числом').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  rooms: z.number().int().positive('Количество комнат должно быть положительным числом').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  square_area: z.number().int().positive('Площадь должна быть положительным числом').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  live_square_area: z.number().int().positive('Жилая площадь должна быть положительным числом').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  floor_number: z.number().int().positive('Этажность должна быть положительным числом').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  location: z.enum(['city', 'suburb', 'countryside', 'along_road', 'near_pond', 'foothills', 'cottage_area', 'closed_area'], { required_error: 'Это поле обязательно' }),
+  district: z.string().nonempty("Это поле обязательно"),
+  title: z
+    .string()
+    .min(3, "Минимум 3 символа")
+    .max(50, "Максимум 50 символов")
+    .nonempty("Это поле обязательно"),
+  category: z.literal("land"),
+  action_type: z.enum(["rent", "sale"], {
+    required_error: "Это поле обязательно",
+  }),
+  description: z.string().max(6000, "Максимум 6000 символов").optional(),
+  comment: z.string().max(6000, "Максимум 6000 символов").optional(),
+  price: z
+    .number()
+    .int()
+    .positive("Цена должна быть положительным числом")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  rooms: z
+    .number()
+    .int()
+    .positive("Количество комнат должно быть положительным числом")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  square_area: z
+    .number()
+    .int()
+    .positive("Площадь должна быть положительным числом")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  live_square_area: z
+    .number()
+    .int()
+    .positive("Жилая площадь должна быть положительным числом")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  floor_number: z
+    .number()
+    .int()
+    .positive("Этажность должна быть положительным числом")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  location: z.enum(
+    [
+      "city",
+      "suburb",
+      "countryside",
+      "along_road",
+      "near_pond",
+      "foothills",
+      "cottage_area",
+      "closed_area",
+    ],
+    { required_error: "Это поле обязательно" }
+  ),
   furnished: z.boolean().optional(),
-  house_condition: z.enum(['euro', 'normal', 'repair'], { required_error: 'Это поле обязательно' }),
-  current_status: z.enum(['free', 'soon', 'busy']).optional(),
-  parking_place: z.boolean({ required_error: 'Это поле обязательно' }),
-  agent_percent: z.number().int().min(0, 'Процент агента не может быть отрицательным').max(100, 'Процент агента не может быть больше 100').refine(value => value !== undefined, { message: 'Это поле обязательно' }),
-  agent_commission: z.number().optional(),
-  crm_id: z.string().max(255, 'Максимум 255 символов').optional(),
-  responsible: z.string().min(3, 'Минимум 3 символа').max(100, 'Максимум 100 символов').optional(),
-  media: z.instanceof(FileList).optional(),
-})
+  house_condition: z.enum(["euro", "normal", "repair"], {
+    required_error: "Это поле обязательно",
+  }),
+  current_status: z.enum(["free", "soon", "busy"],{ required_error: "Это поле обязательно" }),
+  parking_place: z.boolean({ required_error: "Это поле обязательно" }),
+  agent_percent: z
+    .number()
+    .int()
+    .min(0, "Процент агента не может быть отрицательным")
+    .max(100, "Процент агента не может быть больше 100")
+    .refine((value) => value !== undefined, {
+      message: "Это поле обязательно",
+    }),
+  agent_commission: z.number().min(0, "Введите положительное число"),
+  crm_id: z.string().max(255, "Максимум 255 символов").optional(),
+  responsible: z
+    .string()
+    .optional(),
+  media: z.any().optional(),
+});
 
 export function LandPropertyForm() {
-  const [previewImages, setPreviewImages] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
     handleSubmit,
@@ -53,100 +116,123 @@ export function LandPropertyForm() {
   } = useForm<LandFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      category: 'land',
+      category: "land",
       furnished: true,
     },
-  })
+  });
+
+  const { districts, fetchDistricts } = usePropertyStore();
+
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
 
   const onSubmit = async (data: LandFormData) => {
     try {
-      const formData = new FormData()
+      const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
-        if (key === 'media') {
+        if (key === "media") {
           for (let i = 0; i < value.length; i++) {
-            formData.append('media', value[i])
+            formData.append("media", value[i]);
           }
         } else {
-          formData.append(key, value as string | Blob)
+          formData.append(key, value as string | Blob);
         }
-      })
+      });
 
-      await axios.post('/land/', formData, {
+      await api.post("/land/", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
-      })
+      });
       // Handle success (e.g., show a success message, reset form, etc.)
-      setPreviewImages([])
+      setPreviewImages([]);
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = "";
       }
     } catch (error) {
       // Handle error (e.g., show an error message)
-      console.error('Error submitting form:', error)
+      console.error("Error submitting form:", error);
     }
-  }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files) {
-      const newPreviewImages: string[] = []
+      const newPreviewImages: string[] = [];
       for (let i = 0; i < files.length; i++) {
-        const reader = new FileReader()
+        const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
-            newPreviewImages.push(e.target.result as string)
+            newPreviewImages.push(e.target.result as string);
             if (newPreviewImages.length === files.length) {
-              setPreviewImages(newPreviewImages)
+              setPreviewImages(newPreviewImages);
             }
           }
-        }
-        reader.readAsDataURL(files[i])
+        };
+        reader.readAsDataURL(files[i]);
       }
     }
-  }
+  };
 
   const removeImage = (index: number) => {
-    const newPreviewImages = [...previewImages]
-    newPreviewImages.splice(index, 1)
-    setPreviewImages(newPreviewImages)
+    const newPreviewImages = [...previewImages];
+    newPreviewImages.splice(index, 1);
+    setPreviewImages(newPreviewImages);
 
     if (fileInputRef.current && fileInputRef.current.files) {
-      const dt = new DataTransfer()
-      const { files } = fileInputRef.current
+      const dt = new DataTransfer();
+      const { files } = fileInputRef.current;
       for (let i = 0; i < files.length; i++) {
         if (i !== index) {
-          dt.items.add(files[i])
+          dt.items.add(files[i]);
         }
       }
-      fileInputRef.current.files = dt.files
+      fileInputRef.current.files = dt.files;
     }
-  }
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 max-w-2xl mx-auto"
+    >
       <div>
-        <label htmlFor="district" className="block text-sm font-medium text-gray-700">
-          Район
-        </label>
-        <Input
-          id="district"
-          {...register('district')}
-          placeholder="Введите район"
-          className="mt-1 w-full"
+        <Label htmlFor="district">Район</Label>
+        <Controller
+          name="district"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите район" />
+              </SelectTrigger>
+              <SelectContent>
+                {districts.map((district) => (
+                  <SelectItem key={district.id} value={district.name}>
+                    {district.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         />
         {errors.district && (
-          <p className="mt-1 text-sm text-red-600">{errors.district.message}</p>
+          <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>
         )}
       </div>
 
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="title"
+          className="block text-sm font-medium text-gray-700"
+        >
           Название
         </label>
         <Input
           id="title"
-          {...register('title')}
+          {...register("title")}
           placeholder="Введите название"
           className="mt-1"
         />
@@ -156,7 +242,10 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="action_type" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="action_type"
+          className="block text-sm font-medium text-gray-700"
+        >
           Тип действия
         </label>
         <Controller
@@ -175,32 +264,42 @@ export function LandPropertyForm() {
           )}
         />
         {errors.action_type && (
-          <p className="mt-1 text-sm text-red-600">{errors.action_type.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.action_type.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700"
+        >
           Описание
         </label>
         <Textarea
           id="description"
-          {...register('description')}
+          {...register("description")}
           placeholder="Введите описание"
           className="mt-1"
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.description.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="comment" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="comment"
+          className="block text-sm font-medium text-gray-700"
+        >
           Комментарий
         </label>
         <Textarea
           id="comment"
-          {...register('comment')}
+          {...register("comment")}
           placeholder="Введите комментарий"
           className="mt-1"
         />
@@ -210,13 +309,16 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="price"
+          className="block text-sm font-medium text-gray-700"
+        >
           Цена
         </label>
         <Input
           id="price"
           type="number"
-          {...register('price', { valueAsNumber: true })}
+          {...register("price", { valueAsNumber: true })}
           placeholder="Введите цену"
           className="mt-1"
         />
@@ -226,13 +328,16 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="rooms" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="rooms"
+          className="block text-sm font-medium text-gray-700"
+        >
           Количество комнат
         </label>
         <Input
           id="rooms"
           type="number"
-          {...register('rooms', { valueAsNumber: true })}
+          {...register("rooms", { valueAsNumber: true })}
           placeholder="Введите количество комнат"
           className="mt-1"
         />
@@ -242,55 +347,73 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="square_area" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="square_area"
+          className="block text-sm font-medium text-gray-700"
+        >
           Общая площадь
         </label>
         <Input
           id="square_area"
           type="number"
-          {...register('square_area', { valueAsNumber: true })}
+          {...register("square_area", { valueAsNumber: true })}
           placeholder="Введите общую площадь"
           className="mt-1"
         />
         {errors.square_area && (
-          <p className="mt-1 text-sm text-red-600">{errors.square_area.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.square_area.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="live_square_area" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="live_square_area"
+          className="block text-sm font-medium text-gray-700"
+        >
           Жилая площадь
         </label>
         <Input
           id="live_square_area"
           type="number"
-          {...register('live_square_area', { valueAsNumber: true })}
+          {...register("live_square_area", { valueAsNumber: true })}
           placeholder="Введите жилую площадь"
           className="mt-1"
         />
         {errors.live_square_area && (
-          <p className="mt-1 text-sm text-red-600">{errors.live_square_area.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.live_square_area.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="floor_number" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="floor_number"
+          className="block text-sm font-medium text-gray-700"
+        >
           Этажность
         </label>
         <Input
           id="floor_number"
           type="number"
-          {...register('floor_number', { valueAsNumber: true })}
+          {...register("floor_number", { valueAsNumber: true })}
           placeholder="Введите этажность"
           className="mt-1"
         />
         {errors.floor_number && (
-          <p className="mt-1 text-sm text-red-600">{errors.floor_number.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.floor_number.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="location"
+          className="block text-sm font-medium text-gray-700"
+        >
           Расположение
         </label>
         <Controller
@@ -320,14 +443,20 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="furnished" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="furnished"
+          className="block text-sm font-medium text-gray-700"
+        >
           Меблированная
         </label>
         <Controller
           name="furnished"
           control={control}
           render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value?.toString()}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Выберите наличие мебели" />
               </SelectTrigger>
@@ -339,12 +468,17 @@ export function LandPropertyForm() {
           )}
         />
         {errors.furnished && (
-          <p className="mt-1 text-sm text-red-600">{errors.furnished.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.furnished.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="house_condition" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="house_condition"
+          className="block text-sm font-medium text-gray-700"
+        >
           Состояние
         </label>
         <Controller
@@ -364,12 +498,17 @@ export function LandPropertyForm() {
           )}
         />
         {errors.house_condition && (
-          <p className="mt-1 text-sm text-red-600">{errors.house_condition.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.house_condition.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="current_status" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="current_status"
+          className="block text-sm font-medium text-gray-700"
+        >
           Текущий статус
         </label>
         <Controller
@@ -389,19 +528,27 @@ export function LandPropertyForm() {
           )}
         />
         {errors.current_status && (
-          <p className="mt-1 text-sm text-red-600">{errors.current_status.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.current_status.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="parking_place" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="parking_place"
+          className="block text-sm font-medium text-gray-700"
+        >
           Парковка
         </label>
         <Controller
           name="parking_place"
           control={control}
           render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value?.toString()}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Выберите наличие парковки" />
               </SelectTrigger>
@@ -413,49 +560,64 @@ export function LandPropertyForm() {
           )}
         />
         {errors.parking_place && (
-          <p className="mt-1 text-sm text-red-600">{errors.parking_place.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.parking_place.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="agent_percent" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="agent_percent"
+          className="block text-sm font-medium text-gray-700"
+        >
           Процент агента
         </label>
         <Input
           id="agent_percent"
           type="number"
-          {...register('agent_percent', { valueAsNumber: true })}
+          {...register("agent_percent", { valueAsNumber: true })}
           placeholder="Введите процент агента"
           className="mt-1"
         />
         {errors.agent_percent && (
-          <p className="mt-1 text-sm text-red-600">{errors.agent_percent.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.agent_percent.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="agent_commission" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="agent_commission"
+          className="block text-sm font-medium text-gray-700"
+        >
           Комиссия агента
         </label>
         <Input
           id="agent_commission"
           type="number"
-          {...register('agent_commission', { valueAsNumber: true })}
+          {...register("agent_commission", { valueAsNumber: true })}
           placeholder="Введите комиссию агента"
           className="mt-1"
         />
         {errors.agent_commission && (
-          <p className="mt-1 text-sm text-red-600">{errors.agent_commission.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.agent_commission.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="crm_id" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="crm_id"
+          className="block text-sm font-medium text-gray-700"
+        >
           CRM ID
         </label>
         <Input
           id="crm_id"
-          {...register('crm_id')}
+          {...register("crm_id")}
           placeholder="Введите CRM ID"
           className="mt-1"
         />
@@ -465,22 +627,30 @@ export function LandPropertyForm() {
       </div>
 
       <div>
-        <label htmlFor="responsible" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="responsible"
+          className="block text-sm font-medium text-gray-700"
+        >
           Ответственный
         </label>
         <Input
           id="responsible"
-          {...register('responsible')}
+          {...register("responsible")}
           placeholder="Введите ответственного"
           className="mt-1"
         />
         {errors.responsible && (
-          <p className="mt-1 text-sm text-red-600">{errors.responsible.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.responsible.message}
+          </p>
         )}
       </div>
 
       <div>
-        <label htmlFor="media" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="media"
+          className="block text-sm font-medium text-gray-700"
+        >
           Фотографии
         </label>
         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
@@ -497,7 +667,7 @@ export function LandPropertyForm() {
                   type="file"
                   className="sr-only"
                   multiple
-                  {...register('media')}
+                  {...register("media")}
                   ref={fileInputRef}
                   onChange={handleImageChange}
                 />
@@ -511,7 +681,11 @@ export function LandPropertyForm() {
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
               <div key={index} className="relative">
-                <img src={image} alt={`Preview ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                <img
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-md"
+                />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -526,9 +700,8 @@ export function LandPropertyForm() {
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+        {isSubmitting ? "Сохранение..." : "Сохранить"}
       </Button>
     </form>
-  )
+  );
 }
-

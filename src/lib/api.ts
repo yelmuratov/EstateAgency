@@ -3,7 +3,7 @@ import { getAuthToken, clearAuthToken } from './tokenHelper';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 5000,
+  timeout: 10000,
 });
 
 // Add a request interceptor to attach the token

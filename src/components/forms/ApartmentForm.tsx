@@ -1,85 +1,169 @@
-'use client'
+"use client";
 
-import { useState, useRef } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import api  from '@/lib/api'
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Loader2, Upload, X } from 'lucide-react'
+import { useState, useRef, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import api from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Loader2, Upload, X } from "lucide-react";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 
 interface ApartmentFormData {
   district: string;
   metro_st: string;
   title: string;
-  category: 'apartment';
-  action_type: 'rent' | 'sale';
+  category: "apartment";
+  action_type: "rent" | "sale";
   description?: string;
   comment?: string;
   price: number;
-  house_type: 'new_building' | 'secondary';
+  house_type: "new_building" | "secondary";
   rooms: number;
   square_area: number;
   floor_number: number;
   floor: number;
-  bathroom: 'seperated' | 'combined' | 'many';
+  bathroom: "seperated" | "combined" | "many";
   furnished: boolean;
-  house_condition: 'euro' | 'normal' | 'repair';
-  current_status: 'free' | 'soon' | 'busy';
+  house_condition: "euro" | "normal" | "repair";
+  current_status: "free" | "soon" | "busy";
   name: string;
   phone_number: string;
   agent_percent: number;
   agent_commission?: number;
   crm_id?: string;
   responsible?: string;
-  images: FileList;
+  media?: FileList;
 }
 
 export default function ApartmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const { register, handleSubmit, control, formState: { errors } } = useForm<ApartmentFormData>();
+  const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const { toast } = useToast(); // Initialize the toast hook
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<ApartmentFormData>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
+
+  useEffect(() => {
+    fetchMetros();
+    fetchDistricts();
+  }, [fetchMetros, fetchDistricts]);
+
   const onSubmit = async (data: ApartmentFormData) => {
-    setIsSubmitting(true);
+  
     try {
       const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'images') {
-          for (let i = 0; i < value.length; i++) {
-            formData.append('images', value[i]);
-          }
-        } else if (key === 'furnished') {
-          formData.append(key, value ? 'true' : 'false');
-        } else {
-          formData.append(key, value as string | Blob);
+  
+      // Append media files (if any) to FormData
+      if (mediaFiles && mediaFiles.length > 0) {
+        for (let i = 0; i < mediaFiles.length; i++) {
+          formData.append("media", mediaFiles[i]); // Add each file under the "media" key
+        }
+      }
+  
+      // Prepare query parameters
+      const params = new URLSearchParams();
+      Object.keys(data).forEach((key) => {
+        const value = (data as any)[key];
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
         }
       });
-
-      await api.post('/apartment/', formData, {
+  
+      console.log("Query parameters:", params.toString());
+      console.log("FormData content (media only):");
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+  
+      // Submit the API request
+      const response = await api.post(`/apartment/?${params.toString()}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
-      alert('Квартира успешно добавлена!');
-      setPreviewImages([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+  
+      // Handle success response
+      toast({
+        title: "Success",
+        description: "Квартира успешно добавлена", // "Apartment successfully added"
+        variant: "default",
+      });
+
+      reset(); // Resets all form fields
+      setPreviewImages([]); // Clears image previews
+      setMediaFiles(null); 
+  
+      setIsSubmitting(false);
+    } catch (error: any) {
+      const statusCode = error.response?.status;
+      const errorDetail = error.response?.data?.detail;
+  
+      if (statusCode === 400 || statusCode === 422) {
+        if (typeof errorDetail === "string") {
+          // Handle case where `detail` is a string
+          toast({
+            title: "Validation Error",
+            description: errorDetail, // Display the error message directly
+            variant: "destructive",
+          });
+        } else if (Array.isArray(errorDetail)) {
+          // Handle case where `detail` is an array
+          const formattedErrors = errorDetail
+            .map((err: any) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
+            .join("\n");
+  
+          toast({
+            title: "Validation Error",
+            description: `The following issues were found:\n${formattedErrors}`,
+            variant: "destructive",
+          });
+        } else {
+          // Fallback for unknown error structures
+          toast({
+            title: "Validation Error",
+            description: "Invalid data submitted.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Handle other types of errors
+        console.error("Error during form submission:", error);
+  
+        toast({
+          title: "Error",
+          description: error.response?.data?.msg || "An unknown error occurred",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Произошла ошибка при добавлении квартиры. Пожалуйста, попробуйте еще раз.');
-    } finally {
+  
       setIsSubmitting(false);
     }
   };
-
+  
+  
+  
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    setMediaFiles(files); // Store files in state
     if (files) {
       const newPreviewImages: string[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -115,40 +199,76 @@ export default function ApartmentForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl mx-auto">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 max-w-2xl mx-auto"
+    >
       <div>
         <Label htmlFor="district">Район</Label>
-        <Input
-          id="district"
-          {...register('district', { required: 'Это поле обязательно' })}
-          placeholder="Введите район"
-          className="mt-1 w-full"
+        <Controller
+          name="district"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите район" />
+              </SelectTrigger>
+              <SelectContent>
+                {districts.map((district) => (
+                  <SelectItem key={district.id} value={district.name}>
+                    {district.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         />
-        {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>}
+        {errors.district && (
+          <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="metro_st">Метро</Label>
-        <Input
-          id="metro_st"
-          {...register('metro_st', { required: 'Это поле обязательно' })}
-          placeholder="Введите ближайшее метро"
+        <Controller
+          name="metro_st"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите метро" />
+              </SelectTrigger>
+              <SelectContent>
+                {metros.map((metro) => (
+                  <SelectItem key={metro.id} value={metro.name}>
+                    {metro.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         />
-        {errors.metro_st && <p className="text-red-500 text-sm mt-1">{errors.metro_st.message}</p>}
+        {errors.metro_st && (
+          <p className="text-red-500 text-sm mt-1">{errors.metro_st.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="title">Название</Label>
         <Input
           id="title"
-          {...register('title', { 
-            required: 'Это поле обязательно', 
-            minLength: { value: 3, message: 'Минимум 3 символа' },
-            maxLength: { value: 50, message: 'Максимум 50 символов' }
+          {...register("title", {
+            required: "Это поле обязательно",
+            minLength: { value: 3, message: "Минимум 3 символа" },
+            maxLength: { value: 50, message: "Максимум 50 символов" },
           })}
           placeholder="Введите название"
         />
-        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+        {errors.title && (
+          <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+        )}
       </div>
 
       <div>
@@ -175,7 +295,7 @@ export default function ApartmentForm() {
         <Controller
           name="action_type"
           control={control}
-          rules={{ required: 'Это поле обязательно' }}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <SelectTrigger>
@@ -188,27 +308,41 @@ export default function ApartmentForm() {
             </Select>
           )}
         />
-        {errors.action_type && <p className="text-red-500 text-sm mt-1">{errors.action_type.message}</p>}
+        {errors.action_type && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.action_type.message}
+          </p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="description">Описание</Label>
         <Textarea
           id="description"
-          {...register('description', { maxLength: { value: 6000, message: 'Максимум 6000 символов' } })}
+          {...register("description", {
+            maxLength: { value: 6000, message: "Максимум 6000 символов" },
+          })}
           placeholder="Введите описание (необязательно)"
         />
-        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+        {errors.description && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.description.message}
+          </p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="comment">Комментарий</Label>
         <Textarea
           id="comment"
-          {...register('comment', { maxLength: { value: 6000, message: 'Максимум 6000 символов' } })}
+          {...register("comment", {
+            maxLength: { value: 6000, message: "Максимум 6000 символов" },
+          })}
           placeholder="Введите комментарий (необязательно)"
         />
-        {errors.comment && <p className="text-red-500 text-sm mt-1">{errors.comment.message}</p>}
+        {errors.comment && (
+          <p className="text-red-500 text-sm mt-1">{errors.comment.message}</p>
+        )}
       </div>
 
       <div>
@@ -216,10 +350,15 @@ export default function ApartmentForm() {
         <Input
           id="price"
           type="number"
-          {...register('price', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("price", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите цену"
         />
-        {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>}
+        {errors.price && (
+          <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+        )}
       </div>
 
       <div>
@@ -227,7 +366,7 @@ export default function ApartmentForm() {
         <Controller
           name="house_type"
           control={control}
-          rules={{ required: 'Это поле обязательно' }}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <SelectTrigger>
@@ -240,7 +379,11 @@ export default function ApartmentForm() {
             </Select>
           )}
         />
-        {errors.house_type && <p className="text-red-500 text-sm mt-1">{errors.house_type.message}</p>}
+        {errors.house_type && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.house_type.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -248,10 +391,15 @@ export default function ApartmentForm() {
         <Input
           id="rooms"
           type="number"
-          {...register('rooms', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("rooms", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите количество комнат"
         />
-        {errors.rooms && <p className="text-red-500 text-sm mt-1">{errors.rooms.message}</p>}
+        {errors.rooms && (
+          <p className="text-red-500 text-sm mt-1">{errors.rooms.message}</p>
+        )}
       </div>
 
       <div>
@@ -259,10 +407,17 @@ export default function ApartmentForm() {
         <Input
           id="square_area"
           type="number"
-          {...register('square_area', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("square_area", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите общую площадь"
         />
-        {errors.square_area && <p className="text-red-500 text-sm mt-1">{errors.square_area.message}</p>}
+        {errors.square_area && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.square_area.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -270,10 +425,17 @@ export default function ApartmentForm() {
         <Input
           id="floor_number"
           type="number"
-          {...register('floor_number', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("floor_number", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите этажность дома"
         />
-        {errors.floor_number && <p className="text-red-500 text-sm mt-1">{errors.floor_number.message}</p>}
+        {errors.floor_number && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.floor_number.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -281,10 +443,15 @@ export default function ApartmentForm() {
         <Input
           id="floor"
           type="number"
-          {...register('floor', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("floor", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите этаж квартиры"
         />
-        {errors.floor && <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>}
+        {errors.floor && (
+          <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>
+        )}
       </div>
 
       <div>
@@ -292,7 +459,7 @@ export default function ApartmentForm() {
         <Controller
           name="bathroom"
           control={control}
-          rules={{ required: 'Это поле обязательно' }}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <SelectTrigger>
@@ -306,23 +473,32 @@ export default function ApartmentForm() {
             </Select>
           )}
         />
-        {errors.bathroom && <p className="text-red-500 text-sm mt-1">{errors.bathroom.message}</p>}
+        {errors.bathroom && (
+          <p className="text-red-500 text-sm mt-1">{errors.bathroom.message}</p>
+        )}
       </div>
 
-      <div className="flex items-center space-x-2">
+      <div>
+        <Label htmlFor="furnished">Меблированная</Label>
         <Controller
           name="furnished"
           control={control}
           defaultValue={true}
           render={({ field }) => (
-            <Checkbox
-              id="furnished"
-              checked={field.value}
-              onCheckedChange={field.onChange}
-            />
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value ? "true" : "false"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
-        <Label htmlFor="furnished">Меблированная</Label>
       </div>
 
       <div>
@@ -330,7 +506,7 @@ export default function ApartmentForm() {
         <Controller
           name="house_condition"
           control={control}
-          rules={{ required: 'Это поле обязательно' }}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <SelectTrigger>
@@ -344,7 +520,11 @@ export default function ApartmentForm() {
             </Select>
           )}
         />
-        {errors.house_condition && <p className="text-red-500 text-sm mt-1">{errors.house_condition.message}</p>}
+        {errors.house_condition && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.house_condition.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -352,7 +532,7 @@ export default function ApartmentForm() {
         <Controller
           name="current_status"
           control={control}
-          rules={{ required: 'Это поле обязательно' }}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <SelectTrigger>
@@ -366,35 +546,45 @@ export default function ApartmentForm() {
             </Select>
           )}
         />
-        {errors.current_status && <p className="text-red-500 text-sm mt-1">{errors.current_status.message}</p>}
+        {errors.current_status && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.current_status.message}
+          </p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="name">Имя</Label>
         <Input
           id="name"
-          {...register('name', { 
-            required: 'Это поле обязательно', 
-            minLength: { value: 3, message: 'Минимум 3 символа' },
-            maxLength: { value: 100, message: 'Максимум 100 символов' }
+          {...register("name", {
+            required: "Это поле обязательно",
+            minLength: { value: 3, message: "Минимум 3 символа" },
+            maxLength: { value: 100, message: "Максимум 100 символов" },
           })}
           placeholder="Введите имя"
         />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="phone_number">Номер телефона</Label>
         <Input
           id="phone_number"
-          {...register('phone_number', { 
-            required: 'Это поле обязательно', 
-            minLength: { value: 3, message: 'Минимум 3 символа' },
-            maxLength: { value: 13, message: 'Максимум 13 символов' }
+          {...register("phone_number", {
+            required: "Это поле обязательно",
+            minLength: { value: 3, message: "Минимум 3 символа" },
+            maxLength: { value: 13, message: "Максимум 13 символов" },
           })}
           placeholder="Введите номер телефона"
         />
-        {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number.message}</p>}
+        {errors.phone_number && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.phone_number.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -402,10 +592,17 @@ export default function ApartmentForm() {
         <Input
           id="agent_percent"
           type="number"
-          {...register('agent_percent', { required: 'Это поле обязательно', valueAsNumber: true })}
+          {...register("agent_percent", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
           placeholder="Введите процент агента"
         />
-        {errors.agent_percent && <p className="text-red-500 text-sm mt-1">{errors.agent_percent.message}</p>}
+        {errors.agent_percent && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.agent_percent.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -413,33 +610,42 @@ export default function ApartmentForm() {
         <Input
           id="agent_commission"
           type="number"
-          {...register('agent_commission', { valueAsNumber: true })}
+          {...register("agent_commission", { valueAsNumber: true })}
           placeholder="Введите комиссию агента (необязательно)"
         />
-        {errors.agent_commission && <p className="text-red-500 text-sm mt-1">{errors.agent_commission.message}</p>}
+        {errors.agent_commission && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.agent_commission.message}
+          </p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="crm_id">CRM ID</Label>
         <Input
           id="crm_id"
-          {...register('crm_id', { maxLength: { value: 255, message: 'Максимум 255 символов' } })}
+          {...register("crm_id", {
+            maxLength: { value: 255, message: "Максимум 255 символов" },
+          })}
           placeholder="Введите CRM ID (необязательно)"
         />
-        {errors.crm_id && <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>}
+        {errors.crm_id && (
+          <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>
+        )}
       </div>
 
       <div>
         <Label htmlFor="responsible">Ответственный</Label>
         <Input
           id="responsible"
-          {...register('responsible', { 
-            minLength: { value: 3, message: 'Минимум 3 символа' },
-            maxLength: { value: 100, message: 'Максимум 100 символов' }
-          })}
+          {...register("responsible", {})}
           placeholder="Введите ответственного (необязательно)"
         />
-        {errors.responsible && <p className="text-red-500 text-sm mt-1">{errors.responsible.message}</p>}
+        {errors.responsible && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.responsible.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -458,7 +664,7 @@ export default function ApartmentForm() {
                   type="file"
                   className="sr-only"
                   multiple
-                  {...register('images')}
+                  {...register("media")}
                   ref={fileInputRef}
                   onChange={handleImageChange}
                 />
@@ -472,7 +678,11 @@ export default function ApartmentForm() {
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
               <div key={index} className="relative">
-                <img src={image} alt={`Preview ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                <img
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-md"
+                />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -493,10 +703,9 @@ export default function ApartmentForm() {
             Сохранение...
           </>
         ) : (
-          'Добавить квартиру'
+          "Добавить квартиру"
         )}
       </Button>
     </form>
   );
 }
-
