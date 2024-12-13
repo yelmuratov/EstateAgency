@@ -1,91 +1,81 @@
-'use client';
+import React, { useEffect, useState } from "react";
+import { useLandStore } from "@/store/land/landStore";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { useLandStore } from '@/store/land/landStore';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+const statusColors: { [key: string]: string } = {
+  free: "bg-green-500",
+  soon: "bg-yellow-500",
+  busy: "bg-red-500",
+};
 
 const LandTable: React.FC = () => {
   const { lands, fetchLands, total, loading } = useLandStore();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(1);
   const limit = 10;
 
   useEffect(() => {
     fetchLands(page, limit);
   }, [page, fetchLands]);
 
-  const statusColors = {
-    free: 'bg-green-500',
-    soon: 'bg-yellow-500',
-    busy: 'bg-red-500',
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (lands.length === 0) {
+    return <div>No lands available.</div>;
+  }
 
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Превью</TableHead>
-            <TableHead>Название</TableHead>
-            <TableHead>Цена</TableHead>
-            <TableHead>Расположение</TableHead>
-            <TableHead>Дата создания</TableHead>
-            <TableHead>Агент</TableHead>
-            <TableHead>Статус</TableHead>
-            <TableHead>Площадь</TableHead>
-            <TableHead>Контакты</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Condition</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Responsible</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={9} className="text-center">
-                Загрузка...
+          {lands.map((land) => (
+            <TableRow key={land.id}>
+              <TableCell>{land.title}</TableCell>
+              <TableCell>{land.price}$</TableCell>
+              <TableCell>{land.location}</TableCell>
+              <TableCell>{land.house_condition}</TableCell>
+              <TableCell>
+                <Badge className={statusColors[land.current_status]}>
+                  {land.current_status}
+                </Badge>
               </TableCell>
+              <TableCell>{land.responsible}</TableCell>
             </TableRow>
-          ) : (
-            lands.map((land) => (
-              <TableRow key={land.id}>
-                <TableCell>
-                  {land.media?.[0]?.url ? (
-                    <Image
-                      src={land.media[0].url}
-                      alt={land.title}
-                      width={50}
-                      height={50}
-                      className="rounded-md"
-                    />
-                  ) : (
-                    'Нет изображения'
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">{land.title}</TableCell>
-                <TableCell>{`${land.price}$`}</TableCell>
-                <TableCell>{land.location}</TableCell>
-                <TableCell>{new Date(land.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>{land.responsible}</TableCell>
-                <TableCell>
-                  <Badge className={statusColors[land.current_status as keyof typeof statusColors]}>{land.current_status}</Badge>
-                </TableCell>
-                <TableCell>{`${land.square_area} M2`}</TableCell>
-                <TableCell>{land.responsible}</TableCell>
-              </TableRow>
-            ))
-          )}
+          ))}
         </TableBody>
       </Table>
-
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-4">
-        <Button onClick={() => setPage((prev) => Math.max(prev - 1, 1))} disabled={page === 1}>
-          Предыдущая
-        </Button>
-        <span>Страница {page}</span>
-        <Button onClick={() => setPage((prev) => (page * limit < total ? prev + 1 : prev))} disabled={page * limit >= total}>
-          Следующая
-        </Button>
+      <div className="flex justify-center space-x-2 mt-4">
+        {Array.from({ length: Math.ceil(total / limit) }, (_, index) => (
+          <button
+            key={index}
+            onClick={() => setPage(index + 1)}
+            className={`px-4 py-2 ${
+              page === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200"
+            } rounded`}
+          >
+            {index + 1}
+          </button>
+        ))}
       </div>
     </div>
   );

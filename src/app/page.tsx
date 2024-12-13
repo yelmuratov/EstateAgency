@@ -12,6 +12,9 @@ import PropertyTable from '@/components/PropertyTable';
 import useAuth from "@/hooks/useAuth";
 import { setAuthToken } from "@/lib/tokenHelper";
 import {UserStore} from '@/store/userStore';
+import LandTable from "@/components/tables/landTable";
+import ApartmentTable from "@/components/tables/apartmentTabel";
+import CommercialTable from "@/components/tables/commercialTable";
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true); 
@@ -63,8 +66,9 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <h1 className="text-2xl font-bold mb-6">Недвижимость</h1>
-      <PropertyTable />
+      <LandTable />
+      <ApartmentTable />
+      <CommercialTable />
     </DashboardLayout>
   );
 }

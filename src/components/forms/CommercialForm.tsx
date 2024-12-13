@@ -533,21 +533,20 @@ export default function CommercialPropertyForm() {
           control={control}
           rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <Select onValueChange={(value) => field.onChange(value === "true")}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите" />{" "}
-                {/* Placeholder for selection */}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Да</SelectItem>
-                <SelectItem value="false">Нет</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select onValueChange={(value) => field.onChange(value === "true")}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Да</SelectItem>
+            <SelectItem value="false">Нет</SelectItem>
+          </SelectContent>
+        </Select>
           )}
         />
         {errors.parking_place && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.parking_place.message}
+        {errors.parking_place.message}
           </p>
         )}
       </div>

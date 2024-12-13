@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import {create} from "zustand";
+import { create } from "zustand";
 
 interface Media {
   media_type: string;
@@ -38,32 +38,34 @@ interface Land {
 }
 
 interface LandStore {
-    lands: Land[];
-    total: number;
-    loading: boolean;
-    error: string | null;
-    fetchLands: (page: number, limit: number) => Promise<void>;
-  }
+  lands: Land[];
+  total: number; // Total is optional if API doesn't provide it
+  loading: boolean;
+  error: string | null;
+  fetchLands: (page: number, limit: number) => Promise<void>;
+}
 
-  export const useLandStore = create<LandStore>((set) => ({
-    lands: [],
-    total: 0,
-    loading: false,
-    error: null,
-    fetchLands: async (page: number, limit: number) => {
-      set({ loading: true, error: null });
-      try {
-        const response = await api.get(`/land/?limit=${limit}&page=${page}`);
-        set({
-          lands: response.data.results,
-          total: response.data.count,
-          loading: false,
-        });
-      } catch (error: any) {
-        set({
-          error: error.message || 'Failed to fetch lands',
-          loading: false,
-        });
-      }
-    },
-  }));
+export const useLandStore = create<LandStore>((set) => ({
+  lands: [],
+  total: 0,
+  loading: false,
+  error: null,
+  fetchLands: async (page: number, limit: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/land/?limit=${limit}&page=${page}`);
+      console.log("API Response:", response.data);
+      set({
+        lands: response.data, // Assuming response is an array
+        total: response.data.length, // Optional: Update if total is provided
+        loading: false,
+      });
+    } catch (error: any) {
+      console.error("Error fetching lands:", error);
+      set({
+        error: error.message || "Failed to fetch lands",
+        loading: false,
+      });
+    }
+  },
+}));
