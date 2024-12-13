@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import Head from 'next/head';
-import {setAuthToken} from '@/lib/tokenHelper';
+import { setAuthToken } from '@/lib/tokenHelper';
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,7 @@ export default function LoginForm() {
   const router = useRouter();
   const { setToken, token } = useAuthStore();
 
+  // Redirect if already logged in
   useEffect(() => {
     if (token) {
       router.push('/');
@@ -35,26 +36,24 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData, event?: React.BaseSyntheticEvent) => {
-    if (event) {
-      event.preventDefault(); // Prevent the default form submission behavior
-    }
-    setError(null);
+  const onSubmit = async (data: LoginFormData) => {
+    setError(null); // Clear previous errors
     setIsLoading(true);
-  
+
     try {
       const { access_token } = await login(data.phone, data.password);
       setToken(access_token);
       setAuthToken(access_token);
       router.push('/');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail;
-      setError(errorMessage);
+      // Extract error message from server response
+      const errorMessage = err.response?.data?.detail || 'Invalid phone number or password.';
+      setError(errorMessage); // Set error for display
+      console.error("Login error:", err); // Debugging
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-4">
@@ -65,7 +64,7 @@ export default function LoginForm() {
         <CardHeader className="text-center">
           <CardTitle className="text-lg sm:text-xl">Login</CardTitle>
         </CardHeader>
-        <form onSubmit={(e) => handleSubmit(onSubmit)(e)}>
+        <form onSubmit={handleSubmit(onSubmit)}> {/* No additional wrapper */}
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <Label htmlFor="phone" className="text-sm sm:text-base">

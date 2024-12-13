@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
+import { useForm, Controller } from "react-hook-form";
+import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Loader2, Upload, X } from "lucide-react";
-import usePropertyStore from "@/store/MetroDistrict/propertyStore";
-import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -17,111 +12,184 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { CommercialFormData } from "@/types/commercial-form-data";
-import { commercialFormSchema } from "@/schemas/commercial-form-schema";
-import api from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Loader2, Upload, X } from "lucide-react";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 
-import {
-  ACTION_TYPES,
-  LOCATIONS,
-  HOUSE_CONDITIONS,
-  CURRENT_STATUSES,
-  BOOLEAN_OPTIONS,
-} from "@/constants/form-options";
+interface CommercialFormData {
+  district: string;
+  title: string;
+  category: "commercial";
+  action_type: "rent" | "sale";
+  description?: string;
+  comment?: string;
+  price: number;
+  rooms: number;
+  square_area: number;
+  floor_number: number;
+  location:
+    | "business_center"
+    | "administrative_building"
+    | "residential_building"
+    | "cottage"
+    | "shopping_mall"
+    | "industrial_zone"
+    | "market"
+    | "detached_building";
+  furnished: boolean;
+  house_condition: "euro" | "normal" | "repair";
+  current_status?: "free" | "soon" | "busy";
+  parking_place: boolean;
+  agent_percent: number;
+  agent_commission?: number;
+  crm_id?: string;
+  responsible?: string;
+  media?: FileList;
+}
 
-export function CommercialPropertyForm() {
+export default function CommercialPropertyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { districts, fetchDistricts } = usePropertyStore();
+  const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    fetchDistricts(); // Fetch data on mount
-  }, [fetchDistricts]);
-
-  const form = useForm<CommercialFormData>({
-    resolver: zodResolver(commercialFormSchema),
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<CommercialFormData>({
     defaultValues: {
       category: "commercial",
       furnished: true,
     },
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { districts, fetchDistricts } = usePropertyStore();
+
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
 
   const onSubmit = async (data: CommercialFormData) => {
-    const { toast } = useToast();
     setIsSubmitting(true);
     try {
       const formData = new FormData();
+
+      // Append media files to FormData
+      if (mediaFiles && mediaFiles.length > 0) {
+        for (let i = 0; i < mediaFiles.length; i++) {
+          formData.append("media", mediaFiles[i]);
+        }
+      }
+
+      // Append query parameters
+      const params = new URLSearchParams();
       Object.entries(data).forEach(([key, value]) => {
-        if (key === "media") {
-          for (let i = 0; i < (value as File[]).length; i++) {
-            formData.append("media", (value as File[])[i]);
-          }
-        } else {
-          formData.append(key, value as string | Blob);
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, value.toString());
         }
       });
 
-      // API Request
-      await api.post("/commercial/", formData, {
+      setIsSubmitting(true);
+      // Send API request
+      await api.post(`/commercial/?${params.toString()}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      // Success Toast
+      // Show success notification
       toast({
-        title: "Success",
-        description: "Коммерческая недвижимость успешно добавлена", // "Commercial property added successfully"
+        title: "Успех",
+        description: "Коммерческая недвижимость успешно добавлена.",
         variant: "default",
       });
 
-      // Reset form, images, and file input
-      form.reset(); // Resets the form fields
+      setIsSubmitting(false);
+      // Reset form state
+      reset();
       setPreviewImages([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      setMediaFiles(null);
     } catch (error: any) {
       const statusCode = error.response?.status;
       const errorDetail = error.response?.data?.detail;
-
-      // Error Handling
-      if (statusCode === 400 || statusCode === 422) {
-        const errorMessage =
-          typeof errorDetail === "string"
-            ? errorDetail
-            : Array.isArray(errorDetail)
-            ? errorDetail.map((err: any) => `- ${err.msg}`).join("\n")
-            : "Invalid data submitted.";
-
+      const isTimeout = error.code === "ECONNABORTED";
+    
+      if (isTimeout) {
         toast({
-          title: "Validation Error",
-          description: errorMessage,
+          title: "Ошибка тайм-аута",
+          description: "Запрос занял слишком много времени. Попробуйте еще раз.",
+          variant: "destructive",
+          action: (
+            <button
+              onClick={() => handleSubmit(onSubmit)()} // Retry submission
+              className="text-sm font-medium text-blue-500 hover:underline"
+            >
+              Повторить
+            </button>
+          ),
+        });
+      } else if (!error.response) {
+        toast({
+          title: "Сетевая ошибка",
+          description: "Не удалось подключиться к серверу. Проверьте соединение и повторите попытку.",
+          variant: "destructive",
+        });
+      } else if (statusCode === 400 || statusCode === 422) {
+        // Handle validation errors
+        if (typeof errorDetail === "string") {
+          toast({
+            title: "Ошибка валидации",
+            description: errorDetail,
+            variant: "destructive",
+          });
+        } else if (Array.isArray(errorDetail)) {
+          const formattedErrors = errorDetail
+            .map((err: any) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
+            .join("\n");
+    
+          toast({
+            title: "Ошибка валидации",
+            description: `Обнаружены следующие проблемы:\n${formattedErrors}`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Ошибка валидации",
+            description: "Отправлены неверные данные.",
+            variant: "destructive",
+          });
+        }
+      } else if (statusCode >= 500 && statusCode < 600) {
+        // Handle server-side errors
+        toast({
+          title: "Ошибка сервера",
+          description: "На сервере произошла ошибка. Попробуйте позже.",
           variant: "destructive",
         });
       } else {
+        // Handle all other errors
         toast({
-          title: "Error",
-          description: "Произошла ошибка. Повторите попытку позже.", // "An error occurred. Please try again later."
+          title: "Неизвестная ошибка",
+          description: error.response?.data?.message || "Произошла неизвестная ошибка.",
           variant: "destructive",
         });
       }
-    } finally {
+    
+      // Ensure the submitting state is reset
       setIsSubmitting(false);
     }
+    
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    setMediaFiles(files);
     if (files) {
       const newPreviewImages: string[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -157,429 +225,452 @@ export function CommercialPropertyForm() {
   };
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 max-w-2xl mx-auto"
-      >
-        <FormField
-          control={form.control}
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 max-w-2xl mx-auto"
+    >
+      <div>
+        <Label htmlFor="district">Район</Label>
+        <Controller
           name="district"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Район</FormLabel>
-              <FormControl>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите район" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district.id} value={district.name}>
-                        {district.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите район" />
+              </SelectTrigger>
+              <SelectContent>
+                {districts.map((district) => (
+                  <SelectItem key={district.id} value={district.name}>
+                    {district.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         />
+        {errors.district && (
+          <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="title"
+      <div>
+        <Label htmlFor="title">Название</Label>
+        <Input
+          id="title"
+          {...register("title", {
+            required: "Это поле обязательно",
+            minLength: { value: 3, message: "Минимум 3 символа" },
+            maxLength: { value: 50, message: "Максимум 50 символов" },
+          })}
+          placeholder="Введите название"
+        />
+        {errors.title && (
+          <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="category">Категория</Label>
+        <Controller
+          name="category"
+          control={control}
+          defaultValue="commercial"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Название</FormLabel>
-              <FormControl>
-                <Input placeholder="Введите название" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите категорию" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="commercial">
+                  Коммерческая недвижимость
+                </SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="action_type">Тип действия</Label>
+        <Controller
           name="action_type"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Тип действия</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите тип действия" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {ACTION_TYPES.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите тип действия" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rent">Аренда</SelectItem>
+                <SelectItem value="sale">Продажа</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+        {errors.action_type && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.action_type.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Описание</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Введите описание"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="description">Описание</Label>
+        <Textarea
+          id="description"
+          {...register("description", {
+            maxLength: { value: 6000, message: "Максимум 6000 символов" },
+          })}
+          placeholder="Введите описание (необязательно)"
         />
+        {errors.description && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.description.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="comment"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Комментарий</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Введите комментарий"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="comment">Комментарий</Label>
+        <Textarea
+          id="comment"
+          {...register("comment", {
+            maxLength: { value: 6000, message: "Максимум 6000 символов" },
+          })}
+          placeholder="Введите комментарий (необязательно)"
         />
+        {errors.comment && (
+          <p className="text-red-500 text-sm mt-1">{errors.comment.message}</p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Цена</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите цену"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="price">Цена</Label>
+        <Input
+          id="price"
+          type="number"
+          {...register("price", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите цену"
         />
+        {errors.price && (
+          <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="rooms"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Количество комнат</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите количество комнат"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="rooms">Количество комнат</Label>
+        <Input
+          id="rooms"
+          type="number"
+          {...register("rooms", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите количество комнат"
         />
+        {errors.rooms && (
+          <p className="text-red-500 text-sm mt-1">{errors.rooms.message}</p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="square_area"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Общая площадь</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите общую площадь"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="square_area">Общая площадь</Label>
+        <Input
+          id="square_area"
+          type="number"
+          {...register("square_area", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите общую площадь"
         />
+        {errors.square_area && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.square_area.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
-          name="floor_number"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Этажность</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите этажность"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      <div>
+        <Label htmlFor="floor_number">Этажность</Label>
+        <Input
+          id="floor_number"
+          type="number"
+          {...register("floor_number", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите этажность"
         />
+        {errors.floor_number && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.floor_number.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="location">Расположение</Label>
+        <Controller
           name="location"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Расположение</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите расположение" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {LOCATIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите расположение" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="business_center">Бизнес-центр</SelectItem>
+                <SelectItem value="administrative_building">
+                  Административное здание
+                </SelectItem>
+                <SelectItem value="residential_building">
+                  Жилое здание
+                </SelectItem>
+                <SelectItem value="cottage">Коттедж</SelectItem>
+                <SelectItem value="shopping_mall">Торговый центр</SelectItem>
+                <SelectItem value="industrial_zone">
+                  Промышленная зона
+                </SelectItem>
+                <SelectItem value="market">Рынок</SelectItem>
+                <SelectItem value="detached_building">
+                  Отдельно стоящее здание
+                </SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+        {errors.location && (
+          <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="furnished">Меблированная</Label>
+        <Controller
           name="furnished"
+          control={control}
+          defaultValue={true}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Меблированная</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value === "true")}
-                defaultValue={field.value ? "true" : "false"}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {BOOLEAN_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+            <Select
+              onValueChange={(value) => field.onChange(value === "true")}
+              defaultValue={field.value ? "true" : "false"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="house_condition">Состояние</Label>
+        <Controller
           name="house_condition"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Состояние</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите состояние" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {HOUSE_CONDITIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите состояние" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="euro">Евроремонт</SelectItem>
+                <SelectItem value="normal">Обычное</SelectItem>
+                <SelectItem value="repair">Требует ремонта</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+        {errors.house_condition && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.house_condition.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="current_status">Текущий статус</Label>
+        <Controller
           name="current_status"
+          control={control}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Текущий статус</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите статус" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {CURRENT_STATUSES.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите текущий статус" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="free">Свободно</SelectItem>
+                <SelectItem value="soon">Скоро освободится</SelectItem>
+                <SelectItem value="busy">Занято</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
+        {errors.current_status && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.current_status.message}
+          </p>
+        )}
+      </div>
 
-        <FormField
-          control={form.control}
+      <div>
+        <Label htmlFor="parking_place">Парковка</Label>
+        <Controller
           name="parking_place"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Парковка</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(value === "true")}
-                defaultValue={field.value ? "true" : "false"}
+            <Select onValueChange={(value) => field.onChange(value === "true")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите" />{" "}
+                {/* Placeholder for selection */}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.parking_place && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.parking_place.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="agent_percent">Процент агента</Label>
+        <Input
+          id="agent_percent"
+          type="number"
+          {...register("agent_percent", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите процент агента"
+        />
+        {errors.agent_percent && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.agent_percent.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="agent_commission">Комиссия агента</Label>
+        <Input
+          id="agent_commission"
+          type="number"
+          {...register("agent_commission", { valueAsNumber: true })}
+          placeholder="Введите комиссию агента (необязательно)"
+        />
+        {errors.agent_commission && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.agent_commission.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="crm_id">CRM ID</Label>
+        <Input
+          id="crm_id"
+          {...register("crm_id", {
+            maxLength: { value: 255, message: "Максимум 255 символов" },
+          })}
+          placeholder="Введите CRM ID (необязательно)"
+        />
+        {errors.crm_id && (
+          <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="responsible">Ответственный</Label>
+        <Input
+          id="responsible"
+          {...register("responsible")}
+          placeholder="Введите ответственного (необязательно)"
+        />
+        {errors.responsible && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.responsible.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="images">Фотографии</Label>
+        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <div className="space-y-1 text-center">
+            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="flex text-sm text-gray-600">
+              <label
+                htmlFor="images"
+                className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
               >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {BOOLEAN_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="agent_percent"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Процент агента</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите процент агента"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+                <span>Загрузить файлы</span>
+                <input
+                  id="images"
+                  type="file"
+                  className="sr-only"
+                  multiple
+                  {...register("media")}
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="agent_commission"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Комиссия агента</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите комиссию агента"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+              </label>
+              <p className="pl-1">или перетащите сюда</p>
+            </div>
+            <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+          </div>
+        </div>
+        {previewImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            {previewImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-md"
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="crm_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CRM ID</FormLabel>
-              <FormControl>
-                <Input placeholder="Введите CRM ID" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="responsible"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ответственный</FormLabel>
-              <FormControl>
-                <Input placeholder="Введите ответственного" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="media"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Фотографии</FormLabel>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="media"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
-                    >
-                      <span>Загрузить файлы</span>
-                      <input
-                        id="media"
-                        type="file"
-                        className="sr-only"
-                        multiple
-                        ref={fileInputRef}
-                        onChange={(e) => {
-                          const files = e.target.files;
-                          if (files) {
-                            field.onChange(Array.from(files));
-                          }
-                        }}
-                      />
-                    </label>
-                    <p className="pl-1">или перетащите сюда</p>
-                  </div>
-                  <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                >
+                  <X size={16} />
+                </button>
               </div>
-            </FormItem>
-          )}
-        />
+            ))}
+          </div>
+        )}
+      </div>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Сохранение..." : "Сохранить"}
-        </Button>
-      </form>
-    </Form>
+      <Button type="submit" disabled={isSubmitting} className="w-full">
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Сохранение...
+          </>
+        ) : (
+          "Добавить коммерческую недвижимость"
+        )}
+      </Button>
+    </form>
   );
 }

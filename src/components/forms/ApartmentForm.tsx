@@ -68,17 +68,16 @@ export default function ApartmentForm() {
   }, [fetchMetros, fetchDistricts]);
 
   const onSubmit = async (data: ApartmentFormData) => {
-  
     try {
       const formData = new FormData();
-  
+
       // Append media files (if any) to FormData
       if (mediaFiles && mediaFiles.length > 0) {
         for (let i = 0; i < mediaFiles.length; i++) {
           formData.append("media", mediaFiles[i]); // Add each file under the "media" key
         }
       }
-  
+
       // Prepare query parameters
       const params = new URLSearchParams();
       Object.keys(data).forEach((key) => {
@@ -87,20 +86,25 @@ export default function ApartmentForm() {
           params.append(key, value.toString());
         }
       });
-  
+
       console.log("Query parameters:", params.toString());
       console.log("FormData content (media only):");
       for (const [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }
-  
+
       // Submit the API request
-      const response = await api.post(`/apartment/?${params.toString()}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-  
+      setIsSubmitting(true);
+      const response = await api.post(
+        `/apartment/?${params.toString()}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       // Handle success response
       toast({
         title: "Success",
@@ -110,34 +114,54 @@ export default function ApartmentForm() {
 
       reset(); // Resets all form fields
       setPreviewImages([]); // Clears image previews
-      setMediaFiles(null); 
-  
+      setMediaFiles(null);
+
       setIsSubmitting(false);
     } catch (error: any) {
       const statusCode = error.response?.status;
       const errorDetail = error.response?.data?.detail;
-  
-      if (statusCode === 400 || statusCode === 422) {
+      const isTimeout = error.code === "ECONNABORTED";
+    
+      if (isTimeout) {
+        toast({
+          title: "Timeout Error",
+          description: "The request took too long to complete. Please try again.",
+          variant: "destructive",
+          action: (
+            <button
+              onClick={() => handleSubmit(onSubmit)()} // Retry submission
+              className="text-sm font-medium text-blue-500 hover:underline"
+            >
+              Retry
+            </button>
+          ),
+        });
+      } else if (!error.response) {
+        // Handle network or unreachable server issues
+        toast({
+          title: "Network Error",
+          description: "Unable to reach the server. Check your connection and try again.",
+          variant: "destructive",
+        });
+      } else if (statusCode === 400 || statusCode === 422) {
+        // Handle validation errors
         if (typeof errorDetail === "string") {
-          // Handle case where `detail` is a string
           toast({
             title: "Validation Error",
-            description: errorDetail, // Display the error message directly
+            description: errorDetail,
             variant: "destructive",
           });
         } else if (Array.isArray(errorDetail)) {
-          // Handle case where `detail` is an array
           const formattedErrors = errorDetail
             .map((err: any) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
             .join("\n");
-  
+    
           toast({
             title: "Validation Error",
             description: `The following issues were found:\n${formattedErrors}`,
             variant: "destructive",
           });
         } else {
-          // Fallback for unknown error structures
           toast({
             title: "Validation Error",
             description: "Invalid data submitted.",
@@ -145,22 +169,18 @@ export default function ApartmentForm() {
           });
         }
       } else {
-        // Handle other types of errors
-        console.error("Error during form submission:", error);
-  
+        // Handle all other errors
         toast({
           title: "Error",
-          description: error.response?.data?.msg || "An unknown error occurred",
+          description: error.response?.data?.msg || "An unknown error occurred.",
           variant: "destructive",
         });
       }
-  
+    
       setIsSubmitting(false);
-    }
-  };
-  
-  
-  
+    }    
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     setMediaFiles(files); // Store files in state
