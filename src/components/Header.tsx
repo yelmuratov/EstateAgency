@@ -1,18 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, Plus, ArrowLeft } from 'lucide-react';
+import { Search, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import FilterDropdown from './FilterDropdown';
-import ThemeToggle from './ThemeToggle';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Spinner from '@/components/local-components/spinner'; // Assuming you have a Spinner component
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Header: React.FC = () => {
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -78,11 +76,6 @@ const Header: React.FC = () => {
             <ThemeToggle />
           </div>
         </div>
-        {isFilterOpen && !isAddPropertyPage && (
-          <div className="w-full mt-4 sm:mt-0">
-            <FilterDropdown />
-          </div>
-        )}
       </div>
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">

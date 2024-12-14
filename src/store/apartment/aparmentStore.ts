@@ -38,6 +38,7 @@ interface Apartment {
   phone_number: string;
   bathroom: string;
   media: Media[];
+  metro_st: string;
 }
 
 interface ApartmentStore {
@@ -63,9 +64,20 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
         total: response.data.total_count || 0, // Use `total_count` key
         loading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
+      // Define a specific type for the error object
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
       set({
-        error: error.message || "Failed to fetch apartments",
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         loading: false,
         apartments: [], // Reset to an empty array in case of error
       });
@@ -73,12 +85,26 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
   },
   fetchApartmentById: async (id: number) => {
     try {
-      console.log('fetching id:', id)
+      console.log('fetching id:', id);
       const response = await api.get(`/apartment/${id}`);
+      console.log('response:', response.data);
       return response.data;
-    } catch (error: any) {
-      console.error("Error fetching apartment by id:", error);
+    } catch (error) {
+      // Define a specific type for the error object
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
+      console.error(
+        "Error fetching apartment by id:",
+        apiError.response?.data?.detail || apiError.message
+      );
       return null;
     }
-  },
+  },  
 }));

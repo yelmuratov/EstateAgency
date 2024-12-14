@@ -55,12 +55,23 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         total: response.data.total_count || 0, // Use `total_count` key
         loading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
+      // Define a specific error type
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
       set({
-        error: error.message || "Failed to fetch commercials",
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
         loading: false,
         commercials: [], // Reset to an empty array in case of error
       });
     }
-  },
+  },  
 }));

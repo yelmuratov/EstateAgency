@@ -71,14 +71,12 @@ export default function ApartmentForm() {
     try {
       const formData = new FormData();
 
-      // Append media files (if any) to FormData
       if (mediaFiles && mediaFiles.length > 0) {
         for (let i = 0; i < mediaFiles.length; i++) {
           formData.append("media", mediaFiles[i]); // Add each file under the "media" key
         }
       }
 
-      // Prepare query parameters
       const params = new URLSearchParams();
       Object.keys(data).forEach((key) => {
         const value = (data as any)[key];
@@ -88,19 +86,20 @@ export default function ApartmentForm() {
       });
 
       console.log("Query parameters:", params.toString());
-      console.log("FormData content (media only):");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
+      if (mediaFiles && mediaFiles.length > 0) {
+        console.log("FormData content (media only):");
+        for (const [key, value] of formData.entries()) {
+          console.log(`${key}:`, value);
+        }
       }
 
-      // Submit the API request
       setIsSubmitting(true);
       const response = await api.post(
         `/apartment/?${params.toString()}`,
-        formData,
+        mediaFiles && mediaFiles.length > 0 ? formData : null,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": mediaFiles && mediaFiles.length > 0 ? "multipart/form-data" : "application/x-www-form-urlencoded",
           },
         }
       );
@@ -116,6 +115,8 @@ export default function ApartmentForm() {
       setPreviewImages([]); // Clears image previews
       setMediaFiles(null);
 
+      window.location.href = `/`; // Redirect to the newly created apartment
+      
       setIsSubmitting(false);
     } catch (error: any) {
       const statusCode = error.response?.status;

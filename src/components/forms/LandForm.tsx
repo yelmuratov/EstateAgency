@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Image from 'next/image';
 import {
   Select,
   SelectContent,
@@ -102,68 +103,75 @@ export default function LandPropertyForm() {
       setPreviewImages([]);
       setMediaFiles(null);
       setIsSubmitting(false);
-    } catch (error: any) {
-        const statusCode = error.response?.status;
-        const errorDetail = error.response?.data?.detail;
-        const isTimeout = error.code === "ECONNABORTED";
-      
-        if (isTimeout) {
+    } catch (error) {
+      const apiError = error as {
+        code?: string;
+        response?: {
+          status?: number;
+          data?: {
+            detail?: string | { loc: string[]; msg: string }[];
+            msg?: string;
+          };
+        };
+        message?: string;
+      };
+    
+      const statusCode = apiError.response?.status;
+      const errorDetail = apiError.response?.data?.detail;
+      const isTimeout = apiError.code === "ECONNABORTED";
+    
+      if (isTimeout) {
+        toast({
+          title: "Timeout Error",
+          description: "The request took too long to complete. Please try again.",
+          variant: "destructive",
+          action: (
+            <button
+              onClick={() => handleSubmit(onSubmit)()} // Retry submission
+              className="text-sm font-medium text-blue-500 hover:underline"
+            >
+              Retry
+            </button>
+          ),
+        });
+      } else if (!apiError.response) {
+        toast({
+          title: "Network Error",
+          description: "Unable to reach the server. Check your connection and try again.",
+          variant: "destructive",
+        });
+      } else if (statusCode === 400 || statusCode === 422) {
+        if (typeof errorDetail === "string") {
           toast({
-            title: "Timeout Error",
-            description: "The request took too long to complete. Please try again.",
+            title: "Validation Error",
+            description: errorDetail,
             variant: "destructive",
-            action: (
-              <button
-                onClick={() => handleSubmit(onSubmit)()} // Retry submission
-                className="text-sm font-medium text-blue-500 hover:underline"
-              >
-                Retry
-              </button>
-            ),
           });
-        } else if (!error.response) {
-          // Handle network or unreachable server issues
+        } else if (Array.isArray(errorDetail)) {
+          const formattedErrors = errorDetail
+            .map((err) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
+            .join("\n");
+    
           toast({
-            title: "Network Error",
-            description: "Unable to reach the server. Check your connection and try again.",
+            title: "Validation Error",
+            description: `The following issues were found:\n${formattedErrors}`,
             variant: "destructive",
           });
-        } else if (statusCode === 400 || statusCode === 422) {
-          // Handle validation errors
-          if (typeof errorDetail === "string") {
-            toast({
-              title: "Validation Error",
-              description: errorDetail,
-              variant: "destructive",
-            });
-          } else if (Array.isArray(errorDetail)) {
-            const formattedErrors = errorDetail
-              .map((err: any) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
-              .join("\n");
-      
-            toast({
-              title: "Validation Error",
-              description: `The following issues were found:\n${formattedErrors}`,
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Validation Error",
-              description: "Invalid data submitted.",
-              variant: "destructive",
-            });
-          }
         } else {
-          // Handle all other errors
           toast({
-            title: "Error",
-            description: error.response?.data?.msg || "An unknown error occurred.",
+            title: "Validation Error",
+            description: "Invalid data submitted.",
             variant: "destructive",
           });
         }
-      }finally {
-        setIsSubmitting(false);
-      }  
+      } else {
+        toast({
+          title: "Error",
+          description: apiError.response?.data?.msg || "An unknown error occurred.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -628,21 +636,32 @@ export default function LandPropertyForm() {
         {previewImages.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
+  <div key={index} className="relative">
+    <Image
+      src={image}
+      alt={`Preview ${index + 1}`}
+      width={128} // Replace with actual width
+      height={128} // Replace with actual height
+      className="w-full h-32 object-cover rounded-md"
+    />
+    <button
+      type="button"
+      onClick={() => removeImage(index)}
+      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+    >
+      <X size={16} />
+    </button>
+    {index < previewImages.length - 1 && (
+      <button
+        type="button"
+        onClick={() => removeImage(index + 1)}
+        className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1"
+      >
+        Next
+      </button>
+    )}
+  </div>
+))}
           </div>
         )}
       </div>

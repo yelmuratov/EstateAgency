@@ -39,21 +39,32 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setError(null); // Clear previous errors
     setIsLoading(true);
-
+  
     try {
       const { access_token } = await login(data.phone, data.password);
       setToken(access_token);
       setAuthToken(access_token);
       router.push('/');
-    } catch (err: any) {
+    } catch (err) {
+      // Define the type of the error object
+      const error = err as {
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
       // Extract error message from server response
-      const errorMessage = err.response?.data?.detail || 'Invalid phone number or password.';
+      const errorMessage =
+        error.response?.data?.detail || 'Invalid phone number or password.';
       setError(errorMessage); // Set error for display
       console.error("Login error:", err); // Debugging
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-4">

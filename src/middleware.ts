@@ -28,6 +28,12 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  if( pathname.startsWith('/edit-apartment')){
+    if(!token){
+      return NextResponse.redirect(new URL('404', req.url))
+    }
+  }
+
   if( pathname.startsWith('/add-commercial')){
     if(!token){
       return NextResponse.redirect(new URL('404', req.url))
@@ -45,5 +51,6 @@ export const config = {
     '/add-apartment',
     '/add-land',
     '/add-commercial',
+    '/edit-apartment'
   ],
 }

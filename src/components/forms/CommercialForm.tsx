@@ -5,6 +5,7 @@ import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
 import {
   Select,
   SelectContent,
@@ -115,10 +116,21 @@ export default function CommercialPropertyForm() {
       reset();
       setPreviewImages([]);
       setMediaFiles(null);
-    } catch (error: any) {
-      const statusCode = error.response?.status;
-      const errorDetail = error.response?.data?.detail;
-      const isTimeout = error.code === "ECONNABORTED";
+    } catch (error) {
+      const apiError = error as {
+        code?: string;
+        response?: {
+          status?: number;
+          data?: {
+            detail?: string | { loc: string[]; msg: string }[];
+            message?: string;
+          };
+        };
+      };
+    
+      const statusCode = apiError.response?.status;
+      const errorDetail = apiError.response?.data?.detail;
+      const isTimeout = apiError.code === "ECONNABORTED";
     
       if (isTimeout) {
         toast({
@@ -134,14 +146,13 @@ export default function CommercialPropertyForm() {
             </button>
           ),
         });
-      } else if (!error.response) {
+      } else if (!apiError.response) {
         toast({
           title: "Сетевая ошибка",
           description: "Не удалось подключиться к серверу. Проверьте соединение и повторите попытку.",
           variant: "destructive",
         });
       } else if (statusCode === 400 || statusCode === 422) {
-        // Handle validation errors
         if (typeof errorDetail === "string") {
           toast({
             title: "Ошибка валидации",
@@ -149,8 +160,8 @@ export default function CommercialPropertyForm() {
             variant: "destructive",
           });
         } else if (Array.isArray(errorDetail)) {
-          const formattedErrors = errorDetail
-            .map((err: any) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
+          const formattedErrors = (errorDetail as { loc: string[]; msg: string }[])
+            .map((err) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
             .join("\n");
     
           toast({
@@ -165,26 +176,23 @@ export default function CommercialPropertyForm() {
             variant: "destructive",
           });
         }
-      } else if (statusCode >= 500 && statusCode < 600) {
-        // Handle server-side errors
+      } else if (statusCode && statusCode >= 500 && statusCode < 600) {
         toast({
           title: "Ошибка сервера",
           description: "На сервере произошла ошибка. Попробуйте позже.",
           variant: "destructive",
         });
       } else {
-        // Handle all other errors
         toast({
           title: "Неизвестная ошибка",
-          description: error.response?.data?.message || "Произошла неизвестная ошибка.",
+          description: apiError.response?.data?.message || "Произошла неизвестная ошибка.",
           variant: "destructive",
         });
       }
     
       // Ensure the submitting state is reset
       setIsSubmitting(false);
-    }
-    
+    }    
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -642,19 +650,22 @@ export default function CommercialPropertyForm() {
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
               <div key={index} className="relative">
-                <img
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              <Image
+                src={image}
+                alt={`Preview ${index + 1}`}
+                width={128} // Replace with the actual width
+                height={128} // Replace with the actual height
+                className="w-full h-32 object-cover rounded-md"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                aria-label={`Remove image ${index + 1}`} // Accessibility improvement
+              >
+                <X size={16} />
+              </button>
+            </div>
             ))}
           </div>
         )}

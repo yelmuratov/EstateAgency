@@ -1,34 +1,35 @@
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { useReportWebVitals } from 'next/web-vitals';
 import { useRouter } from "next/navigation";
 import { getUser } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
 import Spinner from "@/components/local-components/spinner";
-import { ThemeProvider, useTheme } from "next-themes";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
 import useAuth from "@/hooks/useAuth";
 import { setAuthToken } from "@/lib/tokenHelper";
 import { UserStore } from "@/store/userStore";
-import LandTable from "@/components/tables/landTable";
-import ApartmentTable from "@/components/tables/apartmentTabel";
-import CommercialTable from "@/components/tables/commercialTable";
 import { Button } from "@/components/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTheme } from "next-themes";
+
+// Lazy-load heavy components
+const ApartmentTable = dynamic(() => import('@/components/tables/apartmentTabel'));
+const LandTable = dynamic(() => import('@/components/tables/landTable'));
+const CommercialTable = dynamic(() => import('@/components/tables/commercialTable'));
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<string>(() =>
-    typeof window !== "undefined"
-      ? localStorage.getItem("selectedType") || "apartments"
-      : "apartments"
-  ); // Default type with localStorage check
+  const [selectedType, setSelectedType] = useState<string>("apartments");
   const { theme } = useTheme();
   const router = useRouter();
   const { token } = useAuthStore();
@@ -36,6 +37,10 @@ export default function Dashboard() {
   const { setUser, user } = UserStore();
 
   useAuth();
+
+  useReportWebVitals((metric) => {
+    setTimeout(() => console.log(metric), 0); // Log Web Vitals asynchronously
+  });
 
   const fetchUserData = useCallback(async () => {
     if (!token) {
@@ -50,14 +55,13 @@ export default function Dashboard() {
       toast({
         variant: "destructive",
         title: "Error!",
-        description: "Unable to fetch user data. Redirecting to login...",
+        description: (error instanceof Error ? error.message : "An unexpected error occurred."),
       });
-
       router.push("/login"); // Redirect to login on error
     } finally {
       setLoading(false); // Fetching is complete
     }
-  }, [token, router, toast]);
+  }, [token, router, toast, setUser]);
 
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
@@ -65,6 +69,9 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // Load selected type from localStorage
+    const type = localStorage.getItem("selectedType") || "apartments";
+    setSelectedType(type);
     fetchUserData();
   }, [fetchUserData]);
 

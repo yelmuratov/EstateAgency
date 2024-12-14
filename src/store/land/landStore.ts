@@ -60,12 +60,24 @@ export const useLandStore = create<LandStore>((set) => ({
         total: total_count || data.length, // Update total based on `total_count`
         loading: false,
       });
-    } catch (error: any) {
-      console.error("Error fetching lands:", error);
+    } catch (error) {
+      // Define the type of the error
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
+      console.error("Error fetching lands:", apiError);
+  
       set({
-        error: error.message || "Failed to fetch lands",
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
         loading: false,
       });
     }
-  },
+  }
 }));

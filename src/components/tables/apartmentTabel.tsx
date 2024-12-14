@@ -48,27 +48,23 @@ const houseTypeTranslation: { [key: string]: string } = {
 
 export default function PropertyTable() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(() => {
-    return Number(localStorage.getItem("currentPageApartment")) || 1;
-  });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { apartments, total, loading, error, fetchApartments } =
     useApartmentStore();
 
-    useEffect(() => {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("currentPageApartment", String(currentPage));
-      }
-    }, [currentPage]);
-
-    useEffect(() => {
-      if (fetchApartments && typeof currentPage === "number" && typeof itemsPerPage === "number") {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (fetchApartments) {
         fetchApartments(currentPage, itemsPerPage);
       }
-    }, [fetchApartments, currentPage, itemsPerPage]);
+    }, 300); // Debounced
+
+    return () => clearTimeout(timer);
+  }, [currentPage, itemsPerPage, fetchApartments]);
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -81,8 +77,10 @@ export default function PropertyTable() {
   };
 
   const openModal = (imageUrl: string) => {
-    setModalImage(imageUrl);
-    setModalOpen(true);
+    if (imageUrl) {
+      setModalImage(imageUrl);
+      setModalOpen(true);
+    }
   };
 
   const closeModal = () => {
@@ -158,27 +156,20 @@ export default function PropertyTable() {
                   </td>
                   <td className="p-2">
                     <div
-                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
                       onClick={() =>
-                        apartment.media && apartment.media[0]?.url
-                          ? openModal(
-                              `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
-                            )
-                          : null
+                        openModal(
+                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
+                        )
                       }
                     >
-                      {apartment.media &&
-                      apartment.media[0] &&
-                      apartment.media[0].url ? (
+                      {apartment.media && apartment.media[0] ? (
                         <Image
                           src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
                           alt={apartment.title || "Preview image"}
-                          fill // Use the 'fill' prop for layout instead of 'layout="fill"'
-                          style={{ objectFit: "cover" }} // Replace 'objectFit' prop with inline style
+                          layout="fill"
+                          objectFit="cover"
                           className="bg-gray-200 dark:bg-gray-800"
-                          onError={(e) => {
-                            e.currentTarget.src = "/fallback-image.png"; // Provide a fallback image
-                          }}
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
@@ -285,7 +276,7 @@ export default function PropertyTable() {
               <div className="flex space-x-2">
                 <Button
                   onClick={() => {
-                    window.location.href = `/edit-property/${apartment.id}`;
+                    window.location.href = `/edit-apartment/${apartment.id}`;
                   }}
                   variant="default"
                 >
@@ -299,25 +290,36 @@ export default function PropertyTable() {
 
       {/* Modal for Image Preview */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
-            <button
-              onClick={closeModal}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-            {modalImage && (
-              <Image
-                src={modalImage}
-                alt="Preview"
-                width={600}
-                height={400}
-                objectFit="contain"
-              />
-            )}
-          </div>
+        <div
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+        onClick={closeModal} // Close modal when clicking on the backdrop
+      >
+        {/* Image Container */}
+        <div
+          className="relative"
+          onClick={(e) => e.stopPropagation()} // Prevent modal closure when clicking on the image or button
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+          >
+            <span className="text-2xl font-bold">✕</span>
+          </button>
+      
+          {/* Image */}
+          {modalImage && (
+            <Image
+              src={modalImage}
+              alt="Preview"
+              className="rounded-lg shadow-lg max-w-full max-h-screen"
+              width={900}
+              height={600}
+              objectFit="contain"
+            />
+          )}
         </div>
+      </div>
       )}
 
       {/* Pagination */}

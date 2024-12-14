@@ -1,5 +1,6 @@
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/router';
 
 interface LoginResponse {
   access_token: string
@@ -28,12 +29,24 @@ export const getUser = async (): Promise<any> => {
   try {
     const response = await api.get('/auth/me');
     return response.data;
-  } catch (err: any) {
-    if (err.response?.status === 401) {
+  } catch (err) {
+    const apiError = err as {
+      response?: {
+        status?: number;
+        data?: {
+          message?: string;
+        };
+      };
+      message?: string;
+    };
+
+    if (apiError.response?.status === 401) {
       const { clearToken } = useAuthStore.getState();
-      clearToken(); 
+      const router = useRouter(); // Get the router instance
+      clearToken(router); // Pass the router to clearToken
     }
-    console.error(err.response?.data?.message || err.message);
+    console.error(apiError.response?.data?.message || apiError.message);
+    return null;
   }
 };
 
