@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +24,11 @@ import {
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<string>("apartments"); // Default type
+  const [selectedType, setSelectedType] = useState<string>(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("selectedType") || "apartments"
+      : "apartments"
+  ); // Default type with localStorage check
   const { theme } = useTheme();
   const router = useRouter();
   const { token } = useAuthStore();
@@ -55,6 +59,11 @@ export default function Dashboard() {
     }
   }, [token, router, toast]);
 
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+    localStorage.setItem("selectedType", type); // Save to localStorage
+  };
+
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
@@ -80,13 +89,13 @@ export default function Dashboard() {
             <Button variant="outline">Тип: {getLabel(selectedType)}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelectedType("apartments")}>
+            <DropdownMenuItem onClick={() => handleTypeChange("apartments")}>
               Квартиры
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedType("lands")}>
+            <DropdownMenuItem onClick={() => handleTypeChange("lands")}>
               Участки
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedType("commercial")}>
+            <DropdownMenuItem onClick={() => handleTypeChange("commercial")}>
               Коммерция
             </DropdownMenuItem>
           </DropdownMenuContent>

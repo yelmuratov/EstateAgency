@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -42,12 +41,17 @@ const houseTypeTranslation: { [key: string]: string } = {
   apartment: "Квартира",
   house: "Дом",
   townhouse: "Таунхаус",
+  normal: "Обычное",
+  repair: "Требует ремонта",
+  euro: "Евроремонт",
 };
 
 export default function PropertyTable() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   const { apartments, total, loading, error, fetchApartments } =
     useApartmentStore();
@@ -66,8 +70,18 @@ export default function PropertyTable() {
     setCurrentPage(page);
   };
 
+  const openModal = (imageUrl: string) => {
+    setModalImage(imageUrl);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalImage(null);
+    setModalOpen(false);
+  };
+
   if (loading) {
-    return <Spinner theme="default" />;
+    return <h1>Loading......</h1>;
   }
 
   if (error) {
@@ -96,8 +110,11 @@ export default function PropertyTable() {
               <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЦЕНА
               </th>
-              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ТИП ДОМА
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                Тип действия
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                Тип Недвижимости
               </th>
               <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ДАТА СОЗДАНИЯ
@@ -129,7 +146,14 @@ export default function PropertyTable() {
                   />
                 </td>
                 <td className="p-2">
-                  <div className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <div
+                    className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+                    onClick={() =>
+                      openModal(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
+                      )
+                    }
+                  >
                     {apartment.media && apartment.media[0] ? (
                       <Image
                         src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
@@ -137,20 +161,6 @@ export default function PropertyTable() {
                         layout="fill"
                         objectFit="cover"
                         className="bg-gray-200 dark:bg-gray-800"
-                        onError={(e) => {
-                          const imageElement = e.target as HTMLImageElement;
-                          imageElement.style.display = "none";
-
-                          const parentElement =
-                            imageElement.parentNode as HTMLElement;
-                          if (parentElement) {
-                            parentElement.innerHTML = `
-            <div class="flex items-center justify-center h-full w-full bg-red-100 text-red-500 text-sm font-medium">
-              Ошибка изображения
-            </div>
-          `;
-                          }
-                        }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
@@ -170,7 +180,13 @@ export default function PropertyTable() {
                 <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                   ${apartment.price}
                 </td>
+                <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {apartment.action_type === "rent" ? "Аренда" : "Продажа"}
+                </td>
                 <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {houseTypeTranslation[apartment.category] ||
+                    apartment.category}
+                  <br />
                   {houseTypeTranslation[apartment.house_condition] ||
                     apartment.house_condition}
                 </td>
@@ -209,7 +225,6 @@ export default function PropertyTable() {
         </table>
       </div>
 
-      {/* Card View for Small Screens */}
       <div className="block sm:hidden space-y-4">
         {apartments.map((apartment) => (
           <Card
@@ -253,6 +268,29 @@ export default function PropertyTable() {
           </Card>
         ))}
       </div>
+
+      {/* Modal for Image Preview */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            {modalImage && (
+              <Image
+                src={modalImage}
+                alt="Preview"
+                width={600}
+                height={400}
+                objectFit="contain"
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       <Pagination>

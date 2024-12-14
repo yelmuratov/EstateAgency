@@ -41,12 +41,25 @@ const houseTypeTranslation: { [key: string]: string } = {
   apartment: "Квартира",
   house: "Дом",
   townhouse: "Таунхаус",
+  normal: "Обычное",
+  repair: "Требует ремонта",
+  euro: "Евроремонт",
+  business_center: "Бизнес-центр",
+  administrative_building: "Административное здание",
+  residential_building: "Жилое здание",
+  cottage: "Коттедж",
+  shopping_mall: "Торговый центр",
+  industrial_zone: "Промышленная зона",
+  market: "Рынок",
+  detached_building: "Отдельно стоящее здание",
 };
 
 const CommercialTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   const { commercials, total, loading, error, fetchCommercials } =
     useCommercialStore();
@@ -63,6 +76,16 @@ const CommercialTable: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const openModal = (imageUrl: string) => {
+    setModalImage(imageUrl);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalImage(null);
+    setModalOpen(false);
   };
 
   if (loading) {
@@ -99,6 +122,9 @@ const CommercialTable: React.FC = () => {
               <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЦЕНА
               </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                Тип действия
+              </th>
               <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЛОКАЦИЯ
               </th>
@@ -132,7 +158,14 @@ const CommercialTable: React.FC = () => {
                   />
                 </td>
                 <td className="p-2">
-                  <div className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <div
+                    className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
+                    onClick={() =>
+                      openModal(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0]?.url}`
+                      )
+                    }
+                  >
                     {commercial.media && commercial.media[0] ? (
                       <Image
                         src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0].url}`}
@@ -140,20 +173,6 @@ const CommercialTable: React.FC = () => {
                         layout="fill"
                         objectFit="cover"
                         className="bg-gray-200 dark:bg-gray-800"
-                        onError={(e) => {
-                          const imageElement = e.target as HTMLImageElement;
-                          imageElement.style.display = "none";
-
-                          const parentElement =
-                            imageElement.parentNode as HTMLElement;
-                          if (parentElement) {
-                            parentElement.innerHTML = `
-            <div class="flex items-center justify-center h-full w-full bg-red-100 text-red-500 text-sm font-medium">
-              Ошибка изображения
-            </div>
-          `;
-                          }
-                        }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
@@ -170,8 +189,12 @@ const CommercialTable: React.FC = () => {
                 <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                   ${commercial.price}
                 </td>
+                <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {commercial.action_type === "rent" ? "Аренда" : "Продажа"}
+                </td>
                 <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {commercial.location}
+                  {houseTypeTranslation[commercial.location] ||
+                    commercial.location}
                 </td>
                 <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                   {houseTypeTranslation[commercial.house_condition] ||
@@ -209,7 +232,6 @@ const CommercialTable: React.FC = () => {
         </table>
       </div>
 
-      {/* Card View for Small Screens */}
       <div className="block sm:hidden space-y-4">
         {commercials.map((commercial) => (
           <Card
@@ -254,31 +276,28 @@ const CommercialTable: React.FC = () => {
         ))}
       </div>
 
-      {/* Pagination */}
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            {currentPage > 1 && (
-              <PaginationPrevious
-                onClick={() => handlePageChange(currentPage - 1)}
+      {/* Modal for Image Preview */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            {modalImage && (
+              <Image
+                src={modalImage}
+                alt="Preview"
+                width={600}
+                height={400}
+                objectFit="contain"
               />
             )}
-          </PaginationItem>
-          {[...Array(Math.ceil(total / itemsPerPage))].map((_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                onClick={() => handlePageChange(i + 1)}
-                isActive={currentPage === i + 1}
-              >
-                {i + 1}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-          {currentPage < Math.ceil(total / itemsPerPage) && (
-            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
-          )}
-        </PaginationContent>
-      </Pagination>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

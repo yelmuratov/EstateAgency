@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -46,6 +45,8 @@ const LandTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<string | null>(null);
 
   const { lands, total, loading, error, fetchLands } = useLandStore();
 
@@ -63,6 +64,16 @@ const LandTable: React.FC = () => {
     setCurrentPage(page);
   };
 
+  const openModal = (imageUrl: string) => {
+    setModalImage(imageUrl);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalImage(null);
+    setModalOpen(false);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -74,6 +85,17 @@ const LandTable: React.FC = () => {
   if (lands.length === 0) {
     return <div>No lands available.</div>;
   }
+
+  const locationOptions = [
+    { value: "city", label: "Город" },
+    { value: "suburb", label: "Пригород" },
+    { value: "countryside", label: "Сельская местность" },
+    { value: "along_road", label: "Вдоль дороги" },
+    { value: "near_pond", label: "У водоема" },
+    { value: "foothills", label: "Предгорье" },
+    { value: "cottage_area", label: "Дачный массив" },
+    { value: "closed_area", label: "Закрытая территория" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -96,6 +118,9 @@ const LandTable: React.FC = () => {
               </th>
               <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЦЕНА
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                Тип действия
               </th>
               <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЛОКАЦИЯ
@@ -130,7 +155,14 @@ const LandTable: React.FC = () => {
                   />
                 </td>
                 <td className="p-2">
-                  <div className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <div
+                    className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+                    onClick={() =>
+                      openModal(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
+                      )
+                    }
+                  >
                     {land.media && land.media[0] ? (
                       <Image
                         src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
@@ -138,20 +170,6 @@ const LandTable: React.FC = () => {
                         layout="fill"
                         objectFit="cover"
                         className="bg-gray-200 dark:bg-gray-800"
-                        onError={(e) => {
-                          const imageElement = e.target as HTMLImageElement;
-                          imageElement.style.display = "none";
-
-                          const parentElement =
-                            imageElement.parentNode as HTMLElement;
-                          if (parentElement) {
-                            parentElement.innerHTML = `
-            <div class="flex items-center justify-center h-full w-full bg-red-100 text-red-500 text-sm font-medium">
-              Ошибка изображения
-            </div>
-          `;
-                          }
-                        }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
@@ -168,8 +186,13 @@ const LandTable: React.FC = () => {
                 <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                   ${land.price}
                 </td>
-                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {land.location}
+                <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {land.action_type === "rent" ? "Аренда" : "Продажа"}
+                </td>
+                <td className="text-sm text-gray-500 dark:text-gray-400">
+                  {locationOptions.find(
+                    (option) => option.value === land.location
+                  )?.label || land.location}
                 </td>
                 <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                   {landConditionTranslation[land.house_condition] ||
@@ -207,7 +230,6 @@ const LandTable: React.FC = () => {
         </table>
       </div>
 
-      {/* Card View for Small Screens */}
       <div className="block sm:hidden space-y-4">
         {lands.map((land) => (
           <Card
@@ -252,31 +274,28 @@ const LandTable: React.FC = () => {
         ))}
       </div>
 
-      {/* Pagination */}
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            {currentPage > 1 && (
-              <PaginationPrevious
-                onClick={() => handlePageChange(currentPage - 1)}
+      {/* Modal for Image Preview */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            {modalImage && (
+              <Image
+                src={modalImage}
+                alt="Preview"
+                width={600}
+                height={400}
+                objectFit="contain"
               />
             )}
-          </PaginationItem>
-          {[...Array(Math.ceil(total / itemsPerPage))].map((_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                onClick={() => handlePageChange(i + 1)}
-                isActive={currentPage === i + 1}
-              >
-                {i + 1}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-          {currentPage < Math.ceil(total / itemsPerPage) && (
-            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
-          )}
-        </PaginationContent>
-      </Pagination>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

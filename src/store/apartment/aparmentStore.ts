@@ -22,10 +22,12 @@ interface Apartment {
   created_at: string;
   crm_id: string;
   description: string;
+  category: string;
   furnished: boolean;
   updated_at: string;
   comment: string;
   house_condition: string;
+  house_type: string;
   price: number;
   current_status: string;
   district: string;
