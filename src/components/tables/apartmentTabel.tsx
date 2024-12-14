@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,8 +14,8 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis,
 } from "@/components/ui/pagination";
-import Spinner from "../local-components/spinner";
 
 const statusConfig = {
   free: {
@@ -48,7 +48,9 @@ const houseTypeTranslation: { [key: string]: string } = {
 
 export default function PropertyTable() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return Number(localStorage.getItem("currentPageApartment")) || 1;
+  });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
@@ -56,9 +58,17 @@ export default function PropertyTable() {
   const { apartments, total, loading, error, fetchApartments } =
     useApartmentStore();
 
-  useEffect(() => {
-    fetchApartments(currentPage, itemsPerPage);
-  }, [fetchApartments, currentPage, itemsPerPage]);
+    useEffect(() => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("currentPageApartment", String(currentPage));
+      }
+    }, [currentPage]);
+
+    useEffect(() => {
+      if (fetchApartments && typeof currentPage === "number" && typeof itemsPerPage === "number") {
+        fetchApartments(currentPage, itemsPerPage);
+      }
+    }, [fetchApartments, currentPage, itemsPerPage]);
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -150,18 +160,25 @@ export default function PropertyTable() {
                     <div
                       className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
                       onClick={() =>
-                        openModal(
-                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
-                        )
+                        apartment.media && apartment.media[0]?.url
+                          ? openModal(
+                              `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
+                            )
+                          : null
                       }
                     >
-                      {apartment.media && apartment.media[0] ? (
+                      {apartment.media &&
+                      apartment.media[0] &&
+                      apartment.media[0].url ? (
                         <Image
                           src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
                           alt={apartment.title || "Preview image"}
-                          layout="fill"
-                          objectFit="cover"
+                          fill // Use the 'fill' prop for layout instead of 'layout="fill"'
+                          style={{ objectFit: "cover" }} // Replace 'objectFit' prop with inline style
                           className="bg-gray-200 dark:bg-gray-800"
+                          onError={(e) => {
+                            e.currentTarget.src = "/fallback-image.png"; // Provide a fallback image
+                          }}
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
@@ -213,7 +230,7 @@ export default function PropertyTable() {
                   <td className="p-2">
                     <Button
                       onClick={() => {
-                        window.location.href = `/edit-property/${apartment.id}`;
+                        window.location.href = `/edit-apartment/${apartment.id}`;
                       }}
                       variant="default"
                     >
@@ -306,25 +323,49 @@ export default function PropertyTable() {
       {/* Pagination */}
       <Pagination>
         <PaginationContent>
-          <PaginationItem>
-            {currentPage > 1 && (
+          {currentPage > 1 && (
+            <PaginationItem>
               <PaginationPrevious
                 onClick={() => handlePageChange(currentPage - 1)}
               />
-            )}
-          </PaginationItem>
-          {[...Array(Math.ceil(total / itemsPerPage))].map((_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
-                onClick={() => handlePageChange(i + 1)}
-                isActive={currentPage === i + 1}
-              >
-                {i + 1}
-              </PaginationLink>
             </PaginationItem>
-          ))}
+          )}
+
+          {Array.from({ length: Math.ceil(total / itemsPerPage) })
+            .map((_, i) => i + 1)
+            .filter((page) => {
+              // Only show the first, last, and neighboring pages
+              return (
+                page === 1 ||
+                page === Math.ceil(total / itemsPerPage) ||
+                Math.abs(page - currentPage) <= 2
+              );
+            })
+            .map((page, index, pages) => (
+              <React.Fragment key={page}>
+                {/* Add ellipsis if there are skipped pages */}
+                {index > 0 && page > pages[index - 1] + 1 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => handlePageChange(page)}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              </React.Fragment>
+            ))}
+
           {currentPage < Math.ceil(total / itemsPerPage) && (
-            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(currentPage + 1)}
+              />
+            </PaginationItem>
           )}
         </PaginationContent>
       </Pagination>

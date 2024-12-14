@@ -73,8 +73,9 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
   },
   fetchApartmentById: async (id: number) => {
     try {
+      console.log('fetching id:', id)
       const response = await api.get(`/apartment/${id}`);
-      return response.data.data;
+      return response.data;
     } catch (error: any) {
       console.error("Error fetching apartment by id:", error);
       return null;

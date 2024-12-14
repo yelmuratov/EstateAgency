@@ -14,6 +14,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
+  PaginationEllipsis,
 } from "@/components/ui/pagination";
 
 const statusConfig = {
@@ -43,12 +44,18 @@ const landConditionTranslation: { [key: string]: string } = {
 
 const LandTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return Number(localStorage.getItem("currentPageLand")) || 1;
+  }); 
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
 
   const { lands, total, loading, error, fetchLands } = useLandStore();
+
+  useEffect(() => {
+    localStorage.setItem("currentPageLand", String(currentPage));
+  }, [currentPage]);
 
   useEffect(() => {
     fetchLands(currentPage, itemsPerPage);
@@ -73,6 +80,8 @@ const LandTable: React.FC = () => {
     setModalImage(null);
     setModalOpen(false);
   };
+
+  
 
   if (loading) {
     return <div>Loading...</div>;
@@ -296,6 +305,56 @@ const LandTable: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Pagination */}
+      <Pagination>
+        <PaginationContent>
+          {currentPage > 1 && (
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(currentPage - 1)}
+              />
+            </PaginationItem>
+          )}
+
+          {Array.from({ length: Math.ceil(total / itemsPerPage) })
+            .map((_, i) => i + 1)
+            .filter((page) => {
+              // Only show the first, last, and neighboring pages
+              return (
+                page === 1 ||
+                page === Math.ceil(total / itemsPerPage) ||
+                Math.abs(page - currentPage) <= 2
+              );
+            })
+            .map((page, index, pages) => (
+              <React.Fragment key={page}>
+                {/* Add ellipsis if there are skipped pages */}
+                {index > 0 && page > pages[index - 1] + 1 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => handlePageChange(page)}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              </React.Fragment>
+            ))}
+
+          {currentPage < Math.ceil(total / itemsPerPage) && (
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(currentPage + 1)}
+              />
+            </PaginationItem>
+          )}
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };

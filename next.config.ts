@@ -5,15 +5,10 @@ const nextConfig: NextConfig = {
 };
 
 module.exports = {
-
-  reactStrictMode: true,
-
   images: {
-
-    domains: ['109.196.101.143'],
-
+    domains: ["calskgne.legacyestate.uz"], // Add your domain here
   },
-
 };
+
 
 export default nextConfig;
