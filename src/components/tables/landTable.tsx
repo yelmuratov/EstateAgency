@@ -1,32 +1,74 @@
-import React, { useEffect, useState } from "react";
-import { useLandStore } from "@/store/land/landStore";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+"use client";
 
-const statusColors: { [key: string]: string } = {
-  free: "bg-green-500",
-  soon: "bg-yellow-500",
-  busy: "bg-red-500",
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { useLandStore } from "@/store/land/landStore";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const statusConfig = {
+  free: {
+    label: "Свободный",
+    className:
+      "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-100",
+  },
+  soon: {
+    label: "Скоро",
+    className:
+      "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-800 dark:text-yellow-100",
+  },
+  busy: {
+    label: "Занят",
+    className:
+      "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800 dark:text-red-100",
+  },
+};
+
+const landConditionTranslation: { [key: string]: string } = {
+  new: "Новый",
+  good: "Хороший",
+  needs_repair: "Требует ремонта",
+  old: "Старый",
 };
 
 const LandTable: React.FC = () => {
-  const { lands, fetchLands, total, loading } = useLandStore();
-  const [page, setPage] = useState<number>(1);
-  const limit = 10;
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
+  const { lands, total, loading, error, fetchLands } = useLandStore();
 
   useEffect(() => {
-    fetchLands(page, limit);
-  }, [page, fetchLands]);
+    fetchLands(currentPage, itemsPerPage);
+  }, [fetchLands, currentPage, itemsPerPage]);
+
+  const toggleRow = (id: number) => {
+    setSelectedRows((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+    );
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   if (loading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
   }
 
   if (lands.length === 0) {
@@ -34,49 +76,207 @@ const LandTable: React.FC = () => {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Condition</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Responsible</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lands.map((land) => (
-            <TableRow key={land.id}>
-              <TableCell>{land.title}</TableCell>
-              <TableCell>{land.price}$</TableCell>
-              <TableCell>{land.location}</TableCell>
-              <TableCell>{land.house_condition}</TableCell>
-              <TableCell>
-                <Badge className={statusColors[land.current_status]}>
-                  {land.current_status}
-                </Badge>
-              </TableCell>
-              <TableCell>{land.responsible}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {/* Pagination */}
-      <div className="flex justify-center space-x-2 mt-4">
-        {Array.from({ length: Math.ceil(total / limit) }, (_, index) => (
-          <button
-            key={index}
-            onClick={() => setPage(index + 1)}
-            className={`px-4 py-2 ${
-              page === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200"
-            } rounded`}
+    <div className="space-y-4">
+      {/* Table View for Medium and Larger Screens */}
+      <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                #
+              </th>
+              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                <Checkbox />
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                ПРЕВЬЮ
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                НАЗВАНИЕ
+              </th>
+              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                ЦЕНА
+              </th>
+              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                ЛОКАЦИЯ
+              </th>
+              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                СОСТОЯНИЕ
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                СТАТУС
+              </th>
+              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                ОТВЕТСТВЕННЫЙ
+              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                ДЕЙСТВИЯ
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {lands.map((land, index) => (
+              <tr
+                key={land.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </td>
+                <td className="w-[50px] p-2 text-center">
+                  <Checkbox
+                    checked={selectedRows.includes(land.id)}
+                    onCheckedChange={() => toggleRow(land.id)}
+                  />
+                </td>
+                <td className="p-2">
+                  <div className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                    {land.media && land.media[0] ? (
+                      <Image
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
+                        alt={land.title || "Preview image"}
+                        layout="fill"
+                        objectFit="cover"
+                        className="bg-gray-200 dark:bg-gray-800"
+                        onError={(e) => {
+                          const imageElement = e.target as HTMLImageElement;
+                          imageElement.style.display = "none";
+
+                          const parentElement =
+                            imageElement.parentNode as HTMLElement;
+                          if (parentElement) {
+                            parentElement.innerHTML = `
+            <div class="flex items-center justify-center h-full w-full bg-red-100 text-red-500 text-sm font-medium">
+              Ошибка изображения
+            </div>
+          `;
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                        Нет изображения
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="p-2">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {land.title}
+                  </div>
+                </td>
+                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  ${land.price}
+                </td>
+                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {land.location}
+                </td>
+                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {landConditionTranslation[land.house_condition] ||
+                    land.house_condition}
+                </td>
+                <td className="p-2">
+                  <Badge
+                    className={
+                      statusConfig[
+                        land.current_status as keyof typeof statusConfig
+                      ]?.className || ""
+                    }
+                  >
+                    {statusConfig[
+                      land.current_status as keyof typeof statusConfig
+                    ]?.label || "Неизвестно"}
+                  </Badge>
+                </td>
+                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {land.responsible}
+                </td>
+                <td className="p-2">
+                  <Button
+                    onClick={() => {
+                      window.location.href = `/edit-property/${land.id}`;
+                    }}
+                    variant="default"
+                  >
+                    Редактировать
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Card View for Small Screens */}
+      <div className="block sm:hidden space-y-4">
+        {lands.map((land) => (
+          <Card
+            key={land.id}
+            className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
           >
-            {index + 1}
-          </button>
+            <div className="flex flex-col space-y-2">
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {land.title}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {land.location}
+                </div>
+                <div className="text-sm text-gray-900 dark:text-gray-100">
+                  ${land.price}
+                </div>
+                <Badge
+                  className={
+                    statusConfig[
+                      land.current_status as keyof typeof statusConfig
+                    ]?.className || ""
+                  }
+                >
+                  {statusConfig[
+                    land.current_status as keyof typeof statusConfig
+                  ]?.label || "Неизвестно"}
+                </Badge>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => {
+                    window.location.href = `/edit-property/${land.id}`;
+                  }}
+                  variant="default"
+                >
+                  Редактировать
+                </Button>
+              </div>
+            </div>
+          </Card>
         ))}
       </div>
+
+      {/* Pagination */}
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            {currentPage > 1 && (
+              <PaginationPrevious
+                onClick={() => handlePageChange(currentPage - 1)}
+              />
+            )}
+          </PaginationItem>
+          {[...Array(Math.ceil(total / itemsPerPage))].map((_, i) => (
+            <PaginationItem key={i}>
+              <PaginationLink
+                onClick={() => handlePageChange(i + 1)}
+                isActive={currentPage === i + 1}
+              >
+                {i + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+          {currentPage < Math.ceil(total / itemsPerPage) && (
+            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} />
+          )}
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
