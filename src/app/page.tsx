@@ -69,7 +69,7 @@ export default function Dashboard() {
   }, [fetchUserData]);
 
   if (loading) {
-    return <Spinner theme={theme || "light"} />;
+    return <Spinner theme={theme || "dark"} />;
   }
 
   if (!user) {

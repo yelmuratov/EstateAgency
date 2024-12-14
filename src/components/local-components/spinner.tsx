@@ -9,7 +9,7 @@ export default function Spinner({ theme }: SpinnerProps) {
     <div className="flex items-center justify-center min-h-screen">
       <svg
         className={`h-16 w-16 animate-spin ${
-          theme === 'dark' ? 'text-gray-50' : 'text-gray-900'
+          theme === 'dark' ? 'text-light-50' : 'text-light-900'
         }`}
         viewBox="0 0 24 24"
         fill="none"
