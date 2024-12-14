@@ -24,12 +24,30 @@ interface Property {
   floor: number;
   floorNumber: number;
   images: string[];
+  media?: { url: string }[];
 }
 
 const statusConfig = {
-  free: { label: 'Свободный', className: 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-100' },
-  soon: { label: 'Скоро', className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-800 dark:text-yellow-100' },
-  busy: { label: 'Занят', className: 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800 dark:text-red-100' },
+  free: {
+    label: 'Свободный',
+    className: 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-100',
+  },
+  soon: {
+    label: 'Скоро',
+    className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-800 dark:text-yellow-100',
+  },
+  busy: {
+    label: 'Занят',
+    className: 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800 dark:text-red-100',
+  },
+};
+
+const houseTypeTranslation: { [key: string]: string } = {
+  new_building: 'Новостройка',
+  secondary: 'Вторичка',
+  apartment: 'Квартира',
+  house: 'Дом',
+  townhouse: 'Таунхаус',
 };
 
 export default function PropertyTable() {
@@ -39,22 +57,20 @@ export default function PropertyTable() {
 
   const { apartments, fetchApartments } = useApartmentStore();
 
-  // Fetch apartments on component mount
   useEffect(() => {
     fetchApartments(1, 10);
   }, [fetchApartments]);
 
-  // Map fetched apartments to the properties structure
   useEffect(() => {
     if (apartments) {
       const mappedProperties = apartments.map((apartment: any) => ({
         id: apartment.id,
-        title: apartment.title || 'Untitled',
-        district: apartment.district || 'Unknown',
+        title: apartment.title || 'Без названия',
+        district: apartment.district || 'Неизвестный',
         price: apartment.price || 0,
-        houseType: apartment.house_type || 'Unknown',
+        houseType: apartment.house_type || 'unknown',
         createdAt: apartment.created_at || '',
-        agent: apartment.responsible || 'Unknown',
+        agent: apartment.responsible || 'Неизвестно',
         status: apartment.current_status || 'free',
         squareArea: apartment.square_area || 0,
         phoneNumber: apartment.phone_number || 'N/A',
@@ -83,70 +99,81 @@ export default function PropertyTable() {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
+              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">#</th>
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 <Checkbox />
               </th>
-              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ПРЕВЬЮ
-              </th>
-              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                НАЗВАНИЕ
-              </th>
-              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ЦЕНА
-              </th>
-              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ТИП ДОМА
-              </th>
-              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ДАТА СОЗДАНИЯ
-              </th>
-              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                СТАТУС
-              </th>
-              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                ПЛОЩАДЬ
-              </th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ПРЕВЬЮ</th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">НАЗВАНИЕ</th>
+              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ЦЕНА</th>
+              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ТИП ДОМА</th>
+              <th className="hidden lg:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ДАТА СОЗДАНИЯ</th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">СТАТУС</th>
+              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ПЛОЩАДЬ</th>
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">ДЕЙСТВИЯ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {properties.map((property) => (
-              <tr
-                key={property.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                onClick={() => toggleRow(property.id)}
-              >
-                <td className="p-2">
+            {properties.map((property, index) => (
+              <tr key={property.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">{index + 1}</td>
+                <td className="w-[50px] p-2 text-center">
                   <Checkbox
                     checked={selectedRows.includes(property.id)}
                     onCheckedChange={() => toggleRow(property.id)}
                   />
                 </td>
                 <td className="p-2">
-                 
+                  <div className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700">
+                    {property.media?.[0]?.url ? (
+                      <Image
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${property.media[0].url}`}
+                        alt={property.title || 'Preview image'}
+                        layout="fill"
+                        objectFit="cover"
+                        className="bg-gray-200 dark:bg-gray-800"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          const parentElement = (e.target as HTMLImageElement).parentNode as HTMLElement;
+                          parentElement.innerHTML = `<div class="flex items-center justify-center h-full w-full bg-red-100 text-red-500 text-sm font-medium">
+                          Ошибка изображения</div>`;
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                        Нет изображения
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="p-2">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {property.title}
-                  </div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{property.title}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400">{property.district}</div>
                 </td>
-                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  ${property.price}
+                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">${property.price}</td>
+                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                  {houseTypeTranslation[property.houseType] || property.houseType}
                 </td>
                 <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {property.houseType}
-                </td>
-                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {property.createdAt}
+                  {new Date(property.createdAt).toLocaleDateString()}
                 </td>
                 <td className="p-2">
                   <Badge className={statusConfig[property.status]?.className || ''}>
-                    {statusConfig[property.status]?.label || 'Unknown'}
+                    {statusConfig[property.status]?.label || 'Неизвестно'}
                   </Badge>
                 </td>
                 <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {property.squareArea} m²
+                  {property.squareArea} м²
+                </td>
+                <td className="p-2">
+                  <button
+                    onClick={() => {
+                      window.location.href = `/edit-property/${property.id}`;
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Редактировать
+                  </button>
                 </td>
               </tr>
             ))}
@@ -162,17 +189,12 @@ export default function PropertyTable() {
             className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
           >
             <div className="flex items-center space-x-4">
-              
               <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {property.title}
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {property.district}
-                </div>
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{property.title}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{property.district}</div>
                 <div className="text-sm text-gray-900 dark:text-gray-100">${property.price}</div>
                 <Badge className={statusConfig[property.status]?.className || ''}>
-                  {statusConfig[property.status]?.label || 'Unknown'}
+                  {statusConfig[property.status]?.label || 'Неизвестно'}
                 </Badge>
               </div>
             </div>

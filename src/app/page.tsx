@@ -6,23 +6,30 @@ import { getUser } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
 import Spinner from "@/components/local-components/spinner";
 import { ThemeProvider, useTheme } from "next-themes";
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useToast } from "@/hooks/use-toast"; 
-import PropertyTable from '@/components/PropertyTable';
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import { useToast } from "@/hooks/use-toast";
 import useAuth from "@/hooks/useAuth";
 import { setAuthToken } from "@/lib/tokenHelper";
-import {UserStore} from '@/store/userStore';
+import { UserStore } from "@/store/userStore";
 import LandTable from "@/components/tables/landTable";
 import ApartmentTable from "@/components/tables/apartmentTabel";
 import CommercialTable from "@/components/tables/commercialTable";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
-  const [loading, setLoading] = useState(true); 
-  const { theme } = useTheme(); 
+  const [loading, setLoading] = useState(true);
+  const [selectedType, setSelectedType] = useState<string>("apartments"); // Default type
+  const { theme } = useTheme();
   const router = useRouter();
-  const { token, } = useAuthStore();
-  const { toast } = useToast(); 
-  const {setUser,user} = UserStore();
+  const { token } = useAuthStore();
+  const { toast } = useToast();
+  const { setUser, user } = UserStore();
 
   useAuth();
 
@@ -53,7 +60,7 @@ export default function Dashboard() {
   }, [fetchUserData]);
 
   if (loading) {
-    return <Spinner theme={theme || 'light'} />;
+    return <Spinner theme={theme || "light"} />;
   }
 
   if (!user) {
@@ -66,7 +73,43 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <ApartmentTable />
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-lg font-semibold">Выберите тип недвижимости</h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">Тип: {getLabel(selectedType)}</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setSelectedType("apartments")}>
+              Квартиры
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedType("lands")}>
+              Участки
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedType("commercial")}>
+              Коммерция
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {selectedType === "apartments" && <ApartmentTable />}
+      {selectedType === "lands" && <LandTable />}
+      {selectedType === "commercial" && <CommercialTable />}
     </DashboardLayout>
   );
+}
+
+// Helper function to map type to label
+function getLabel(type: string): string {
+  switch (type) {
+    case "apartments":
+      return "Квартиры";
+    case "lands":
+      return "Участки";
+    case "commercial":
+      return "Коммерция";
+    default:
+      return "Неизвестно";
+  }
 }

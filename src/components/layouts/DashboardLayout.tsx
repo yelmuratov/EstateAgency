@@ -1,12 +1,13 @@
-import React, { ReactNode } from 'react'
-import Header from '@/components/Header'
-import { ThemeProvider } from '@/components/theme-provider'
+import React, { ReactNode, useState } from "react";
+import Header from "@/components/Header";
+import { ThemeProvider } from "@/components/theme-provider";
 
 interface DashboardLayoutProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-background text-foreground">
@@ -16,8 +17,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </main>
       </div>
     </ThemeProvider>
-  )
-}
+  );
+};
 
-export default DashboardLayout
-
+export default DashboardLayout;
