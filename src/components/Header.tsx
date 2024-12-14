@@ -48,13 +48,6 @@ const Header: React.FC = () => {
                   />
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 </div>
-                <Button
-                  variant="default"
-                  className="ml-2 hidden sm:flex"
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                >
-                  <Filter className="mr-2 h-4 w-4" /> Фильтр
-                </Button>
               </>
             )}
           </div>

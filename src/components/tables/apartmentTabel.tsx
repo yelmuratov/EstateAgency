@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useApartmentStore } from '@/store/apartment/aparmentStore';
+import { Button } from '@/components/ui/button';
 
 interface Property {
   id: number;
@@ -166,14 +167,14 @@ export default function PropertyTable() {
                   {property.squareArea} м²
                 </td>
                 <td className="p-2">
-                  <button
+                    <Button
                     onClick={() => {
                       window.location.href = `/edit-property/${property.id}`;
                     }}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
+                    variant="default"
+                    >
                     Редактировать
-                  </button>
+                    </Button>
                 </td>
               </tr>
             ))}
@@ -182,25 +183,37 @@ export default function PropertyTable() {
       </div>
 
       {/* Card View for Small Screens */}
-      <div className="block sm:hidden space-y-4">
-        {properties.map((property) => (
-          <Card
-            key={property.id}
-            className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
+<div className="block sm:hidden space-y-4">
+  {properties.map((property) => (
+    <Card
+      key={property.id}
+      className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
+    >
+      <div className="flex flex-col space-y-2">
+        <div>
+          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{property.title}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{property.district}</div>
+          <div className="text-sm text-gray-900 dark:text-gray-100">${property.price}</div>
+          <Badge className={statusConfig[property.status]?.className || ''}>
+            {statusConfig[property.status]?.label || 'Неизвестно'}
+          </Badge>
+        </div>
+        <div className="flex space-x-2">
+          <Button
+            onClick={() => {
+              window.location.href = `/edit-property/${property.id}`;
+            }}
+            variant="default"
           >
-            <div className="flex items-center space-x-4">
-              <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{property.title}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">{property.district}</div>
-                <div className="text-sm text-gray-900 dark:text-gray-100">${property.price}</div>
-                <Badge className={statusConfig[property.status]?.className || ''}>
-                  {statusConfig[property.status]?.label || 'Неизвестно'}
-                </Badge>
-              </div>
-            </div>
-          </Card>
-        ))}
+            Редактировать
+          </Button>
+        </div>
       </div>
+    </Card>
+  ))}
+</div>
+
+
     </div>
   );
 }
