@@ -51,14 +51,15 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
     try {
       const response = await api.get(`/commercial/?limit=${limit}&page=${page}`);
       set({
-        commercials: response.data,
-        total: response.data.length,
+        commercials: Array.isArray(response.data.data) ? response.data.data : [], // Use `data` key
+        total: response.data.total_count || 0, // Use `total_count` key
         loading: false,
       });
     } catch (error: any) {
       set({
         error: error.message || "Failed to fetch commercials",
         loading: false,
+        commercials: [], // Reset to an empty array in case of error
       });
     }
   },

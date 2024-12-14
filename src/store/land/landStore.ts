@@ -39,7 +39,7 @@ interface Land {
 
 interface LandStore {
   lands: Land[];
-  total: number; // Total is optional if API doesn't provide it
+  total: number;
   loading: boolean;
   error: string | null;
   fetchLands: (page: number, limit: number) => Promise<void>;
@@ -54,10 +54,10 @@ export const useLandStore = create<LandStore>((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/land/?limit=${limit}&page=${page}`);
-      console.log("API Response:", response.data);
+      const { data, total_count } = response.data; // Assuming API provides `data` and `total_count`
       set({
-        lands: response.data, // Assuming response is an array
-        total: response.data.length, // Optional: Update if total is provided
+        lands: data, // Using `data` array from the response
+        total: total_count || data.length, // Update total based on `total_count`
         loading: false,
       });
     } catch (error: any) {

@@ -143,91 +143,99 @@ const CommercialTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {commercials.map((commercial, index) => (
-              <tr
-                key={commercial.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-              >
-                <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {(currentPage - 1) * itemsPerPage + index + 1}
-                </td>
-                <td className="w-[50px] p-2 text-center">
-                  <Checkbox
-                    checked={selectedRows.includes(commercial.id)}
-                    onCheckedChange={() => toggleRow(commercial.id)}
-                  />
-                </td>
-                <td className="p-2">
-                  <div
-                    className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
-                    onClick={() =>
-                      openModal(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0]?.url}`
-                      )
-                    }
-                  >
-                    {commercial.media && commercial.media[0] ? (
-                      <Image
-                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0].url}`}
-                        alt={commercial.title || "Preview image"}
-                        layout="fill"
-                        objectFit="cover"
-                        className="bg-gray-200 dark:bg-gray-800"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                        Нет изображения
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {commercial.title}
-                  </div>
-                </td>
-                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  ${commercial.price}
-                </td>
-                <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {commercial.action_type === "rent" ? "Аренда" : "Продажа"}
-                </td>
-                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {houseTypeTranslation[commercial.location] ||
-                    commercial.location}
-                </td>
-                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {houseTypeTranslation[commercial.house_condition] ||
-                    commercial.house_condition}
-                </td>
-                <td className="p-2">
-                  <Badge
-                    className={
-                      statusConfig[
+            {Array.isArray(commercials) && commercials.length > 0 ? (
+              commercials.map((commercial, index) => (
+                <tr
+                  key={commercial.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
+                  <td className="w-[50px] p-2 text-center">
+                    <Checkbox
+                      checked={selectedRows.includes(commercial.id)}
+                      onCheckedChange={() => toggleRow(commercial.id)}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <div
+                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
+                      onClick={() =>
+                        openModal(
+                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0]?.url}`
+                        )
+                      }
+                    >
+                      {commercial.media && commercial.media[0] ? (
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0].url}`}
+                          alt={commercial.title || "Preview image"}
+                          layout="fill"
+                          objectFit="cover"
+                          className="bg-gray-200 dark:bg-gray-800"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                          Нет изображения
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {commercial.title}
+                    </div>
+                  </td>
+                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    ${commercial.price}
+                  </td>
+                  <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {commercial.action_type === "rent" ? "Аренда" : "Продажа"}
+                  </td>
+                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {houseTypeTranslation[commercial.location] ||
+                      commercial.location}
+                  </td>
+                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {houseTypeTranslation[commercial.house_condition] ||
+                      commercial.house_condition}
+                  </td>
+                  <td className="p-2">
+                    <Badge
+                      className={
+                        statusConfig[
+                          commercial.current_status as keyof typeof statusConfig
+                        ]?.className || ""
+                      }
+                    >
+                      {statusConfig[
                         commercial.current_status as keyof typeof statusConfig
-                      ]?.className || ""
-                    }
-                  >
-                    {statusConfig[
-                      commercial.current_status as keyof typeof statusConfig
-                    ]?.label || "Неизвестно"}
-                  </Badge>
-                </td>
-                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {commercial.responsible}
-                </td>
-                <td className="p-2">
-                  <Button
-                    onClick={() => {
-                      window.location.href = `/edit-property/${commercial.id}`;
-                    }}
-                    variant="default"
-                  >
-                    Редактировать
-                  </Button>
+                      ]?.label || "Неизвестно"}
+                    </Badge>
+                  </td>
+                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {commercial.responsible}
+                  </td>
+                  <td className="p-2">
+                    <Button
+                      onClick={() => {
+                        window.location.href = `/edit-property/${commercial.id}`;
+                      }}
+                      variant="default"
+                    >
+                      Редактировать
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={11} className="text-center p-4 text-gray-500">
+                  No commercial properties available.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -46,6 +46,7 @@ interface ApartmentStore {
   loading: boolean;
   error: string | null;
   fetchApartments: (page: number, limit: number) => Promise<void>;
+  fetchApartmentById: (id: number) => Promise<Apartment | null>;
 }
 
 export const useApartmentStore = create<ApartmentStore>((set) => ({
@@ -58,15 +59,25 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
     try {
       const response = await api.get(`/apartment/?limit=${limit}&page=${page}`);
       set({
-        apartments: response.data,
-        total: response.data.length,
+        apartments: Array.isArray(response.data.data) ? response.data.data : [], // Use `data` key
+        total: response.data.total_count || 0, // Use `total_count` key
         loading: false,
       });
     } catch (error: any) {
       set({
         error: error.message || "Failed to fetch apartments",
         loading: false,
+        apartments: [], // Reset to an empty array in case of error
       });
+    }
+  },
+  fetchApartmentById: async (id: number) => {
+    try {
+      const response = await api.get(`/apartment/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error fetching apartment by id:", error);
+      return null;
     }
   },
 }));
