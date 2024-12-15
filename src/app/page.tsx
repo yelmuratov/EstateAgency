@@ -57,19 +57,18 @@ export default function Dashboard() {
         title: "Error!",
         description: (error instanceof Error ? error.message : "An unexpected error occurred."),
       });
-      router.push("/login"); // Redirect to login on error
+      router.push("/login"); 
     } finally {
-      setLoading(false); // Fetching is complete
+      setLoading(false);
     }
   }, [token, router, toast, setUser]);
 
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
-    localStorage.setItem("selectedType", type); // Save to localStorage
+    localStorage.setItem("selectedType", type); 
   };
 
   useEffect(() => {
-    // Load selected type from localStorage
     const type = localStorage.getItem("selectedType") || "apartments";
     setSelectedType(type);
     fetchUserData();

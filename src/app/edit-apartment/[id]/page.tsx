@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -23,6 +25,7 @@ import { useApartmentStore } from "@/store/apartment/aparmentStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Toaster } from "@/components/ui/toaster";
 import Image from "next/image";
+import Spinner from "@/components/local-components/spinner";
 
 interface ApartmentFormData {
   district: string;
@@ -51,14 +54,10 @@ interface ApartmentFormData {
   id?: number;
 }
 
-interface image{
-  id: number;
-  url: string;
-}
-
 export default function EditApartmentForm() {
   const { id } = useParams();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<{ id: number; url: string }[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
@@ -67,7 +66,7 @@ export default function EditApartmentForm() {
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
 
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
-  const { fetchApartmentById } = useApartmentStore();
+  const { fetchApartmentById } = useApartmentStore(); 
 
   const {
     register,
@@ -92,21 +91,10 @@ export default function EditApartmentForm() {
               ...apartmentData,
               category: "apartment",
               action_type: apartmentData.action_type as "rent" | "sale",
-              house_type: apartmentData.house_type as
-                | "new_building"
-                | "secondary",
-              bathroom: apartmentData.bathroom as
-                | "seperated"
-                | "combined"
-                | "many",
-              house_condition: apartmentData.house_condition as
-                | "euro"
-                | "normal"
-                | "repair",
-              current_status: apartmentData.current_status as
-                | "free"
-                | "soon"
-                | "busy",
+              house_type: apartmentData.house_type as "new_building" | "secondary",
+              bathroom: apartmentData.bathroom as "seperated" | "combined" | "many",
+              house_condition: apartmentData.house_condition as "euro" | "normal" | "repair",
+              current_status: apartmentData.current_status as "free" | "soon" | "busy",
             });
             if (apartmentData.media) {
               setPreviewImages(
@@ -121,13 +109,15 @@ export default function EditApartmentForm() {
           console.error("Failed to fetch apartment:", error);
           toast({
             title: "Error",
-            description: "Failed to load apartment data",
+            description: "Failed to load apartment data.",
             variant: "destructive",
           });
+        } finally {
+          setLoading(false); // Stop loading when data fetching is complete
         }
       }
     };
-  
+
     loadApartment();
   }, [id, fetchApartmentById, reset, toast]);
 
@@ -195,6 +185,10 @@ export default function EditApartmentForm() {
 
     loadApartment();
   }, [id, fetchApartmentById, reset, toast]);
+
+  if(loading) {
+    return <Spinner theme="dark" />;
+  }
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -352,8 +346,17 @@ export default function EditApartmentForm() {
     });
   };
 
+
   return (
     <DashboardLayout>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => router.push('/')} // Redirect to home page
+        className="mb-4"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Назад
+      </Button>
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-6 max-w-2xl mx-auto"

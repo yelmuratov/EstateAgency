@@ -7,6 +7,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
 import {
   Pagination,
   PaginationContent,
@@ -16,6 +19,46 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+
+interface Media {
+  media_type: string;
+  updated_at: string;
+  apartment_id: number;
+  id: number;
+  url: string;
+  created_at: string;
+}
+
+interface Apartment {
+  id: number;
+  title: string;
+  rooms: number;
+  square_area: number;
+  agent_percent: number;
+  agent_commission: number;
+  action_type: string;
+  location: string;
+  created_at: string;
+  crm_id: string;
+  description: string;
+  category: string;
+  furnished: boolean;
+  updated_at: string;
+  comment: string;
+  house_condition: string;
+  house_type: string;
+  price: number;
+  current_status: string;
+  district: string;
+  responsible: string;
+  floor_number: number;
+  floor: number;
+  name: string;
+  phone_number: string;
+  bathroom: string;
+  media: Media[];
+  metro_st: string;
+}
 
 const statusConfig = {
   free: {
@@ -44,6 +87,11 @@ const houseTypeTranslation: { [key: string]: string } = {
   normal: "Обычное",
   repair: "Требует ремонта",
   euro: "Евроремонт",
+  rent: "Аренда",
+  sale: "Продажа",
+  seperated:"Раздельный",
+  combined:"Совмещенный",
+  many:"Несколько"
 };
 
 export default function PropertyTable() {
@@ -52,9 +100,10 @@ export default function PropertyTable() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const router = useRouter();
 
-  const { apartments, total, loading, error, fetchApartments } =
-    useApartmentStore();
+  const { apartments, total, error, fetchApartments } = useApartmentStore();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,12 +137,12 @@ export default function PropertyTable() {
     setModalOpen(false);
   };
 
-  if (loading) {
-    return <h1>Loading......</h1>;
-  }
+  const handleRowClick = (id: number) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="text-center text-red-500 dark:text-red-400">{error}</div>;
   }
 
   return (
@@ -118,8 +167,8 @@ export default function PropertyTable() {
               <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ЦЕНА
               </th>
-              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                Категория
+              <th className="hidden md:table-cell p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                Тип действия
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 Тип Недвижимости
@@ -140,100 +189,169 @@ export default function PropertyTable() {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {Array.isArray(apartments) && apartments.length > 0 ? (
-              apartments.map((apartment, index) => (
-                <tr
-                  key={apartment.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                >
-                  <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {(currentPage - 1) * itemsPerPage + index + 1}
-                  </td>
-                  <td className="w-[50px] p-2 text-center">
-                    <Checkbox
-                      checked={selectedRows.includes(apartment.id)}
-                      onCheckedChange={() => toggleRow(apartment.id)}
-                    />
-                  </td>
-                  <td className="p-2">
-                    <div
-                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
-                      onClick={() =>
-                        openModal(
-                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
-                        )
-                      }
-                    >
-                      {apartment.media && apartment.media[0] ? (
-                        <Image
-                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
-                          alt={apartment.title || "Preview image"}
-                          layout="fill"
-                          objectFit="cover"
-                          className="bg-gray-200 dark:bg-gray-800"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                          Нет изображения
+              apartments.map((apartment: Apartment, index: number) => (
+                <React.Fragment key={apartment.id}>
+                  <tr
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => handleRowClick(apartment.id)}
+                  >
+                    <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
+                    <td className="w-[50px] p-2 text-center">
+                      <Checkbox
+                        checked={selectedRows.includes(apartment.id)}
+                        onCheckedChange={() => toggleRow(apartment.id)}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <div
+                        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
+                        onClick={() =>
+                          openModal(
+                            `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
+                          )
+                        }
+                      >
+                        {apartment.media && apartment.media[0] ? (
+                          <Image
+                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
+                            alt={apartment.title || "Preview image"}
+                            layout="fill"
+                            objectFit="cover"
+                            className="bg-gray-200 dark:bg-gray-800"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                            Нет изображения
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {apartment.title}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {apartment.district}
+                      </div>
+                    </td>
+                    <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      ${apartment.price}
+                    </td>
+                    <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {houseTypeTranslation[apartment.action_type]||apartment.action_type}
+                    </td>
+                    <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {houseTypeTranslation[apartment.house_type] || apartment.house_type}
+                      <br />
+                      {houseTypeTranslation[apartment.house_condition] || apartment.house_condition}
+                    </td>
+                    <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {new Date(apartment.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="p-2">
+                      <Badge
+                        className={
+                          statusConfig[apartment.current_status as keyof typeof statusConfig]
+                            ?.className || ""
+                        }
+                      >
+                        {statusConfig[apartment.current_status as keyof typeof statusConfig]?.label ||
+                          "Неизвестно"}
+                      </Badge>
+                    </td>
+                    <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {apartment.square_area} м²
+                    </td>
+                    <td className="p-2">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/edit-apartment/${apartment.id}`);
+                        }}
+                        variant="default"
+                      >
+                        Редактировать
+                      </Button>
+                    </td>
+                  </tr>
+                  {expandedRow === apartment.id && (
+                    <tr className="bg-gray-50 dark:bg-gray-800">
+                      <td colSpan={11}>
+                        <div className="p-4 space-y-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
+                              <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.floor_number} из {apartment.floor}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
+                              <div className="text-gray-900 dark:text-gray-100">{houseTypeTranslation[apartment.bathroom]}</div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">Метро</div>
+                              <div className="text-gray-900 dark:text-gray-100">{apartment.metro_st}</div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.agent_commission}% ({apartment.agent_percent})
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
+                              <div className="text-gray-900 dark:text-gray-100">{apartment.crm_id}</div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">Мебель</div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.furnished ? "Да" : "Нет"}
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {apartment.description || "Описание отсутствует"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {apartment.comment || "Комментарий отсутствует"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Ответственный
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">{apartment.responsible}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {apartment.name}, {apartment.phone_number}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {apartment.title}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {apartment.district}
-                    </div>
-                  </td>
-                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    ${apartment.price}
-                  </td>
-                  <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {apartment.category}
-                  </td>
-                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {houseTypeTranslation[apartment.category] ||
-                      apartment.category}
-                    <br />
-                    {houseTypeTranslation[apartment.house_condition] ||
-                      apartment.house_condition}
-                  </td>
-                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {new Date(apartment.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="p-2">
-                    <Badge
-                      className={
-                        statusConfig[
-                          apartment.current_status as keyof typeof statusConfig
-                        ]?.className || ""
-                      }
-                    >
-                      {statusConfig[
-                        apartment.current_status as keyof typeof statusConfig
-                      ]?.label || "Неизвестно"}
-                    </Badge>
-                  </td>
-                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {apartment.square_area} м²
-                  </td>
-                  <td className="p-2">
-                    <Button
-                      onClick={() => {
-                        window.location.href = `/edit-apartment/${apartment.id}`;
-                      }}
-                      variant="default"
-                    >
-                      Редактировать
-                    </Button>
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="text-center text-sm text-gray-500 dark:text-gray-400"
                 >
                   Нет доступных данных
@@ -244,8 +362,9 @@ export default function PropertyTable() {
         </table>
       </div>
 
+      {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {apartments.map((apartment) => (
+        {apartments.map((apartment: Apartment) => (
           <Card
             key={apartment.id}
             className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -263,27 +382,66 @@ export default function PropertyTable() {
                 </div>
                 <Badge
                   className={
-                    statusConfig[
-                      apartment.current_status as keyof typeof statusConfig
-                    ]?.className || ""
+                    statusConfig[apartment.current_status as keyof typeof statusConfig]?.className || ""
                   }
                 >
-                  {statusConfig[
-                    apartment.current_status as keyof typeof statusConfig
-                  ]?.label || "Неизвестно"}
+                  {statusConfig[apartment.current_status as keyof typeof statusConfig]?.label || "Неизвестно"}
                 </Badge>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex justify-between items-center">
                 <Button
                   onClick={() => {
-                    window.location.href = `/edit-apartment/${apartment.id}`;
+                    router.push(`/edit-apartment/${apartment.id}`);
                   }}
                   variant="default"
                 >
                   Редактировать
                 </Button>
+                <Button
+                  onClick={() => handleRowClick(apartment.id)}
+                  variant="ghost"
+                  className="p-2"
+                >
+                  {expandedRow === apartment.id ? <ChevronUp /> : <ChevronDown />}
+                </Button>
               </div>
             </div>
+            {expandedRow === apartment.id && (
+              <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
+                    <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
+                    <div className="text-gray-900 dark:text-gray-100">{apartment.square_area} м²</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {apartment.floor_number} из {apartment.floor}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
+                    <div className="text-gray-900 dark:text-gray-100">{apartment.bathroom}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    {apartment.description || "Описание отсутствует"}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    {apartment.name}, {apartment.phone_number}
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         ))}
       </div>
@@ -291,35 +449,31 @@ export default function PropertyTable() {
       {/* Modal for Image Preview */}
       {modalOpen && (
         <div
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-        onClick={closeModal} // Close modal when clicking on the backdrop
-      >
-        {/* Image Container */}
-        <div
-          className="relative"
-          onClick={(e) => e.stopPropagation()} // Prevent modal closure when clicking on the image or button
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={closeModal}
         >
-          {/* Close Button */}
-          <button
-            onClick={closeModal}
-            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+          <div
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-2xl font-bold">✕</span>
-          </button>
-      
-          {/* Image */}
-          {modalImage && (
-            <Image
-              src={modalImage}
-              alt="Preview"
-              className="rounded-lg shadow-lg max-w-full max-h-screen"
-              width={900}
-              height={600}
-              objectFit="contain"
-            />
-          )}
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+            >
+              <span className="text-2xl font-bold">✕</span>
+            </button>
+            {modalImage && (
+              <Image
+                src={modalImage}
+                alt="Preview"
+                className="rounded-lg shadow-lg max-w-full max-h-screen"
+                width={900}
+                height={600}
+                objectFit="contain"
+              />
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Pagination */}
@@ -336,7 +490,6 @@ export default function PropertyTable() {
           {Array.from({ length: Math.ceil(total / itemsPerPage) })
             .map((_, i) => i + 1)
             .filter((page) => {
-              // Only show the first, last, and neighboring pages
               return (
                 page === 1 ||
                 page === Math.ceil(total / itemsPerPage) ||
@@ -345,7 +498,6 @@ export default function PropertyTable() {
             })
             .map((page, index, pages) => (
               <React.Fragment key={page}>
-                {/* Add ellipsis if there are skipped pages */}
                 {index > 0 && page > pages[index - 1] + 1 && (
                   <PaginationItem>
                     <PaginationEllipsis />
@@ -374,3 +526,4 @@ export default function PropertyTable() {
     </div>
   );
 }
+

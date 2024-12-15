@@ -6,7 +6,6 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-
   return (
       <div className="min-h-screen bg-background text-foreground">
         <Header />

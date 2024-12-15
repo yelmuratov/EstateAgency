@@ -4,17 +4,19 @@ import ApartmentForm from "@/components/forms/ApartmentForm";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
+import { useRouter } from "next/navigation";
 
 export default function AddApartmentPage() {
+  const router = useRouter(); // Use Next.js useRouter hook
+
   return (
     <DashboardLayout>
-      <Toaster 
-      />
+      <Toaster />
       <Button
         type="button"
         variant="outline"
-        onClick={() => (window.location.href = '/')}
+        onClick={() => router.push('/')} // Redirect to home page
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Назад

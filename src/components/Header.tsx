@@ -10,7 +10,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import Spinner from '@/components/local-components/spinner'; // Assuming you have a Spinner component
 import ThemeToggle from '@/components/ThemeToggle';
 import { UserStore } from '@/store/userStore';
-import { useToast } from "@/hooks/use-toast";
 
 const Header: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +17,6 @@ const Header: React.FC = () => {
   const router = useRouter();
   const { user, logoutUser,loading } = UserStore();// Assuming `user` and `logout` exist in your store
   const isAddPropertyPage = pathname === '/add-property';
-  const { toast } = useToast();
 
   const handleAddPropertySelect = (path: string) => {
     if (pathname === path) {
@@ -32,9 +30,10 @@ const Header: React.FC = () => {
   // Handle Logout
   const handleLogout = () => {
     try{
+      
       logoutUser(); // Clears user session (from your auth store)
 
-      window.location.href = '/login'; // Redirect to home page
+      router.push('/') // Redirect to home page
     }catch(error){
       console.error(error);
     }

@@ -16,6 +16,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import Spinner from "../local-components/spinner";
 
 const statusConfig = {
   free: {
@@ -95,7 +96,7 @@ const CommercialTable: React.FC = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Spinner theme="dark" />;
   }
 
   if (error) {
