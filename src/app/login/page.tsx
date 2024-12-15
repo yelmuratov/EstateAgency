@@ -14,19 +14,23 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { AlertCircle } from 'lucide-react';
 import Head from 'next/head';
 import { setAuthToken } from '@/lib/tokenHelper';
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const router = useRouter();
   const { setToken, token } = useAuthStore();
+  const { toast } = useToast();
+  
 
-  // Redirect if already logged in
   useEffect(() => {
     if (token) {
-      router.push('/');
+      const timer = setTimeout(() => router.push('/'), 100); // Prevent blocking rendering
+      return () => clearTimeout(timer);
     }
   }, [token, router]);
+  
 
   const {
     register,
@@ -59,7 +63,7 @@ export default function LoginForm() {
       const errorMessage =
         error.response?.data?.detail || 'Invalid phone number or password.';
       setError(errorMessage); // Set error for display
-      console.error("Login error:", err); // Debugging
+       
     } finally {
       setIsLoading(false);
     }

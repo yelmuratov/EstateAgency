@@ -3,7 +3,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/router';
 
 interface LoginResponse {
-  access_token: string
+  access_token: string,
+  error: string,
 }
 
 export const login = async (phone: string, password: string): Promise<LoginResponse> => {
@@ -45,8 +46,7 @@ export const getUser = async (): Promise<any> => {
       const router = useRouter(); // Get the router instance
       clearToken(router); // Pass the router to clearToken
     }
-    console.error(apiError.response?.data?.message || apiError.message);
-    return null;
+    return err;
   }
 };
 

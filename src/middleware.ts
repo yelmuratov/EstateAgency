@@ -32,6 +32,18 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  if(pathname.startsWith('/edit-land')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/edit-commercial')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
   if (pathname.startsWith('/add-commercial')) {
     if (!token) {
       return NextResponse.redirect(new URL('/404', req.url));
@@ -50,5 +62,7 @@ export const config = {
     '/add-land/:path*',      // Matches /add-land and any subpaths
     '/add-commercial/:path*', // Matches /add-commercial and any subpaths
     '/edit-apartment/:path*', // Matches /edit-apartment and any subpaths
+    '/edit-land/:path*', // Matches /edit-land and any subpaths
+    '/edit-commercial/:path*', // Matches /edit-commercial and any subpaths
   ],
 };

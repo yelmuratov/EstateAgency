@@ -1,8 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { logout } from '@/services/authService'
+import { useRouter } from 'next/router';
 
 export default function LogoutButton() {
   const router = useRouter()
@@ -12,14 +12,14 @@ export default function LogoutButton() {
     try {
       await logout()
 
-      // Clear the token from Zustand store and cookies
-      clearToken()
+      const routerInstance = router;
+      clearToken(routerInstance);
       document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; secure;'
 
       // Redirect to login
       router.push('/login')
     } catch (err) {
-      console.error('Failed to log out:', err)
+      return err;
     }
   }
 

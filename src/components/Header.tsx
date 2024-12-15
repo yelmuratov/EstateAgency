@@ -7,9 +7,13 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import {useRouter as useRouterLog} from 'next/router';
 import Spinner from '@/components/local-components/spinner'; // Assuming you have a Spinner component
 import ThemeToggle from '@/components/ThemeToggle';
 import { UserStore } from '@/store/userStore';
+import { toast } from '@/hooks/use-toast';
+import { ToastAction } from "@/components/ui/toast"
+import { useAuthStore } from '@/store/authStore';
 
 const Header: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +21,7 @@ const Header: React.FC = () => {
   const router = useRouter();
   const { user, logoutUser,loading } = UserStore();// Assuming `user` and `logout` exist in your store
   const isAddPropertyPage = pathname === '/add-property';
+  const { clearToken } = useAuthStore();
 
   const handleAddPropertySelect = (path: string) => {
     if (pathname === path) {
@@ -30,12 +35,18 @@ const Header: React.FC = () => {
   // Handle Logout
   const handleLogout = () => {
     try{
-      
-      logoutUser(); // Clears user session (from your auth store)
-
-      router.push('/') // Redirect to home page
+     const routeInstance = useRouterLog();
+     clearToken(routeInstance); // Clears token from your auth store
+     logoutUser(); // Clears user session (from your auth store)
     }catch(error){
-      console.error(error);
+      toast({
+        variant: "destructive",
+        title: error instanceof Error ? error.message : String(error),
+        description: "There was a problem with your request.",
+        action: <ToastAction altText="Try again">
+          Попробуйте снова
+        </ToastAction>,
+      })
     }
   };
 

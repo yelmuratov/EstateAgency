@@ -16,7 +16,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('%cRequest Error:', 'color: red', error);
     return Promise.reject(error);
   }
 );

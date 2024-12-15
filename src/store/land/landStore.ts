@@ -43,6 +43,7 @@ interface LandStore {
   loading: boolean;
   error: string | null;
   fetchLands: (page: number, limit: number) => Promise<void>;
+  fetchLandById: (id: number) => Promise<Land | null>;
 }
 
 export const useLandStore = create<LandStore>((set) => ({
@@ -71,13 +72,36 @@ export const useLandStore = create<LandStore>((set) => ({
         };
       };
   
-      console.error("Error fetching lands:", apiError);
-  
       set({
         error:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
         loading: false,
       });
+    }
+  },
+  fetchLandById: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/land/${id}`);
+      set({ loading: false });
+      return response.data; // Return the data
+    } catch (error) {
+      // Define the type of the error
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+  
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch land",
+        loading: false,
+      });
+      return null; // Return null in case of error
     }
   }
 }));

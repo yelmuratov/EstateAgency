@@ -18,11 +18,13 @@ interface UserState {
     setUser: (user: User) => void;
     logoutUser: ()=> void;
     loading: boolean;
+    error: string | null;
 }
 
 export const UserStore = create<UserState>((set) => ({
     user: null,
     loading: false,
+    error: null,
     setUser: (user) => set({ user }),
     logoutUser: async() => {
         try{
@@ -30,8 +32,8 @@ export const UserStore = create<UserState>((set) => ({
             await api.post('/auth/logout').then(() => set({ user: null })),
             set({ loading: false });
         }catch(error){
-            console.error(error);
-            set({ loading: false });
+            set({ loading: false, error: error instanceof Error ? error.message : String(error) });
+            return error;
         }
     }
 }));

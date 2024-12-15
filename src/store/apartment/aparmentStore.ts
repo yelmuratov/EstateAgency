@@ -100,10 +100,12 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
         };
       };
   
-      console.error(
-        "Error fetching apartment by id:",
-        apiError.response?.data?.detail || apiError.message
-      );
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartment",
+        loading: false,
+      })
+
       return null;
     }
   },  

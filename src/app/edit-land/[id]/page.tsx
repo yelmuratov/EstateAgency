@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from 'lucide-react';
+import Image from "next/image";
 
 import {
   Select,
@@ -19,34 +20,26 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
-import { useApartmentStore } from "@/store/apartment/aparmentStore";
+import { useLandStore } from "@/store/land/landStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Toaster } from "@/components/ui/toaster";
-import Image from "next/image";
 import Spinner from "@/components/local-components/spinner";
 
-interface ApartmentFormData {
+interface LandFormData {
   district: string;
-  metro_st: string;
   title: string;
-  category: "apartment";
+  category: "land";
   action_type: "rent" | "sale";
   description?: string;
   comment?: string;
   price: number;
-  house_type: "new_building" | "secondary";
-  rooms: number;
   square_area: number;
-  floor_number: number;
-  floor: number;
-  bathroom: "seperated" | "combined" | "many";
-  furnished: boolean;
-  house_condition: "euro" | "normal" | "repair";
+  location: "city" | "suburb" | "countryside" | "along_road" | "near_pond" | "foothills" | "cottage_area" | "closed_area";
+  house_condition: "euro" | "repair" | "normal"
   current_status: "free" | "soon" | "busy";
-  name: string;
-  phone_number: string;
+  parking_place: boolean;
   agent_percent: number;
   agent_commission?: number;
   crm_id?: string;
@@ -54,7 +47,7 @@ interface ApartmentFormData {
   id?: number;
 }
 
-export default function EditApartmentForm() {
+export default function EditLandForm() {
   const { id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -63,130 +56,10 @@ export default function EditApartmentForm() {
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
 
-  const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
-  const { fetchApartmentById } = useApartmentStore(); 
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<ApartmentFormData>();
-
-  useEffect(() => {
-    fetchMetros();
-    fetchDistricts();
-  }, [fetchMetros, fetchDistricts]);
-
-  useEffect(() => {
-    const loadApartment = async () => {
-      if (id) {
-        try {
-          const apartmentData = await fetchApartmentById(Number(id));
-          if (apartmentData) {
-            reset({
-              ...apartmentData,
-              category: "apartment",
-              action_type: apartmentData.action_type as "rent" | "sale",
-              house_type: apartmentData.house_type as "new_building" | "secondary",
-              bathroom: apartmentData.bathroom as "seperated" | "combined" | "many",
-              house_condition: apartmentData.house_condition as "euro" | "normal" | "repair",
-              current_status: apartmentData.current_status as "free" | "soon" | "busy",
-            });
-            if (apartmentData.media) {
-              setPreviewImages(
-                apartmentData.media.map((m: { id: number; url: string }) => ({
-                  id: m.id,
-                  url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/${m.url}`,
-                }))
-              );
-            }
-          }
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to load apartment data.",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false); // Stop loading when data fetching is complete
-        }
-      }
-    };
-
-    loadApartment();
-  }, [id, fetchApartmentById, reset, toast]);
-
-  const [initialData, setInitialData] = useState<ApartmentFormData | null>(
-    null
-  );
-
-  useEffect(() => {
-    const loadApartment = async () => {
-      if (id) {
-        try {
-          const apartmentData = await fetchApartmentById(Number(id));
-          if (apartmentData) {
-            const mappedData: ApartmentFormData = {
-              district: apartmentData.district || "",
-              metro_st: apartmentData.metro_st || "",
-              title: apartmentData.title || "",
-              category: "apartment",
-              action_type: apartmentData.action_type as "rent" | "sale",
-              description: apartmentData.description || "",
-              comment: apartmentData.comment || "",
-              price: apartmentData.price || 0,
-              house_type: apartmentData.house_type as
-                | "new_building"
-                | "secondary",
-              rooms: apartmentData.rooms || 0,
-              square_area: apartmentData.square_area || 0,
-              floor_number: apartmentData.floor_number || 0,
-              floor: apartmentData.floor || 0,
-              bathroom: apartmentData.bathroom as
-                | "seperated"
-                | "combined"
-                | "many",
-              furnished: apartmentData.furnished || false,
-              house_condition: apartmentData.house_condition as
-                | "euro"
-                | "normal"
-                | "repair",
-              current_status: apartmentData.current_status as
-                | "free"
-                | "soon"
-                | "busy",
-              name: apartmentData.name || "",
-              phone_number: apartmentData.phone_number || "",
-              agent_percent: apartmentData.agent_percent || 0,
-              agent_commission: apartmentData.agent_commission || 0,
-              crm_id: apartmentData.crm_id || "",
-              responsible: apartmentData.responsible || "",
-              id: apartmentData.id || 0,
-            };
-
-            setInitialData(mappedData); // Set initial data for comparison
-            reset(mappedData); // Populate the form with initial values
-          }
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to load apartment data.",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-
-    loadApartment();
-  }, [id, fetchApartmentById, reset, toast]);
-
-  if(loading) {
-    return <Spinner theme="dark" />;
-  }
+  const { districts, fetchDistricts } = usePropertyStore();
+  const { fetchLandById } = useLandStore();
 
   const errorTranslations: { [key: string]: string } = {
     "401: This object created by another agent": "401: Этот объект создан другим агентом",
@@ -199,59 +72,151 @@ export default function EditApartmentForm() {
     return errorTranslations[message] || message; // Fallback to the original message
   };
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<LandFormData>();
 
-  const onSubmit = async (data: ApartmentFormData) => {
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
+
+  useEffect(() => {
+    const loadLand = async () => {
+      if (id) {
+        try {
+          const landData = await fetchLandById(Number(id));
+          if (landData) {
+            reset({
+              ...landData,
+              category: "land",
+              action_type: landData.action_type as "rent" | "sale",
+              location: landData.location as LandFormData["location"],
+              house_condition: landData.house_condition as LandFormData["house_condition"],
+              current_status: landData.current_status as "free" | "soon" | "busy",
+            });
+            if (landData.media) {
+              setPreviewImages(
+                landData.media.map((m: { id: number; url: string }) => ({
+                  id: m.id,
+                  url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/${m.url}`,
+                }))
+              );
+            }
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to load land data.",
+            variant: "destructive",
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadLand();
+  }, [id, fetchLandById, reset, toast]);
+
+  const [initialData, setInitialData] = useState<LandFormData | null>(null);
+
+  useEffect(() => {
+    const loadLand = async () => {
+      if (id) {
+        try {
+          const landData = await fetchLandById(Number(id));
+          if (landData) {
+            const mappedData: LandFormData = {
+              district: landData.district || "",
+              title: landData.title || "",
+              category: "land",
+              action_type: landData.action_type as "rent" | "sale",
+              description: landData.description || "",
+              comment: landData.comment || "",
+              price: landData.price || 0,
+              square_area: landData.square_area || 0,
+              location: landData.location as LandFormData["location"],
+              house_condition: landData.house_condition as LandFormData["house_condition"],
+              current_status: landData.current_status as "free" | "soon" | "busy",
+              parking_place: landData.parking_place || false,
+              agent_percent: landData.agent_percent || 0,
+              agent_commission: landData.agent_commission || 0,
+              crm_id: landData.crm_id || "",
+              responsible: landData.responsible || "",
+              id: landData.id || 0,
+            };
+
+            setInitialData(mappedData);
+            reset(mappedData);
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to load land data.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    loadLand();
+  }, [id, fetchLandById, reset, toast]);
+
+  if (loading) {
+    return <Spinner theme="dark" />;
+  }
+
+  const onSubmit = async (data: LandFormData) => {
     try {
       if (!initialData) {
         throw new Error("Initial data not loaded.");
       }
-  
+
       const queryParams: Record<string, string> = {};
-      let hasTextChanges = false; 
+      let hasTextChanges = false;
       let hasFileChanges = false;
-  
-      // Detect text changes (excluding media)
-      (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
+
+      (Object.keys(data) as (keyof LandFormData)[]).forEach((key) => {
         const currentValue = data[key];
         const initialValue = initialData[key];
-  
-        if (key !== "media" as keyof ApartmentFormData && currentValue !== initialValue) {
+
+        if (key !== "media" as keyof LandFormData && currentValue !== initialValue) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
         }
       });
-  
-      // Check for new media files
+
       if (mediaFiles && mediaFiles.length > 0) {
         hasFileChanges = true;
       }
-  
-      // Check for deleted images
+
       if (deletedImageIds.length > 0) {
         hasFileChanges = true;
       }
-  
-      // If no changes detected, exit early
+
       if (!hasTextChanges && !hasFileChanges) {
         toast({
-          title: "Изменения не обнаружены",
-          description: "Изменения не обнаружены",
+          title: "No changes detected",
+          description: "No changes were made to the land data.",
           variant: "default",
         });
         return;
       }
-  
+
       setIsSubmitting(true);
-  
-      // Step 1: Handle Deleted Images
+
       if (deletedImageIds.length > 0) {
         try {
           const uniqueDeletedIds = [...new Set(deletedImageIds)];
-          const queryParams = new URLSearchParams();
-          queryParams.append("table", "apartment");
-          uniqueDeletedIds.forEach((id) => queryParams.append("media", id.toString()));
-  
-          await api.delete(`/additional/delete_media/?${queryParams.toString()}`);
+          const deleteParams = new URLSearchParams();
+          deleteParams.append("table", "land");
+          uniqueDeletedIds.forEach((id) => deleteParams.append("media", id.toString()));
+
+          await api.delete(`/additional/delete_media/?${deleteParams.toString()}`);
           toast({
             title: "Success",
             description: "Deleted images successfully.",
@@ -263,85 +228,77 @@ export default function EditApartmentForm() {
             description: "Failed to delete images.",
             variant: "destructive",
           });
-          return; 
+          return;
         }
       }
-  
-      // Step 2: Handle PUT Request
+
       if (hasFileChanges || hasTextChanges) {
         const queryString = new URLSearchParams(queryParams).toString();
-        const url = `/apartment/${id}${queryString ? `?${queryString}` : ""}`;
-      
+        const url = `/land/${id}${queryString ? `?${queryString}` : ""}`;
+
         if (hasFileChanges) {
           const formData = new FormData();
-      
-          // Add media files only if they exist
+
           if (mediaFiles && mediaFiles?.length > 0) {
             for (const file of mediaFiles) {
               formData.append("media", file);
             }
-      
-            // Send request with FormData
+
             await api.put(url, formData, {
               headers: {
                 "Content-Type": "multipart/form-data",
               },
             });
-          } else {
-            console.warn("No media files to upload. Skipping FormData submission.");
           }
-        } 
-      
-        // Handle text changes separately
+        }
+
         if (hasTextChanges && !hasFileChanges) {
           await api.put(url, queryParams);
         }
-      
+
         toast({
           title: "Success",
-          description: "Apartment updated successfully.",
+          description: "Land updated successfully.",
           variant: "default",
         });
         router.push("/");
       }
     } catch (error: unknown) {
-      let errorMessage = "Произошла непредвиденная ошибка.";
-    
-      if (error && typeof error === "object" && "isAxiosError" in error) {
-        const axiosError = error as any;
-    
-        if (axiosError.response) {
-          const detail = axiosError.response.data?.detail;
-    
-          if (detail) {
-            errorMessage = translateError(detail); // Translate the error message
+        let errorMessage = "Произошла непредвиденная ошибка.";
+      
+        if (error && typeof error === "object" && "isAxiosError" in error) {
+          const axiosError = error as any;
+      
+          if (axiosError.response) {
+            const detail = axiosError.response.data?.detail;
+      
+            if (detail) {
+              errorMessage = translateError(detail); // Translate the error message
+            } else {
+              errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            }
           } else {
-            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            errorMessage = translateError("Network Error: Unable to reach the server.");
           }
-        } else {
-          errorMessage = translateError("Network Error: Unable to reach the server.");
+        } else if (error instanceof Error) {
+          errorMessage = translateError(error.message);
         }
-      } else if (error instanceof Error) {
-        errorMessage = translateError(error.message);
-      }
-    
-      toast({
-        title: "Ошибка",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    
-    } finally {
-      setIsSubmitting(false);
-    }      
+      
+        toast({
+          title: "Ошибка",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      
+      } finally {
+        setIsSubmitting(false);
+      }      
   };
-  
-  
-  
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files); // Store new files
-  
+    setMediaFiles(files);
+
     if (files) {
       const newPreviewImages: { id: number; url: string }[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -349,11 +306,11 @@ export default function EditApartmentForm() {
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push({
-              id: Date.now() + i, // Use a unique ID for new images
+              id: Date.now() + i,
               url: e.target.result as string,
             });
             if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images
+              setPreviewImages((prev) => [...prev, ...newPreviewImages]);
             }
           }
         };
@@ -361,20 +318,17 @@ export default function EditApartmentForm() {
       }
     }
   };
-  
-  
+
   const removeImage = (imageId: number) => {
-    // Remove the image ID from the preview
     setDeletedImageIds((prev) => [...prev, imageId]);
     setPreviewImages((prev) => prev.filter((image) => image.id !== imageId));
-  
+
     toast({
       title: "Image removed",
       description: "Image marked for deletion.",
       variant: "default",
     });
   };
-
 
   return (
     <DashboardLayout>
@@ -408,34 +362,6 @@ export default function EditApartmentForm() {
             {errors.district && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.district.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="metro_st">Метро</Label>
-            <Controller
-              name="metro_st"
-              control={control}
-              rules={{ required: "Это поле обязательно" }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите метро" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {metros.map((metro) => (
-                      <SelectItem key={metro.id} value={metro.name}>
-                        {metro.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.metro_st && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.metro_st.message}
               </p>
             )}
           </div>
@@ -502,49 +428,6 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="house_type">Тип жилья</Label>
-            <Controller
-              name="house_type"
-              control={control}
-              rules={{ required: "Это поле обязательно" }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите тип жилья" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new_building">Новостройка</SelectItem>
-                    <SelectItem value="secondary">Вторичное жилье</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.house_type && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.house_type.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="rooms">Количество комнат</Label>
-            <Input
-              id="rooms"
-              type="number"
-              {...register("rooms", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
-              })}
-              placeholder="Введите количество комнат"
-            />
-            {errors.rooms && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.rooms.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="square_area">Общая площадь</Label>
             <Input
               id="square_area"
@@ -563,63 +446,32 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="floor_number">Этажность</Label>
-            <Input
-              id="floor_number"
-              type="number"
-              {...register("floor_number", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
-              })}
-              placeholder="Введите этажность дома"
-            />
-            {errors.floor_number && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.floor_number.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="floor">Этаж</Label>
-            <Input
-              id="floor"
-              type="number"
-              {...register("floor", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
-              })}
-              placeholder="Введите этаж квартиры"
-            />
-            {errors.floor && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.floor.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bathroom">Санузел</Label>
+            <Label htmlFor="location">Расположение</Label>
             <Controller
-              name="bathroom"
+              name="location"
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Выберите тип санузла" />
+                    <SelectValue placeholder="Выберите расположение" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="seperated">Раздельный</SelectItem>
-                    <SelectItem value="combined">Совмещенный</SelectItem>
-                    <SelectItem value="many">Несколько</SelectItem>
+                    <SelectItem value="city">Город</SelectItem>
+                    <SelectItem value="suburb">Пригород</SelectItem>
+                    <SelectItem value="countryside">Сельская местность</SelectItem>
+                    <SelectItem value="along_road">Вдоль дороги</SelectItem>
+                    <SelectItem value="near_pond">У водоема</SelectItem>
+                    <SelectItem value="foothills">Предгорье</SelectItem>
+                    <SelectItem value="cottage_area">Дачный массив</SelectItem>
+                    <SelectItem value="closed_area">Закрытая территория</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
-            {errors.bathroom && (
+            {errors.location && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.bathroom.message}
+                {errors.location.message}
               </p>
             )}
           </div>
@@ -636,9 +488,9 @@ export default function EditApartmentForm() {
                     <SelectValue placeholder="Выберите состояние" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="euro">Евроремонт</SelectItem>
+                    <SelectItem value="euro">Евро</SelectItem>
+                    <SelectItem value="repair">Ремонт</SelectItem>
                     <SelectItem value="normal">Обычное</SelectItem>
-                    <SelectItem value="repair">Требует ремонта</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -677,57 +529,45 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Имя</Label>
-            <Input
-              id="name"
-              {...register("name", {
-                required: "Это поле обязательно",
-                minLength: { value: 3, message: "Минимум 3 символа" },
-                maxLength: { value: 100, message: "Максимум 100 символов" },
-              })}
-              placeholder="Введите имя"
+            <Label htmlFor="parking_place">Парковка</Label>
+            <Controller
+              name="parking_place"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={(value) => field.onChange(value === "true")}
+                  value={field.value ? "true" : "false"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Да</SelectItem>
+                    <SelectItem value="false">Нет</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone_number">Номер телефона</Label>
-            <Input
-              id="phone_number"
-              {...register("phone_number", {
-                required: "Это поле обязательно",
-                minLength: { value: 3, message: "Минимум 3 символа" },
-                maxLength: { value: 13, message: "Максимум 13 символов" },
-              })}
-              placeholder="Введите номер телефона"
-            />
-            {errors.phone_number && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.phone_number.message}
-              </p>
-            )}
-          </div>
-
-            <div className="space-y-2">
             <Label htmlFor="agent_percent">Процент агента</Label>
             <Input
               id="agent_percent"
               type="number"
-              step="0.01" // Allow floating point numbers
+              step="0.01"
               {...register("agent_percent", {
-              required: "Это поле обязательно",
-              valueAsNumber: true,
+                required: "Это поле обязательно",
+                valueAsNumber: true,
               })}
               placeholder="Введите процент агента"
             />
             {errors.agent_percent && (
               <p className="text-red-500 text-sm mt-1">
-              {errors.agent_percent.message}
+                {errors.agent_percent.message}
               </p>
             )}
-            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="agent_commission">Комиссия агента</Label>
@@ -807,21 +647,6 @@ export default function EditApartmentForm() {
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Controller
-            name="furnished"
-            control={control}
-            render={({ field }) => (
-              <Checkbox
-                id="furnished"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            )}
-          />
-          <Label htmlFor="furnished">Меблированная</Label>
-        </div>
-
         <div>
           <Label htmlFor="images">Фотографии</Label>
           <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
@@ -848,30 +673,26 @@ export default function EditApartmentForm() {
             </div>
           </div>
           {previewImages.length > 0 && (
-             <div>
-             {previewImages.length > 0 && (
-               <div className="mt-4 grid grid-cols-3 gap-4">
-                 {previewImages.map((image) => (
-                   <div key={image.id} className="relative">
-                     <Image
-                       src={image.url}
-                       alt={`Preview ${image.id}`}
-                       width={150}
-                       height={150}
-                       className="w-full h-32 object-cover rounded-md"
-                     />
-                     <button
-                       type="button"
-                       className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                       onClick={() => removeImage(image.id)} // Pass the image ID
-                     >
-                       ✕
-                     </button>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {previewImages.map((image) => (
+                <div key={image.id} className="relative">
+                  <Image
+                    src={image.url}
+                    alt={`Preview ${image.id}`}
+                    width={150}
+                    height={150}
+                    className="w-full h-32 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                    onClick={() => removeImage(image.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
         <Button type="submit" disabled={isSubmitting} className="w-full">
@@ -881,10 +702,9 @@ export default function EditApartmentForm() {
               Обновление...
             </>
           ) : (
-            "Обновить квартиру"
+            "Обновить земельный участок"
           )}
         </Button>
-        {/* cancel */}
         <Button
           type="button"
           onClick={() => router.push("/")}
@@ -897,3 +717,4 @@ export default function EditApartmentForm() {
     </DashboardLayout>
   );
 }
+

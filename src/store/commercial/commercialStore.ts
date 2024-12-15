@@ -21,16 +21,18 @@ interface Commercial {
   location: string;
   created_at: string;
   crm_id: string;
-  description: string;
-  furnished: boolean;
+  description?: string;
+  furnished?: boolean;
   updated_at: string;
-  comment: string;
-  house_condition: string;
+  comment?: string;
+  house_condition?: string;
   price: number;
-  current_status: string;
-  district: string;
-  responsible: string;
-  media: Media[];
+  current_status?: string;
+  district?: string;
+  responsible?: string;
+  floor_number?: number; // Optional field
+  parking_place?: boolean; // Optional field
+  media?: Media[];
 }
 
 interface CommercialStore {
@@ -39,6 +41,7 @@ interface CommercialStore {
   loading: boolean;
   error: string | null;
   fetchCommercials: (page: number, limit: number) => Promise<void>;
+  fetchCommercialById: (id: number) => Promise<Commercial | null>;
 }
 
 export const useCommercialStore = create<CommercialStore>((set) => ({
@@ -46,32 +49,49 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
   total: 0,
   loading: false,
   error: null,
+
+  // Fetch a paginated list of commercials
   fetchCommercials: async (page: number, limit: number) => {
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/commercial/?limit=${limit}&page=${page}`);
       set({
-        commercials: Array.isArray(response.data.data) ? response.data.data : [], // Use `data` key
-        total: response.data.total_count || 0, // Use `total_count` key
+        commercials: Array.isArray(response.data.data) ? response.data.data : [],
+        total: response.data.total_count || 0,
         loading: false,
       });
     } catch (error) {
-      // Define a specific error type
       const apiError = error as {
         message?: string;
-        response?: {
-          data?: {
-            detail?: string;
-          };
-        };
+        response?: { data?: { detail?: string } };
       };
-  
+
       set({
         error:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
         loading: false,
-        commercials: [], // Reset to an empty array in case of error
       });
     }
-  },  
+  },
+
+  // Fetch a single commercial by ID
+  fetchCommercialById: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get(`/commercial/${id}`);
+      return response.data as Commercial;
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercial",
+        loading: false,
+      });
+      return null;
+    }
+  },
 }));

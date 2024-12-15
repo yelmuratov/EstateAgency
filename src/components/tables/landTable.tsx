@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useLandStore } from "@/store/land/landStore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -43,15 +45,28 @@ const landConditionTranslation: { [key: string]: string } = {
   old: "Старый",
 };
 
+const locationOptions = [
+  { value: "city", label: "Город" },
+  { value: "suburb", label: "Пригород" },
+  { value: "countryside", label: "Сельская местность" },
+  { value: "along_road", label: "Вдоль дороги" },
+  { value: "near_pond", label: "У водоема" },
+  { value: "foothills", label: "Предгорье" },
+  { value: "cottage_area", label: "Дачный массив" },
+  { value: "closed_area", label: "Закрытая территория" },
+];
+
 const LandTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageLand")) || 1;
-  }); 
+  });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
+  const router = useRouter();
   const { lands, total, loading, error, fetchLands } = useLandStore();
 
   useEffect(() => {
@@ -82,7 +97,9 @@ const LandTable: React.FC = () => {
     setModalOpen(false);
   };
 
-  
+  const handleRowClick = (id: number) => {
+    setExpandedRow(expandedRow === id ? null : id);
+  };
 
   if (loading) {
     return <Spinner theme="dark" />;
@@ -95,17 +112,6 @@ const LandTable: React.FC = () => {
   if (lands.length === 0) {
     return <div>No lands available.</div>;
   }
-
-  const locationOptions = [
-    { value: "city", label: "Город" },
-    { value: "suburb", label: "Пригород" },
-    { value: "countryside", label: "Сельская местность" },
-    { value: "along_road", label: "Вдоль дороги" },
-    { value: "near_pond", label: "У водоема" },
-    { value: "foothills", label: "Предгорье" },
-    { value: "cottage_area", label: "Дачный массив" },
-    { value: "closed_area", label: "Закрытая территория" },
-  ];
 
   return (
     <div className="space-y-4">
@@ -151,95 +157,157 @@ const LandTable: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {lands.map((land, index) => (
-              <tr
-                key={land.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-              >
-                <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {(currentPage - 1) * itemsPerPage + index + 1}
-                </td>
-                <td className="w-[50px] p-2 text-center">
-                  <Checkbox
-                    checked={selectedRows.includes(land.id)}
-                    onCheckedChange={() => toggleRow(land.id)}
-                  />
-                </td>
-                <td className="p-2">
-                  <div
-                    className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
-                    onClick={() =>
-                      openModal(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
-                      )
-                    }
-                  >
-                    {land.media && land.media[0] ? (
-                      <Image
-                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
-                        alt={land.title || "Preview image"}
-                        layout="fill"
-                        objectFit="cover"
-                        className="bg-gray-200 dark:bg-gray-800"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                        Нет изображения
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {land.title}
-                  </div>
-                </td>
-                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  ${land.price}
-                </td>
-                <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {land.action_type === "rent" ? "Аренда" : "Продажа"}
-                </td>
-                <td className="text-sm text-gray-500 dark:text-gray-400">
-                  {locationOptions.find(
-                    (option) => option.value === land.location
-                  )?.label || land.location}
-                </td>
-                <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {landConditionTranslation[land.house_condition] ||
-                    land.house_condition}
-                </td>
-                <td className="p-2">
-                  <Badge
-                    className={
-                      statusConfig[
+              <React.Fragment key={land.id}>
+                <tr
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => handleRowClick(land.id)}
+                >
+                  <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
+                  <td className="w-[50px] p-2 text-center">
+                    <Checkbox
+                      checked={selectedRows.includes(land.id)}
+                      onCheckedChange={() => toggleRow(land.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                  <td className="p-2">
+                    <div
+                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openModal(
+                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
+                        );
+                      }}
+                    >
+                      {land.media && land.media[0] ? (
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
+                          alt={land.title || "Preview image"}
+                          layout="fill"
+                          objectFit="cover"
+                          className="bg-gray-200 dark:bg-gray-800"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                          Нет изображения
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {land.title}
+                    </div>
+                  </td>
+                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    ${land.price}
+                  </td>
+                  <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {land.action_type === "rent" ? "Аренда" : "Продажа"}
+                  </td>
+                  <td className="text-sm text-gray-500 dark:text-gray-400">
+                    {locationOptions.find(
+                      (option) => option.value === land.location
+                    )?.label || land.location}
+                  </td>
+                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {landConditionTranslation[land.house_condition] ||
+                      land.house_condition}
+                  </td>
+                  <td className="p-2">
+                    <Badge
+                      className={
+                        statusConfig[
+                          land.current_status as keyof typeof statusConfig
+                        ]?.className || ""
+                      }
+                    >
+                      {statusConfig[
                         land.current_status as keyof typeof statusConfig
-                      ]?.className || ""
-                    }
-                  >
-                    {statusConfig[
-                      land.current_status as keyof typeof statusConfig
-                    ]?.label || "Неизвестно"}
-                  </Badge>
-                </td>
-                <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                  {land.responsible}
-                </td>
-                <td className="p-2">
-                  <Button
-                    onClick={() => {
-                      window.location.href = `/edit-property/${land.id}`;
-                    }}
-                    variant="default"
-                  >
-                    Редактировать
-                  </Button>
-                </td>
-              </tr>
+                      ]?.label || "Неизвестно"}
+                    </Badge>
+                  </td>
+                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                    {land.responsible}
+                  </td>
+                  <td className="p-2">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/edit-land/${land.id}`);
+                      }}
+                      variant="default"
+                    >
+                      Редактировать
+                    </Button>
+                  </td>
+                </tr>
+                {expandedRow === land.id && (
+                  <tr className="bg-gray-50 dark:bg-gray-800">
+                    <td colSpan={11}>
+                      <div className="p-4 space-y-4 text-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
+                            <div className="text-gray-900 dark:text-gray-100">{land.square_area} м²</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
+                            <div className="text-gray-900 dark:text-gray-100">{land.parking_place ? "Да" : "Нет"}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
+                            <div className="text-gray-900 dark:text-gray-100">{land.crm_id || "Не указан"}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">Комиссия агента</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.agent_commission}% ({land.agent_percent})
+                            </div>
+                          </div>
+                          <div>
+                          <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                          <div className="text-gray-900 dark:text-gray-100">
+                            {land.description || "Описание отсутствует"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                          <div className="text-gray-900 dark:text-gray-100">
+                            {land.comment || "Комментарий отсутствует"}
+                          </div>
+                        </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {land.media.map((image) => (
+                              <div
+                                key={image.id}
+                                className="relative h-32 w-full border rounded-md overflow-hidden"
+                              >
+                                <Image
+                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                  alt="Apartment Image"
+                                  layout="fill"
+                                  objectFit="cover"
+                                  className="bg-gray-200 dark:bg-gray-800"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
       </div>
 
+      {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
         {lands.map((land) => (
           <Card
@@ -252,7 +320,7 @@ const LandTable: React.FC = () => {
                   {land.title}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {land.location}
+                  {locationOptions.find((option) => option.value === land.location)?.label || land.location}
                 </div>
                 <div className="text-sm text-gray-900 dark:text-gray-100">
                   ${land.price}
@@ -269,37 +337,72 @@ const LandTable: React.FC = () => {
                   ]?.label || "Неизвестно"}
                 </Badge>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex justify-between items-center">
                 <Button
-                  onClick={() => {
-                    window.location.href = `/edit-property/${land.id}`;
-                  }}
+                  onClick={() => router.push(`/edit-land/${land.id}`)}
                   variant="default"
                 >
                   Редактировать
                 </Button>
+                <Button
+                  onClick={() => handleRowClick(land.id)}
+                  variant="ghost"
+                  className="p-2"
+                >
+                  {expandedRow === land.id ? <ChevronUp /> : <ChevronDown />}
+                </Button>
               </div>
             </div>
+            {expandedRow === land.id && (
+              <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
+                    <div className="text-gray-900 dark:text-gray-100">{land.square_area} м²</div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
+                    <div className="text-gray-900 dark:text-gray-100">{land.parking_place ? "Да" : "Нет"}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    {land.description || "Описание отсутствует"}
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                  <div className="text-gray-900 dark:text-gray-100">
+                    {land.comment || "Комментарий отсутствует"}
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         ))}
       </div>
 
       {/* Modal for Image Preview */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={closeModal}
+        >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
             >
-              ✕
+              <span className="text-2xl font-bold">✕</span>
             </button>
             {modalImage && (
               <Image
                 src={modalImage}
                 alt="Preview"
-                width={600}
-                height={400}
+                className="rounded-lg shadow-lg max-w-full max-h-screen"
+                width={900}
+                height={600}
                 objectFit="contain"
               />
             )}
@@ -321,7 +424,6 @@ const LandTable: React.FC = () => {
           {Array.from({ length: Math.ceil(total / itemsPerPage) })
             .map((_, i) => i + 1)
             .filter((page) => {
-              // Only show the first, last, and neighboring pages
               return (
                 page === 1 ||
                 page === Math.ceil(total / itemsPerPage) ||
@@ -330,7 +432,6 @@ const LandTable: React.FC = () => {
             })
             .map((page, index, pages) => (
               <React.Fragment key={page}>
-                {/* Add ellipsis if there are skipped pages */}
                 {index > 0 && page > pages[index - 1] + 1 && (
                   <PaginationItem>
                     <PaginationEllipsis />
@@ -361,3 +462,4 @@ const LandTable: React.FC = () => {
 };
 
 export default LandTable;
+
