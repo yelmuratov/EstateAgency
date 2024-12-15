@@ -57,7 +57,7 @@ const houseTypeTranslation: { [key: string]: string } = {
   detached_building: "Отдельно стоящее здание",
 };
 
-const CommercialTable: React.FC = () => {
+const CommercialTable: React.FC = ({}) => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageCommercial")) || 1;
@@ -296,11 +296,16 @@ const CommercialTable: React.FC = () => {
                             {commercial.media && commercial.media.map((image) => (
                               <div
                                 key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden"
+                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                onClick={() =>
+                                  openModal(
+                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
+                                  )
+                                }
                               >
                                 <Image
                                   src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                  alt="Commercial Property Image"
+                                  alt="Apartment Image"
                                   layout="fill"
                                   objectFit="cover"
                                   className="bg-gray-200 dark:bg-gray-800"

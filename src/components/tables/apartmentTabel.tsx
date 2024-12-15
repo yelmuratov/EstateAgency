@@ -284,93 +284,126 @@ export default function PropertyTable() {
                     </td>
                   </tr>
                   {expandedRow === apartment.id && (
-  <tr className="bg-gray-50 dark:bg-gray-600">
-    <td colSpan={11}>
-      <div className="p-4 space-y-4 text-sm">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
-            <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.floor_number} из {apartment.floor}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {houseTypeTranslation[apartment.bathroom]}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Метро</div>
-            <div className="text-gray-900 dark:text-gray-100">{apartment.metro_st}</div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Комиссия агента</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.agent_commission}% ({apartment.agent_percent})
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
-            <div className="text-gray-900 dark:text-gray-100">{apartment.crm_id}</div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Мебель</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.furnished ? "Да" : "Нет"}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.description || "Описание отсутствует"}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.comment || "Комментарий отсутствует"}
-            </div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Ответственный</div>
-            <div className="text-gray-900 dark:text-gray-100">{apartment.responsible}</div>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
-            <div className="text-gray-900 dark:text-gray-100">
-              {apartment.name}, {apartment.phone_number}
-            </div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {apartment.media.map((image) => (
-            <div
-              key={image.id}
-              className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-              onClick={() =>
-                openModal(`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`)
-              }
-            >
-              <Image
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                alt="Apartment Image"
-                layout="fill"
-                objectFit="cover"
-                className="bg-gray-200 dark:bg-gray-800"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </td>
-  </tr>
-)}
-
+                    <tr className="bg-gray-50 dark:bg-gray-600">
+                      <td colSpan={11}>
+                        <div className="p-4 space-y-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комнаты
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.rooms}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Этаж
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.floor_number} из {apartment.floor}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ванная
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {houseTypeTranslation[apartment.bathroom]}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Метро
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.metro_st}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.agent_commission}% (
+                                {apartment.agent_percent})
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                CRM ID
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.crm_id}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Мебель
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.furnished ? "Да" : "Нет"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Описание
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.description ||
+                                  "Описание отсутствует"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комментарий
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.comment || "Комментарий отсутствует"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ответственный
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.responsible}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Контакты
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.name}, {apartment.phone_number}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {apartment.media.map((image) => (
+                              <div
+                                key={image.id}
+                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                onClick={() =>
+                                  openModal(
+                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
+                                  )
+                                }
+                              >
+                                <Image
+                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                  alt="Apartment Image"
+                                  layout="fill"
+                                  objectFit="cover"
+                                  className="bg-gray-200 dark:bg-gray-800"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </React.Fragment>
               ))
             ) : (

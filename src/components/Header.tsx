@@ -1,26 +1,56 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Search, Plus, ArrowLeft, LogOut, UserCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import Spinner from '@/components/local-components/spinner';
-import ThemeToggle from '@/components/ThemeToggle';
-import { UserStore } from '@/store/userStore';
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
-import { useAuthStore } from '@/store/authStore';
+import React, { useState, useEffect } from "react";
+import { Search, Plus, ArrowLeft, LogOut, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import Spinner from "@/components/local-components/spinner";
+import ThemeToggle from "@/components/ThemeToggle";
+import { UserStore } from "@/store/userStore";
+import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useAuthStore } from "@/store/authStore";
+import api from "@/lib/api"; // Assuming you have an API helper
 
 const Header: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [objectCount, setObjectCount] = useState<number | null>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logoutUser, loading } = UserStore(); // Extract Zustand actions at top level
-  const { clearToken } = useAuthStore(); // Extract Zustand actions at top level
-  const isAddPropertyPage = pathname === '/add-property';
+  const { user, logoutUser, loading } = UserStore();
+  const { clearToken, token } = useAuthStore();
+  const isAddPropertyPage = pathname === "/add-property";
+
+  // Fetch the object count
+  useEffect(() => {
+    const fetchObjectCount = async () => {
+      try {
+        const response = await api.get("/additional/get_all_object/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setObjectCount(response.data.total);
+      } catch (error) {
+        console.error("Failed to fetch object count:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load object count.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchObjectCount();
+  }, [token]);
 
   const handleAddPropertySelect = (path: string) => {
     if (pathname === path) {
@@ -31,28 +61,27 @@ const Header: React.FC = () => {
     }
   };
 
-  // Handle Logout
   const handleLogout = async () => {
     try {
-      setIsLoading(true); // Show the loading spinner
-
-      await logoutUser(); // Call API to logout
-      clearToken(); // Clear the token and reset auth state
+      setIsLoading(true);
+      await logoutUser();
+      clearToken();
 
       toast({
-        variant: 'default',
-        title: 'Logged out successfully',
-        description: 'You have been logged out.',
+        variant: "default",
+        title: "Logged out successfully",
+        description: "You have been logged out.",
       });
     } catch (error) {
       toast({
-        variant: 'destructive',
-        title: 'Logout Failed',
-        description: error instanceof Error ? error.message : 'Something went wrong.',
+        variant: "destructive",
+        title: "Logout Failed",
+        description:
+          error instanceof Error ? error.message : "Something went wrong.",
         action: <ToastAction altText="Try again">Попробуйте снова</ToastAction>,
       });
     } finally {
-      setIsLoading(false); // Stop the loading spinner
+      setIsLoading(false);
     }
   };
 
@@ -88,7 +117,11 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
             {!isAddPropertyPage && (
               <>
-                <span className="text-sm text-muted-foreground hidden md:block">12300 объектов</span>
+                <span className="text-sm text-muted-foreground hidden md:block">
+                  {objectCount !== null
+                    ? `${objectCount} объектов`
+                    : "Загрузка..."}
+                </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline">
@@ -96,13 +129,21 @@ const Header: React.FC = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="z-50">
-                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-apartment')}>
+                    <DropdownMenuItem
+                      onClick={() => handleAddPropertySelect("/add-apartment")}
+                    >
                       Добавить Квартиру
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-commercial')}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        handleAddPropertySelect("/add-commercial")
+                      }
+                    >
                       Добавить Коммерческую
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAddPropertySelect('/add-land')}>
+                    <DropdownMenuItem
+                      onClick={() => handleAddPropertySelect("/add-land")}
+                    >
                       Добавить Участок
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -122,10 +163,15 @@ const Header: React.FC = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-4 py-2 text-sm text-muted-foreground">
-                  <p className="font-semibold">{user?.full_name || 'Имя пользователя'}</p>
-                  <p>{user?.phone || 'Телефон'}</p>
+                  <p className="font-semibold">
+                    {user?.full_name || "Имя пользователя"}
+                  </p>
+                  <p>{user?.phone || "Телефон"}</p>
                 </div>
-                <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-500 cursor-pointer"
+                >
                   <LogOut className="mr-2 h-4 w-4" /> Выйти
                 </DropdownMenuItem>
               </DropdownMenuContent>

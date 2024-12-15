@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -19,6 +19,15 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
+
+interface Media {
+  id: number;
+  url: string;
+}
+
+interface Land {
+  media: Media[];
+}
 
 const statusConfig = {
   free: {
@@ -55,6 +64,7 @@ const locationOptions = [
   { value: "cottage_area", label: "Дачный массив" },
   { value: "closed_area", label: "Закрытая территория" },
 ];
+
 
 const LandTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -251,41 +261,65 @@ const LandTable: React.FC = () => {
                       <div className="p-4 space-y-4 text-sm">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
-                            <div className="text-gray-900 dark:text-gray-100">{land.square_area} м²</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Площадь
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.square_area} м²
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
-                            <div className="text-gray-900 dark:text-gray-100">{land.parking_place ? "Да" : "Нет"}</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Парковка
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.parking_place ? "Да" : "Нет"}
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
-                            <div className="text-gray-900 dark:text-gray-100">{land.crm_id || "Не указан"}</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              CRM ID
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.crm_id || "Не указан"}
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Комиссия агента</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Комиссия агента
+                            </div>
                             <div className="text-gray-900 dark:text-gray-100">
                               {land.agent_commission}% ({land.agent_percent})
                             </div>
                           </div>
                           <div>
-                          <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
-                          <div className="text-gray-900 dark:text-gray-100">
-                            {land.description || "Описание отсутствует"}
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Описание
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.description || "Описание отсутствует"}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
-                          <div className="text-gray-900 dark:text-gray-100">
-                            {land.comment || "Комментарий отсутствует"}
+                          <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Комментарий
+                            </div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {land.comment || "Комментарий отсутствует"}
+                            </div>
                           </div>
-                        </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {land.media.map((image) => (
+                          {land.media &&
+                            land.media.map((image: Media) => (
                               <div
                                 key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden"
+                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                onClick={() =>
+                                  openModal(
+                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
+                                  )
+                                }
                               >
                                 <Image
                                   src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
@@ -296,7 +330,7 @@ const LandTable: React.FC = () => {
                                 />
                               </div>
                             ))}
-                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -320,7 +354,9 @@ const LandTable: React.FC = () => {
                   {land.title}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {locationOptions.find((option) => option.value === land.location)?.label || land.location}
+                  {locationOptions.find(
+                    (option) => option.value === land.location
+                  )?.label || land.location}
                 </div>
                 <div className="text-sm text-gray-900 dark:text-gray-100">
                   ${land.price}
@@ -357,22 +393,34 @@ const LandTable: React.FC = () => {
               <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
-                    <div className="text-gray-900 dark:text-gray-100">{land.square_area} м²</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Площадь
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {land.square_area} м²
+                    </div>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
-                    <div className="text-gray-900 dark:text-gray-100">{land.parking_place ? "Да" : "Нет"}</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Парковка
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {land.parking_place ? "Да" : "Нет"}
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Описание
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {land.description || "Описание отсутствует"}
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Комментарий
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {land.comment || "Комментарий отсутствует"}
                   </div>
@@ -462,4 +510,3 @@ const LandTable: React.FC = () => {
 };
 
 export default LandTable;
-
