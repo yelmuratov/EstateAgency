@@ -76,15 +76,11 @@ export default function Dashboard() {
   }, [fetchUserData]);
 
   if (loading) {
-    return <Spinner theme={theme || "dark"} />;
+    return <Spinner theme={theme || "light"} />;
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500">Unable to load user data. Please log in again.</p>
-      </div>
-    );
+    router.push("/login");
   }
 
   return (

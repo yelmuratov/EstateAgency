@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import api from '@/lib/api';
 
 interface User{
     id: string | null;
@@ -15,11 +16,22 @@ interface User{
 interface UserState {
     user: User | null;
     setUser: (user: User) => void;
-    clearUser: () => void;
+    logoutUser: ()=> void;
+    loading: boolean;
 }
 
 export const UserStore = create<UserState>((set) => ({
     user: null,
+    loading: false,
     setUser: (user) => set({ user }),
-    clearUser: () => set({ user: null }),
+    logoutUser: async() => {
+        try{
+            set({ loading: true });
+            await api.post('/auth/logout').then(() => set({ user: null })),
+            set({ loading: false });
+        }catch(error){
+            console.error(error);
+            set({ loading: false });
+        }
+    }
 }));
