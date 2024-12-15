@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { useReportWebVitals } from 'next/web-vitals';
 import { useRouter } from "next/navigation";
 import { getUser } from "@/services/authService";
 import { useAuthStore } from "@/store/authStore";
@@ -20,48 +19,62 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "next-themes";
 
 // Lazy-load heavy components
-const ApartmentTable = dynamic(() => import('@/components/tables/apartmentTabel'));
-const LandTable = dynamic(() => import('@/components/tables/landTable'));
-const CommercialTable = dynamic(() => import('@/components/tables/commercialTable'));
+const ApartmentTable = dynamic(() => import('@/components/tables/apartmentTabel'), {
+  ssr: false,
+  loading: () => <Spinner theme="light" />,
+});
+const LandTable = dynamic(() => import('@/components/tables/landTable'), {
+  ssr: false,
+  loading: () => <Spinner theme="light" />,
+});
+const CommercialTable = dynamic(() => import('@/components/tables/commercialTable'), {
+  ssr: false,
+  loading: () => <Spinner theme="light" />,
+});
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>("apartments");
-  const { theme } = useTheme();
   const router = useRouter();
   const { token } = useAuthStore();
   const { toast } = useToast();
-  const { setUser, user } = UserStore();
+  const { setUser } = UserStore();
 
   useAuth();
 
-  useReportWebVitals((metric) => {
-    setTimeout(() => console.log(metric), 0); // Log Web Vitals asynchronously
-  });
-
   const fetchUserData = useCallback(async () => {
     if (!token) {
-      router.push("/login"); // Redirect if no token
+      router.replace("/login");
       return;
     }
+  
     try {
       const userData = await getUser();
-      setUser(userData.user);
-      setAuthToken(userData.token);
+  
+      if (!userData) {
+        throw new Error("Failed to retrieve user data.");
+      }
+  
+      setUser({ ...userData.user, id: userData.user.id.toString() }); // Convert id to string
+      setAuthToken(userData.token); // Assuming `setAuthToken` is a utility function
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred while fetching user data.";
       toast({
         variant: "destructive",
-        title: "Error!",
-        description: (error instanceof Error ? error.message : "An unexpected error occurred."),
+        title: "Error",
+        description: errorMessage,
       });
-      router.push("/login"); 
+  
+      router.replace("/login"); // Redirect to login if an error occurs
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop the loading indicator
     }
-  }, [token, router, toast, setUser]);
+  }, [token, router, toast, setUser]); 
 
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
@@ -69,17 +82,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const type = localStorage.getItem("selectedType") || "apartments";
-    setSelectedType(type);
+    const savedType = localStorage.getItem("selectedType") || "apartments";
+    setSelectedType(savedType);
     fetchUserData();
   }, [fetchUserData]);
 
-  if (loading) {
-    return <Spinner theme={theme || "light"} />;
-  }
-
-  if (!user) {
-    router.push("/login");
+  // Prevent rendering if user isn't authenticated
+  if (loading || !token) {
+    return <Spinner theme="light" />;
   }
 
   return (
@@ -113,14 +123,10 @@ export default function Dashboard() {
 
 // Helper function to map type to label
 function getLabel(type: string): string {
-  switch (type) {
-    case "apartments":
-      return "Квартиры";
-    case "lands":
-      return "Участки";
-    case "commercial":
-      return "Коммерция";
-    default:
-      return "Неизвестно";
-  }
+  const labels: Record<string, string> = {
+    apartments: "Квартиры",
+    lands: "Участки",
+    commercial: "Коммерция",
+  };
+  return labels[type] || "Неизвестно";
 }

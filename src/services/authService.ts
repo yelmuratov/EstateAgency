@@ -1,6 +1,5 @@
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore';
-import { useRouter } from 'next/router';
 
 interface LoginResponse {
   access_token: string,
@@ -26,16 +25,33 @@ export const logout = async (): Promise<void> => {
   await api.post('/auth/logout')
 }
 
-export const getUser = async (): Promise<any> => {
+interface User {
+  id: number;
+  full_name: string;
+  disabled: boolean;
+  created_at: string;
+  updated_at: string;
+  phone: string;
+  hashed_password: string; // This may not need to be exposed in your UI
+  email: string;
+  is_superuser: boolean;
+}
+
+interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+export const getUser = async (): Promise<AuthResponse | null> => {
   try {
-    const response = await api.get('/auth/me');
+    const response = await api.get<AuthResponse>('/auth/me');
     return response.data;
   } catch (err) {
     const apiError = err as {
       response?: {
         status?: number;
         data?: {
-          message?: string;
+          detail?: string;
         };
       };
       message?: string;
@@ -43,10 +59,10 @@ export const getUser = async (): Promise<any> => {
 
     if (apiError.response?.status === 401) {
       const { clearToken } = useAuthStore.getState();
-      const router = useRouter(); // Get the router instance
-      clearToken(router); // Pass the router to clearToken
+      clearToken(); // Clear the token on unauthorized response
     }
-    return err;
+
+    console.error("Error fetching user:", apiError.message);
+    return null; // Return null in case of an error
   }
 };
-

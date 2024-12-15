@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -19,13 +20,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useLandStore } from "@/store/land/landStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Toaster } from "@/components/ui/toaster";
 import Spinner from "@/components/local-components/spinner";
+import { UserStore } from "@/store/userStore";
+import useAuth from "@/hooks/useAuth";
 
 interface LandFormData {
   district: string;
@@ -56,10 +58,18 @@ export default function EditLandForm() {
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
+  useAuth();
 
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
   const { districts, fetchDistricts } = usePropertyStore();
   const { fetchLandById } = useLandStore();
+  const { user } = UserStore();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, router]);
 
   const errorTranslations: { [key: string]: string } = {
     "401: This object created by another agent": "401: Этот объект создан другим агентом",
@@ -110,7 +120,7 @@ export default function EditLandForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load land data.",
+            description: `Failed to load land data: ${error}`,
             variant: "destructive",
           });
         } finally {
@@ -156,7 +166,7 @@ export default function EditLandForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load land data.",
+            description: `Failed to load land data: ${error}`,
             variant: "destructive",
           });
         }
@@ -225,7 +235,7 @@ export default function EditLandForm() {
         } catch (deleteError) {
           toast({
             title: "Error",
-            description: "Failed to delete images.",
+            description: `Failed to delete images: ${deleteError}`,
             variant: "destructive",
           });
           return;
@@ -264,35 +274,43 @@ export default function EditLandForm() {
         router.push("/");
       }
     } catch (error: unknown) {
-        let errorMessage = "Произошла непредвиденная ошибка.";
-      
-        if (error && typeof error === "object" && "isAxiosError" in error) {
-          const axiosError = error as any;
-      
-          if (axiosError.response) {
-            const detail = axiosError.response.data?.detail;
-      
-            if (detail) {
-              errorMessage = translateError(detail); // Translate the error message
-            } else {
-              errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
-            }
+      let errorMessage = "Произошла непредвиденная ошибка.";
+    
+      if (error && typeof error === "object" && "isAxiosError" in error) {
+        const axiosError = error as AxiosError<{ detail?: string | Record<string, string> }>;
+    
+        if (axiosError.response) {
+          const detail = axiosError.response.data?.detail;
+    
+          if (typeof detail === "string") {
+            // Handle a single string error message
+            errorMessage = translateError(detail);
+          } else if (typeof detail === "object" && detail !== null) {
+            // Handle validation error object (e.g., 422)
+            errorMessage = Object.values(detail)
+              .map((msg) => `${msg}`)
+              .join(", ");
           } else {
-            errorMessage = translateError("Network Error: Unable to reach the server.");
+            // Fallback for server errors
+            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
           }
-        } else if (error instanceof Error) {
-          errorMessage = translateError(error.message);
+        } else {
+          // Network error
+          errorMessage = translateError("Network Error: Unable to reach the server.");
         }
-      
-        toast({
-          title: "Ошибка",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      
-      } finally {
-        setIsSubmitting(false);
-      }      
+      } else if (error instanceof Error) {
+        // Handle generic JavaScript errors
+        errorMessage = translateError(error.message);
+      }
+    
+      toast({
+        title: "Ошибка",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

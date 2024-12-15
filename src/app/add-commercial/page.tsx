@@ -6,10 +6,21 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { useRouter } from "next/navigation";
+import { UserStore } from "@/store/userStore";
+import useAuth from "@/hooks/useAuth";
 
 
 export default function AddCommercialPage() {
   const router = useRouter(); // Use Next.js useRouter hook
+
+  const { user } = UserStore();
+  useAuth();
+
+  if (!user) {
+    router.replace("/login");
+    return null; // Prevent further rendering until redirection
+  }
+
   return (
     <DashboardLayout>
       <Toaster />

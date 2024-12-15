@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -18,12 +19,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload} from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useCommercialStore } from "@/store/commercial/commercialStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Toaster } from "@/components/ui/toaster";
 import Spinner from "@/components/local-components/spinner";
+import { UserStore } from "@/store/userStore";
+import useAuth from "@/hooks/useAuth";
 
 interface CommercialFormData {
   district: string;
@@ -68,9 +71,16 @@ export default function EditCommercialPropertyForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
 
+  useAuth();
   const { districts, fetchDistricts } = usePropertyStore();
   const { fetchCommercialById } = useCommercialStore();
+  const { user } = UserStore();
 
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, router]);
   const {
     register,
     handleSubmit,
@@ -121,7 +131,7 @@ export default function EditCommercialPropertyForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load commercial property data.",
+            description: `Failed to load commercial property data: ${error}`,
             variant: "destructive",
           });
         } finally {
@@ -170,7 +180,7 @@ export default function EditCommercialPropertyForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load commercial property data.",
+            description: `Failed to load commercial property data: ${error}`,
             variant: "destructive",
           });
         }
@@ -239,7 +249,7 @@ export default function EditCommercialPropertyForm() {
         } catch (deleteError) {
           toast({
             title: "Error",
-            description: "Failed to delete images.",
+            description: `Failed to delete images: ${deleteError}`,
             variant: "destructive",
           });
           return;
@@ -279,28 +289,35 @@ export default function EditCommercialPropertyForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-  
-      // Check if AxiosError and response exist
+    
+      // Check if the error is an AxiosError
       if (error && typeof error === "object" && "isAxiosError" in error) {
-        const axiosError = error as any;
-  
+        const axiosError = error as AxiosError<{ detail?: string | Record<string, string> }>;
+    
         if (axiosError.response) {
-          // Handle detailed error messages (e.g., 422 validation error)
           const details = axiosError.response.data?.detail;
-          if (typeof details === "object") {
+    
+          if (details && typeof details === "object" && !Array.isArray(details)) {
+            // Handle validation error object (e.g., 422)
             errorMessage = Object.values(details)
               .map((msg) => `${msg}`)
               .join(", ");
+          } else if (typeof details === "string") {
+            // Handle single string error message
+            errorMessage = translateError(details);
           } else {
-            errorMessage = translateError(details || `Server Error: ${axiosError.response.status}`);
+            // Default fallback for server errors
+            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
           }
         } else {
+          // Network error fallback
           errorMessage = translateError("Network Error: Unable to reach the server.");
         }
       } else if (error instanceof Error) {
+        // Handle generic JavaScript errors
         errorMessage = translateError(error.message);
       }
-  
+    
       toast({
         title: "Ошибка",
         description: errorMessage,

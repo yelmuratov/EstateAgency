@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect} from "react";
+import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -26,6 +27,8 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { Toaster } from "@/components/ui/toaster";
 import Image from "next/image";
 import Spinner from "@/components/local-components/spinner";
+import { UserStore } from "@/store/userStore";
+import useAuth from "@/hooks/useAuth";
 
 interface ApartmentFormData {
   district: string;
@@ -63,10 +66,19 @@ export default function EditApartmentForm() {
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
+  useAuth();
 
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
   const { fetchApartmentById } = useApartmentStore(); 
+
+  const { user } = UserStore();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, router]);
 
   const {
     register,
@@ -108,7 +120,7 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load apartment data.",
+            description: `Failed to load apartment data: ${(error as Error).message}`,
             variant: "destructive",
           });
         } finally {
@@ -174,10 +186,10 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: "Failed to load apartment data.",
+            description: `Failed to load apartment data: ${(error as Error).message}`,
             variant: "destructive",
           });
-        }
+        } 
       }
     };
 
@@ -260,7 +272,7 @@ export default function EditApartmentForm() {
         } catch (deleteError) {
           toast({
             title: "Error",
-            description: "Failed to delete images.",
+            description: `Failed to delete images: ${(deleteError as Error).message}`,
             variant: "destructive",
           });
           return; 
@@ -306,13 +318,13 @@ export default function EditApartmentForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-    
+      
       if (error && typeof error === "object" && "isAxiosError" in error) {
-        const axiosError = error as any;
-    
+        const axiosError = error as AxiosError<{ detail?: string }>;
+        
         if (axiosError.response) {
           const detail = axiosError.response.data?.detail;
-    
+          
           if (detail) {
             errorMessage = translateError(detail); // Translate the error message
           } else {
@@ -324,16 +336,15 @@ export default function EditApartmentForm() {
       } else if (error instanceof Error) {
         errorMessage = translateError(error.message);
       }
-    
+      
       toast({
         title: "Ошибка",
         description: errorMessage,
         variant: "destructive",
       });
-    
     } finally {
       setIsSubmitting(false);
-    }      
+    }
   };
   
   

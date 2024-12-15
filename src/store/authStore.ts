@@ -1,10 +1,9 @@
 import { create } from 'zustand';
-import { useRouter } from 'next/router';
 
 interface AuthState {
   token: string | null;
   setToken: (token: string) => void;
-  clearToken: (router: ReturnType<typeof useRouter>) => void;
+  clearToken: () => void;
 }
 
 // Helper function to get token from cookies (client-side only)
@@ -27,12 +26,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     document.cookie = `auth_token=${token}; path=/;`;
     set({ token });
   },
-  clearToken: (router) => {
+  clearToken: () => {
     // Remove token from cookies (no 'secure' attribute for HTTP)
     document.cookie = `auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
     set({ token: null });
-    const routerInstance = router;
-    routerInstance.push('/login');
   },
 }));
 

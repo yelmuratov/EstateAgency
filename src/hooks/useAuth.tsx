@@ -23,9 +23,15 @@ const useAuth = () => {
       }
       try {
         const userData = await getUser(); // Fetch user data
-        setUser(userData.user); // Save user data in the store
-        setAuthToken(userData.token); // Set token for API requests
-        setToken(userData.token); // Update token in the store if refreshed
+        if (userData && userData.user) {
+          setUser({ ...userData.user, id: userData.user.id.toString() }); // Save user data in the store
+        }
+        if (userData) {
+          setAuthToken(userData.token); // Set token for API requests
+        }
+        if (userData) {
+          setToken(userData.token); // Update token in the store if refreshed
+        }
       } catch (error) {
         toast({
           variant: "destructive",

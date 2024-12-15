@@ -284,120 +284,93 @@ export default function PropertyTable() {
                     </td>
                   </tr>
                   {expandedRow === apartment.id && (
-                    <tr className="bg-gray-50 dark:bg-gray-600">
-                      <td colSpan={11}>
-                        <div className="p-4 space-y-4 text-sm">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Комнаты
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.rooms}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Этаж
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.floor_number} из {apartment.floor}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Ванная
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {houseTypeTranslation[apartment.bathroom]}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Метро
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.metro_st}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Комиссия агента
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.agent_commission}% (
-                                {apartment.agent_percent})
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                CRM ID
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.crm_id}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Мебель
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.furnished ? "Да" : "Нет"}
-                              </div>
-                            </div>
-                            <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Описание
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {apartment.description || "Описание отсутствует"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Комментарий
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {apartment.comment || "Комментарий отсутствует"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Ответственный
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {apartment.responsible}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Контакты
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {apartment.name}, {apartment.phone_number}
-                            </div>
-                          </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {apartment.media.map((image) => (
-                              <div
-                                key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden"
-                              >
-                                <Image
-                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                  alt="Apartment Image"
-                                  layout="fill"
-                                  objectFit="cover"
-                                  className="bg-gray-200 dark:bg-gray-800"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+  <tr className="bg-gray-50 dark:bg-gray-600">
+    <td colSpan={11}>
+      <div className="p-4 space-y-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
+            <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.floor_number} из {apartment.floor}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {houseTypeTranslation[apartment.bathroom]}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Метро</div>
+            <div className="text-gray-900 dark:text-gray-100">{apartment.metro_st}</div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Комиссия агента</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.agent_commission}% ({apartment.agent_percent})
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
+            <div className="text-gray-900 dark:text-gray-100">{apartment.crm_id}</div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Мебель</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.furnished ? "Да" : "Нет"}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.description || "Описание отсутствует"}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.comment || "Комментарий отсутствует"}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Ответственный</div>
+            <div className="text-gray-900 dark:text-gray-100">{apartment.responsible}</div>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
+            <div className="text-gray-900 dark:text-gray-100">
+              {apartment.name}, {apartment.phone_number}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {apartment.media.map((image) => (
+            <div
+              key={image.id}
+              className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+              onClick={() =>
+                openModal(`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`)
+              }
+            >
+              <Image
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                alt="Apartment Image"
+                layout="fill"
+                objectFit="cover"
+                className="bg-gray-200 dark:bg-gray-800"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </td>
+  </tr>
+)}
+
                 </React.Fragment>
               ))
             ) : (
@@ -498,7 +471,8 @@ export default function PropertyTable() {
                       Ванная
                     </div>
                     <div className="text-gray-900 dark:text-gray-100">
-                      {houseTypeTranslation[apartment.bathroom]|| apartment.bathroom}
+                      {houseTypeTranslation[apartment.bathroom] ||
+                        apartment.bathroom}
                     </div>
                   </div>
                 </div>
@@ -525,17 +499,22 @@ export default function PropertyTable() {
       </div>
 
       {/* Modal for Image Preview */}
+      {/* Modal for Image Preview */}
       {modalOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={closeModal}
         >
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative max-w-3xl max-h-screen p-4"
+            onClick={(e) => e.stopPropagation()} // Prevents closing modal on inner click
+          >
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+              aria-label="Close"
             >
-              <span className="text-2xl font-bold">✕</span>
+              ✕
             </button>
             {modalImage && (
               <Image

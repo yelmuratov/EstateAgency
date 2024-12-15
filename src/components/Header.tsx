@@ -7,21 +7,20 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import {useRouter as useRouterLog} from 'next/router';
-import Spinner from '@/components/local-components/spinner'; // Assuming you have a Spinner component
+import Spinner from '@/components/local-components/spinner';
 import ThemeToggle from '@/components/ThemeToggle';
 import { UserStore } from '@/store/userStore';
 import { toast } from '@/hooks/use-toast';
-import { ToastAction } from "@/components/ui/toast"
+import { ToastAction } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/authStore';
 
 const Header: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logoutUser,loading } = UserStore();// Assuming `user` and `logout` exist in your store
+  const { user, logoutUser, loading } = UserStore(); // Extract Zustand actions at top level
+  const { clearToken } = useAuthStore(); // Extract Zustand actions at top level
   const isAddPropertyPage = pathname === '/add-property';
-  const { clearToken } = useAuthStore();
 
   const handleAddPropertySelect = (path: string) => {
     if (pathname === path) {
@@ -33,24 +32,31 @@ const Header: React.FC = () => {
   };
 
   // Handle Logout
-  const handleLogout = () => {
-    try{
-     const routeInstance = useRouterLog();
-     clearToken(routeInstance); // Clears token from your auth store
-     logoutUser(); // Clears user session (from your auth store)
-    }catch(error){
+  const handleLogout = async () => {
+    try {
+      setIsLoading(true); // Show the loading spinner
+
+      await logoutUser(); // Call API to logout
+      clearToken(); // Clear the token and reset auth state
+
       toast({
-        variant: "destructive",
-        title: error instanceof Error ? error.message : String(error),
-        description: "There was a problem with your request.",
-        action: <ToastAction altText="Try again">
-          Попробуйте снова
-        </ToastAction>,
-      })
+        variant: 'default',
+        title: 'Logged out successfully',
+        description: 'You have been logged out.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: error instanceof Error ? error.message : 'Something went wrong.',
+        action: <ToastAction altText="Try again">Попробуйте снова</ToastAction>,
+      });
+    } finally {
+      setIsLoading(false); // Stop the loading spinner
     }
   };
 
-  if(loading){
+  if (loading) {
     return <Spinner theme="dark" />;
   }
 
@@ -78,7 +84,7 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Right Section: Theme Toggle, Profile Dropdown */}
+          {/* Right Section */}
           <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
             {!isAddPropertyPage && (
               <>
@@ -116,7 +122,6 @@ const Header: React.FC = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-4 py-2 text-sm text-muted-foreground">
-                  {/* Display User Name and Phone */}
                   <p className="font-semibold">{user?.full_name || 'Имя пользователя'}</p>
                   <p>{user?.phone || 'Телефон'}</p>
                 </div>

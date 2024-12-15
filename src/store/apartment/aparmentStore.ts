@@ -48,13 +48,15 @@ interface ApartmentStore {
   error: string | null;
   fetchApartments: (page: number, limit: number) => Promise<void>;
   fetchApartmentById: (id: number) => Promise<Apartment | null>;
+  hydrateApartments: (apartments: Apartment[], total: number) => void; // SSR Hydration
 }
 
-export const useApartmentStore = create<ApartmentStore>((set) => ({
+export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   apartments: [],
   total: 0,
   loading: false,
   error: null,
+
   fetchApartments: async (page: number, limit: number) => {
     set({ loading: true, error: null });
     try {
@@ -65,16 +67,10 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
         loading: false,
       });
     } catch (error) {
-      // Define a specific type for the error object
       const apiError = error as {
         message?: string;
-        response?: {
-          data?: {
-            detail?: string;
-          };
-        };
+        response?: { data?: { detail?: string } };
       };
-  
       set({
         error:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
@@ -83,30 +79,38 @@ export const useApartmentStore = create<ApartmentStore>((set) => ({
       });
     }
   },
+
   fetchApartmentById: async (id: number) => {
+    const { apartments } = get();
+
+    // Check if the apartment is already in the store
+    const cachedApartment = apartments.find((apt) => apt.id === id);
+    if (cachedApartment) {
+      return cachedApartment;
+    }
+
     try {
-      console.log('fetching id:', id);
       const response = await api.get(`/apartment/${id}`);
-      console.log('response:', response.data);
       return response.data;
     } catch (error) {
-      // Define a specific type for the error object
       const apiError = error as {
         message?: string;
-        response?: {
-          data?: {
-            detail?: string;
-          };
-        };
+        response?: { data?: { detail?: string } };
       };
-  
       set({
         error:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartment",
         loading: false,
-      })
-
+      });
       return null;
     }
-  },  
+  },
+
+  hydrateApartments: (apartments, total) => {
+    set({
+      apartments,
+      total,
+      loading: false,
+    });
+  },
 }));

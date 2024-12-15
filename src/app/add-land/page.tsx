@@ -6,10 +6,23 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Toaster } from "@/components/ui/toaster";
 import { useRouter } from "next/navigation";
+import { UserStore } from "@/store/userStore";
+import useAuth from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 
 export default function AddLandPage() {
   const router = useRouter(); // Use Next.js useRouter hook
+
+  const { user } = UserStore();
+  useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/login"); // Use router to redirect
+    }
+  }, [user, router]);
+
   return (
     <DashboardLayout>
       <Toaster />
