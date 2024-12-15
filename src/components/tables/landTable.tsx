@@ -25,10 +25,6 @@ interface Media {
   url: string;
 }
 
-interface Land {
-  media: Media[];
-}
-
 const statusConfig = {
   free: {
     label: "Свободный",
