@@ -349,14 +349,6 @@ export default function EditApartmentForm() {
 
   return (
     <DashboardLayout>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => router.push('/')} // Redirect to home page
-        className="mb-4"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" /> Назад
-      </Button>
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-6 max-w-2xl mx-auto"
@@ -862,6 +854,15 @@ export default function EditApartmentForm() {
           ) : (
             "Обновить квартиру"
           )}
+        </Button>
+        {/* cancel */}
+        <Button
+          type="button"
+          onClick={() => router.push("/")}
+          className="w-full"
+        >
+          <ArrowLeft className="mr-2" />
+          Назад
         </Button>
       </form>
     </DashboardLayout>

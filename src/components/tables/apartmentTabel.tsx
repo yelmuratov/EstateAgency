@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
   Pagination,
@@ -89,9 +89,9 @@ const houseTypeTranslation: { [key: string]: string } = {
   euro: "Евроремонт",
   rent: "Аренда",
   sale: "Продажа",
-  seperated:"Раздельный",
-  combined:"Совмещенный",
-  many:"Несколько"
+  seperated: "Раздельный",
+  combined: "Совмещенный",
+  many: "Несколько",
 };
 
 export default function PropertyTable() {
@@ -142,7 +142,9 @@ export default function PropertyTable() {
   };
 
   if (error) {
-    return <div className="text-center text-red-500 dark:text-red-400">{error}</div>;
+    return (
+      <div className="text-center text-red-500 dark:text-red-400">{error}</div>
+    );
   }
 
   return (
@@ -240,12 +242,15 @@ export default function PropertyTable() {
                       ${apartment.price}
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                      {houseTypeTranslation[apartment.action_type]||apartment.action_type}
+                      {houseTypeTranslation[apartment.action_type] ||
+                        apartment.action_type}
                     </td>
                     <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                      {houseTypeTranslation[apartment.house_type] || apartment.house_type}
+                      {houseTypeTranslation[apartment.house_type] ||
+                        apartment.house_type}
                       <br />
-                      {houseTypeTranslation[apartment.house_condition] || apartment.house_condition}
+                      {houseTypeTranslation[apartment.house_condition] ||
+                        apartment.house_condition}
                     </td>
                     <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                       {new Date(apartment.created_at).toLocaleDateString()}
@@ -253,12 +258,14 @@ export default function PropertyTable() {
                     <td className="p-2">
                       <Badge
                         className={
-                          statusConfig[apartment.current_status as keyof typeof statusConfig]
-                            ?.className || ""
+                          statusConfig[
+                            apartment.current_status as keyof typeof statusConfig
+                          ]?.className || ""
                         }
                       >
-                        {statusConfig[apartment.current_status as keyof typeof statusConfig]?.label ||
-                          "Неизвестно"}
+                        {statusConfig[
+                          apartment.current_status as keyof typeof statusConfig
+                        ]?.label || "Неизвестно"}
                       </Badge>
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
@@ -277,55 +284,79 @@ export default function PropertyTable() {
                     </td>
                   </tr>
                   {expandedRow === apartment.id && (
-                    <tr className="bg-gray-50 dark:bg-gray-800">
+                    <tr className="bg-gray-50 dark:bg-gray-600">
                       <td colSpan={11}>
                         <div className="p-4 space-y-4 text-sm">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
-                              <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комнаты
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.rooms}
+                              </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Этаж
+                              </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.floor_number} из {apartment.floor}
                               </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
-                              <div className="text-gray-900 dark:text-gray-100">{houseTypeTranslation[apartment.bathroom]}</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ванная
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {houseTypeTranslation[apartment.bathroom]}
+                              </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Метро</div>
-                              <div className="text-gray-900 dark:text-gray-100">{apartment.metro_st}</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Метро
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.metro_st}
+                              </div>
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Комиссия агента
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.agent_commission}% ({apartment.agent_percent})
+                                {apartment.agent_commission}% (
+                                {apartment.agent_percent})
                               </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
-                              <div className="text-gray-900 dark:text-gray-100">{apartment.crm_id}</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                CRM ID
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.crm_id}
+                              </div>
                             </div>
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Мебель</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Мебель
+                              </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.furnished ? "Да" : "Нет"}
                               </div>
                             </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                            <div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Описание
+                            </div>
                             <div className="text-gray-900 dark:text-gray-100">
                               {apartment.description || "Описание отсутствует"}
                             </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Комментарий
+                            </div>
                             <div className="text-gray-900 dark:text-gray-100">
                               {apartment.comment || "Комментарий отсутствует"}
                             </div>
@@ -334,13 +365,34 @@ export default function PropertyTable() {
                             <div className="font-medium text-gray-500 dark:text-gray-400">
                               Ответственный
                             </div>
-                            <div className="text-gray-900 dark:text-gray-100">{apartment.responsible}</div>
+                            <div className="text-gray-900 dark:text-gray-100">
+                              {apartment.responsible}
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
+                            <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Контакты
+                            </div>
                             <div className="text-gray-900 dark:text-gray-100">
                               {apartment.name}, {apartment.phone_number}
                             </div>
+                          </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {apartment.media.map((image) => (
+                              <div
+                                key={image.id}
+                                className="relative h-32 w-full border rounded-md overflow-hidden"
+                              >
+                                <Image
+                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                  alt="Apartment Image"
+                                  layout="fill"
+                                  objectFit="cover"
+                                  className="bg-gray-200 dark:bg-gray-800"
+                                />
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </td>
@@ -382,10 +434,14 @@ export default function PropertyTable() {
                 </div>
                 <Badge
                   className={
-                    statusConfig[apartment.current_status as keyof typeof statusConfig]?.className || ""
+                    statusConfig[
+                      apartment.current_status as keyof typeof statusConfig
+                    ]?.className || ""
                   }
                 >
-                  {statusConfig[apartment.current_status as keyof typeof statusConfig]?.label || "Неизвестно"}
+                  {statusConfig[
+                    apartment.current_status as keyof typeof statusConfig
+                  ]?.label || "Неизвестно"}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
@@ -402,7 +458,11 @@ export default function PropertyTable() {
                   variant="ghost"
                   className="p-2"
                 >
-                  {expandedRow === apartment.id ? <ChevronUp /> : <ChevronDown />}
+                  {expandedRow === apartment.id ? (
+                    <ChevronUp />
+                  ) : (
+                    <ChevronDown />
+                  )}
                 </Button>
               </div>
             </div>
@@ -410,32 +470,50 @@ export default function PropertyTable() {
               <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Комнаты</div>
-                    <div className="text-gray-900 dark:text-gray-100">{apartment.rooms}</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Комнаты
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {apartment.rooms}
+                    </div>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
-                    <div className="text-gray-900 dark:text-gray-100">{apartment.square_area} м²</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Площадь
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {apartment.square_area} м²
+                    </div>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Этаж</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Этаж
+                    </div>
                     <div className="text-gray-900 dark:text-gray-100">
                       {apartment.floor_number} из {apartment.floor}
                     </div>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Ванная</div>
-                    <div className="text-gray-900 dark:text-gray-100">{apartment.bathroom}</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Ванная
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {houseTypeTranslation[apartment.bathroom]|| apartment.bathroom}
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Описание
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {apartment.description || "Описание отсутствует"}
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Контакты</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Контакты
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {apartment.name}, {apartment.phone_number}
                   </div>
@@ -452,10 +530,7 @@ export default function PropertyTable() {
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={closeModal}
         >
-          <div
-            className="relative"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
@@ -526,4 +601,3 @@ export default function PropertyTable() {
     </div>
   );
 }
-
