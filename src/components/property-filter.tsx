@@ -1,49 +1,59 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect } from "react"
+import usePropertyStore from "@/store/MetroDistrict/propertyStore"
+import { useApartmentStore } from "@/store/apartment/aparmentStore"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-interface FilterValues {
-  region: string
-  metro: string
-  title: string
-  price: string
-  housingType: string
-  rooms: string
-  area: string
-  totalFloors: string
-  floor: string
-  bathroom: string
-  furnished: string
-  condition: string
-}
 
 interface PropertyFilterProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onApplyFilters: (filters: Record<string, string>) => void
 }
 
-const regions = ['Мирзо Улугбек', 'Юнусабад', 'Чиланзар', 'Шайхантахур', 'Сергелий']
-const metroStations = ['Буюк Ипак Йули', 'Минор', 'Хамид Алимжан', 'Чорсу', 'Алишер Навои']
+export function PropertyFilter({
+  open,
+  onOpenChange,
+  onApplyFilters,
+}: PropertyFilterProps) {
+  const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore()
+  const { filterApartments } = useApartmentStore()
 
-export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
-  const [filters, setFilters] = useState<FilterValues>({
-    region: '',
-    metro: '',
-    title: '',
-    price: '',
-    housingType: '',
-    rooms: '',
-    area: '',
-    totalFloors: '',
-    floor: '',
-    bathroom: '',
-    furnished: '',
-    condition: '',
+  useEffect(() => {
+    fetchMetros()
+    fetchDistricts()
+  }, [fetchMetros, fetchDistricts])
+
+  const [filters, setFilters] = useState<Record<string, string>>({
+    region: "",
+    metro: "",
+    title: "",
+    price: "",
+    housingType: "",
+    rooms: "",
+    area: "",
+    totalFloors: "",
+    floor: "",
+    bathroom: "",
+    furnished: "",
+    condition: "",
   })
 
   const handleChange = (name: string, value: string) => {
@@ -52,11 +62,37 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
 
   const handleSubmit = () => {
     const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
+
+    // Use `Set` to ensure uniqueness
+    const uniqueFilters = new Set(Object.entries(filters))
+
+    uniqueFilters.forEach(([key, value]) => {
       if (value) params.append(key, value)
     })
-    console.log('Applied Filters:', params.toString())
-    onOpenChange(false)
+    
+    filterApartments(Object.fromEntries(params.entries())) // Convert to plain object for API usage
+    onApplyFilters(Object.fromEntries(uniqueFilters)) // Pass unique filters back
+    onOpenChange(false) // Close the modal
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      region: "",
+      metro: "",
+      title: "",
+      price: "",
+      housingType: "",
+      rooms: "",
+      area: "",
+      totalFloors: "",
+      floor: "",
+      bathroom: "",
+      furnished: "",
+      condition: "",
+    })
+    filterApartments({}) // Clear all filters from the API
+    onApplyFilters({}) // Pass back an empty object
+    onOpenChange(false) // Close the modal
   }
 
   return (
@@ -70,14 +106,17 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Район</Label>
-              <Select onValueChange={(value) => handleChange('region', value)} value={filters.region}>
+              <Select
+                onValueChange={(value) => handleChange("region", value)}
+                value={filters.region}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите район" />
                 </SelectTrigger>
                 <SelectContent>
-                  {regions.map((region) => (
-                    <SelectItem key={region} value={region}>
-                      {region}
+                  {districts.map((district) => (
+                    <SelectItem key={district.id} value={district.name}>
+                      {district.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -85,14 +124,17 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
             </div>
             <div>
               <Label>Метро</Label>
-              <Select onValueChange={(value) => handleChange('metro', value)} value={filters.metro}>
+              <Select
+                onValueChange={(value) => handleChange("metro", value)}
+                value={filters.metro}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите станцию метро" />
                 </SelectTrigger>
                 <SelectContent>
-                  {metroStations.map((station) => (
-                    <SelectItem key={station} value={station}>
-                      {station}
+                  {metros.map((metro) => (
+                    <SelectItem key={metro.id} value={metro.name}>
+                      {metro.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -106,7 +148,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
             <Input
               placeholder="Проспект Амир Темур 5/5/2"
               value={filters.title}
-              onChange={(e) => handleChange('title', e.target.value)}
+              onChange={(e) => handleChange("title", e.target.value)}
             />
           </div>
 
@@ -117,20 +159,23 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
               type="number"
               placeholder="300000$"
               value={filters.price}
-              onChange={(e) => handleChange('price', e.target.value)}
+              onChange={(e) => handleChange("price", e.target.value)}
             />
           </div>
 
           {/* Housing Type */}
           <div>
             <Label>Тип жилья</Label>
-            <Select onValueChange={(value) => handleChange('housingType', value)} value={filters.housingType}>
+            <Select
+              onValueChange={(value) => handleChange("housingType", value)}
+              value={filters.housingType}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Выберите тип" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Новостройка">Новостройка</SelectItem>
-                <SelectItem value="Вторичка">Вторичка</SelectItem>
+                <SelectItem value="new_building">Новостройка</SelectItem>
+                <SelectItem value="secondary">Вторичка</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -141,7 +186,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
             <Input
               placeholder="1/2/3/4/5/6"
               value={filters.rooms}
-              onChange={(e) => handleChange('rooms', e.target.value)}
+              onChange={(e) => handleChange("rooms", e.target.value)}
             />
           </div>
 
@@ -152,7 +197,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
               type="number"
               placeholder="200"
               value={filters.area}
-              onChange={(e) => handleChange('area', e.target.value)}
+              onChange={(e) => handleChange("area", e.target.value)}
             />
           </div>
 
@@ -164,7 +209,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
                 type="number"
                 placeholder="23"
                 value={filters.totalFloors}
-                onChange={(e) => handleChange('totalFloors', e.target.value)}
+                onChange={(e) => handleChange("totalFloors", e.target.value)}
               />
             </div>
             <div>
@@ -173,7 +218,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
                 type="number"
                 placeholder="10"
                 value={filters.floor}
-                onChange={(e) => handleChange('floor', e.target.value)}
+                onChange={(e) => handleChange("floor", e.target.value)}
               />
             </div>
           </div>
@@ -181,14 +226,17 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
           {/* Bathroom */}
           <div>
             <Label>Санузел</Label>
-            <Select onValueChange={(value) => handleChange('bathroom', value)} value={filters.bathroom}>
+            <Select
+              onValueChange={(value) => handleChange("bathroom", value)}
+              value={filters.bathroom}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Выберите тип" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Раздельный">Раздельный</SelectItem>
-                <SelectItem value="Совмещенный">Совмещенный</SelectItem>
-                <SelectItem value="2 и более">2 и более</SelectItem>
+                <SelectItem value="separated">Раздельный</SelectItem>
+                <SelectItem value="combined">Совмещенный</SelectItem>
+                <SelectItem value="multiple">2 и более</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -196,13 +244,16 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
           {/* Furnished */}
           <div>
             <Label>Меблирован</Label>
-            <Select onValueChange={(value) => handleChange('furnished', value)} value={filters.furnished}>
+            <Select
+              onValueChange={(value) => handleChange("furnished", value)}
+              value={filters.furnished}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Да/Нет" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Да">Да</SelectItem>
-                <SelectItem value="Нет">Нет</SelectItem>
+                <SelectItem value="yes">Да</SelectItem>
+                <SelectItem value="no">Нет</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -210,14 +261,17 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
           {/* Condition */}
           <div>
             <Label>Состояние</Label>
-            <Select onValueChange={(value) => handleChange('condition', value)} value={filters.condition}>
+            <Select
+              onValueChange={(value) => handleChange("condition", value)}
+              value={filters.condition}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Выберите состояние" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Евроремонт">Евроремонт</SelectItem>
-                <SelectItem value="Среднее">Среднее</SelectItem>
-                <SelectItem value="Требует ремонта">Требует ремонта</SelectItem>
+                <SelectItem value="euro">Евроремонт</SelectItem>
+                <SelectItem value="normal">Среднее</SelectItem>
+                <SelectItem value="needs_repair">Требует ремонта</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -227,9 +281,13 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
+          <Button variant="secondary" onClick={clearFilters}>
+            Очистить фильтры
+          </Button>
           <Button onClick={handleSubmit}>Применить</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
+

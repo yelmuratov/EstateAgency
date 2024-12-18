@@ -48,10 +48,12 @@ interface ApartmentStore {
   error: string | null;
   searchError: string | null;
   searchLoading: boolean;
+  filterError: string | null;
   fetchApartments: (page: number, limit: number) => Promise<void>;
   fetchApartmentById: (id: number) => Promise<Apartment | null>;
   hydrateApartments: (apartments: Apartment[], total: number) => void; // SSR Hydration
   searchApartments: (query: string) => Promise<void>;
+  filterApartments: (filters: Record<string, string>) => Promise<void>;
 }
 
 export const useApartmentStore = create<ApartmentStore>((set, get) => ({
@@ -61,6 +63,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   error: null,
   searchError: null,
   searchLoading: false,
+  filterError: null,
 
   fetchApartments: async (page: number, limit: number) => {
     set({ loading: true, error: null });
@@ -142,4 +145,28 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
       loading: false,
     });
   },
+  filterApartments: async (filters) => {
+    set({ loading: true, filterError: null });
+    try {
+      const response = await api.get(`/additional/filter/?table=apartment&${filters}`, {
+        params: filters,
+      });
+      set({
+        apartments: Array.isArray(response.data) ? response.data : [], // Use `data` key
+        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        loading: false,
+      });
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      set({
+        filterError:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+        loading: false,
+        apartments: [], // Reset to an empty array in case of error
+      });
+    }
+  }
 }));

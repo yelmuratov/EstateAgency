@@ -644,7 +644,14 @@ export default function PropertyTable() {
         </PaginationContent>
       </Pagination>
 
-      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} />
+      <PropertyFilter 
+        open={filterOpen} 
+        onOpenChange={setFilterOpen} 
+        onApplyFilters={(filters) => {
+          const queryParams = Object.fromEntries(new URLSearchParams(filters).entries());
+          useApartmentStore.getState().filterApartments(queryParams)
+        }} 
+      />
     </div>
   );
 }
