@@ -20,7 +20,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import Spinner from "@/components/local-components/spinner";
-import { CommercialFilterModal } from "../commercial-filter";
+import { CommercialFilter } from "../commercial-filter";
 
 const statusConfig = {
   free: {
@@ -572,11 +572,13 @@ const CommercialTable: React.FC = ({}) => {
           )}
         </PaginationContent>
       </Pagination>
-      
-      {/* Filter Modal */}
-      <CommercialFilterModal
-        open={filterOpen}
-        onOpenChange={() => setFilterOpen(false)}
+      <CommercialFilter 
+        open={filterOpen} 
+        onOpenChange={() => setFilterOpen(false)} 
+        onApplyFilters={(filters) => {
+          // Handle filter application logic here
+          console.log(filters);
+        }} 
       />
     </div>
   );
