@@ -102,14 +102,9 @@ const Header: React.FC = () => {
                 </Link>
               </Button>
             ) : (
-              <div className="relative flex-grow sm:max-w-md w-full">
-                <Input
-                  type="text"
-                  placeholder="Поиск"
-                  className="pl-10 pr-4 py-2 w-full"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              </div>
+              <h1 className="text-xl font-semibold text-primary">
+                Панель сотрудинка 
+              </h1>
             )}
           </div>
 

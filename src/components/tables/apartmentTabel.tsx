@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 import {
   Pagination,
@@ -101,19 +102,22 @@ export default function PropertyTable() {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const router = useRouter();
 
   const { apartments, total, error, fetchApartments } = useApartmentStore();
-
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (fetchApartments) {
+      if (searchQuery.trim() !== "") {
+        useApartmentStore.getState().searchApartments(searchQuery);
+      } else if (fetchApartments) {
         fetchApartments(currentPage, itemsPerPage);
       }
     }, 300); // Debounced
 
     return () => clearTimeout(timer);
-  }, [currentPage, itemsPerPage, fetchApartments]);
+  }, [searchQuery, currentPage, itemsPerPage, fetchApartments]);
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -150,7 +154,23 @@ export default function PropertyTable() {
   return (
     <div className="space-y-4">
       {/* Table View for Medium and Larger Screens */}
+      <div className="flex items-center justify-between">
+        <div className="relative flex-grow sm:max-w-md w-full">
+          <Input
+            type="text"
+            placeholder="Поиск"
+            className="pl-10 pr-4 py-2 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <Button variant="default" className="ml-2 hidden sm:flex">
+          <Filter className="mr-2 h-4 w-4" /> Фильтр
+        </Button>
+      </div>
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
+        {/* search input with shadcn */}
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
@@ -190,7 +210,16 @@ export default function PropertyTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Array.isArray(apartments) && apartments.length > 0 ? (
+            {error ? (
+              <tr>
+                <td
+                  colSpan={11}
+                  className="text-center py-4 text-red-500 dark:text-red-400"
+                >
+                  Произошла ошибка: {error}
+                </td>
+              </tr>
+            ) : Array.isArray(apartments) && apartments.length > 0 ? (
               apartments.map((apartment: Apartment, index: number) => (
                 <React.Fragment key={apartment.id}>
                   <tr
@@ -325,8 +354,8 @@ export default function PropertyTable() {
                                 Комиссия агента
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.agent_commission}% (
-                                {apartment.agent_percent})
+                                {apartment.agent_commission}$ (
+                                {apartment.agent_percent}%)
                               </div>
                             </div>
                             <div>
@@ -532,7 +561,6 @@ export default function PropertyTable() {
       </div>
 
       {/* Modal for Image Preview */}
-      {/* Modal for Image Preview */}
       {modalOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -600,7 +628,6 @@ export default function PropertyTable() {
                 </PaginationItem>
               </React.Fragment>
             ))}
-
           {currentPage < Math.ceil(total / itemsPerPage) && (
             <PaginationItem>
               <PaginationNext

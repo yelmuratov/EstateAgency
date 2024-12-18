@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -61,7 +62,6 @@ const locationOptions = [
   { value: "closed_area", label: "Закрытая территория" },
 ];
 
-
 const LandTable: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(() => {
@@ -71,6 +71,7 @@ const LandTable: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const router = useRouter();
   const { lands, total, loading, error, fetchLands } = useLandStore();
@@ -80,8 +81,17 @@ const LandTable: React.FC = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    fetchLands(currentPage, itemsPerPage);
-  }, [fetchLands, currentPage, itemsPerPage]);
+    const timer = setTimeout(() => {
+      if (searchQuery.trim() !== "") {
+        // Call the searchLands function in the store
+        useLandStore.getState().searchLands(searchQuery);
+      } else {
+        fetchLands(currentPage, itemsPerPage);
+      }
+    }, 300); // 300ms debounce to optimize input handling
+
+    return () => clearTimeout(timer); // Clear the timer on cleanup
+  }, [searchQuery, currentPage, itemsPerPage, fetchLands]);
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -115,13 +125,25 @@ const LandTable: React.FC = () => {
     return <div>Error: {error}</div>;
   }
 
-  if (lands.length === 0) {
-    return <div>No lands available.</div>;
-  }
-
   return (
     <div className="space-y-4">
       {/* Table View for Medium and Larger Screens */}
+      <div className="flex items-center justify-between">
+        <div className="relative flex-grow sm:max-w-md w-full">
+          <Input
+            type="text"
+            placeholder="Поиск"
+            className="pl-10 pr-4 py-2 w-full"
+            value={searchQuery} // Bind searchQuery to input
+            onChange={(e) => setSearchQuery(e.target.value)} // Update state on change
+          />
+
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <Button variant="default" className="ml-2 hidden sm:flex">
+          <Filter className="mr-2 h-4 w-4" /> Фильтр
+        </Button>
+      </div>
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
@@ -162,177 +184,197 @@ const LandTable: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {lands.map((land, index) => (
-              <React.Fragment key={land.id}>
-                <tr
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                  onClick={() => handleRowClick(land.id)}
+            {error ? (
+              <tr>
+                <td
+                  colSpan={11}
+                  className="text-center py-4 text-red-500 dark:text-red-400"
                 >
-                  <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {(currentPage - 1) * itemsPerPage + index + 1}
-                  </td>
-                  <td className="w-[50px] p-2 text-center">
-                    <Checkbox
-                      checked={selectedRows.includes(land.id)}
-                      onCheckedChange={() => toggleRow(land.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </td>
-                  <td className="p-2">
-                    <div
-                      className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openModal(
-                          `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
-                        );
-                      }}
-                    >
-                      {land.media && land.media[0] ? (
-                        <Image
-                          src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
-                          alt={land.title || "Preview image"}
-                          layout="fill"
-                          objectFit="cover"
-                          className="bg-gray-200 dark:bg-gray-800"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                          Нет изображения
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {land.title}
-                    </div>
-                  </td>
-                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    ${land.price}
-                  </td>
-                  <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {land.action_type === "rent" ? "Аренда" : "Продажа"}
-                  </td>
-                  <td className="text-sm text-gray-500 dark:text-gray-400">
-                    {locationOptions.find(
-                      (option) => option.value === land.location
-                    )?.label || land.location}
-                  </td>
-                  <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {landConditionTranslation[land.house_condition] ||
-                      land.house_condition}
-                  </td>
-                  <td className="p-2">
-                    <Badge
-                      className={
-                        statusConfig[
-                          land.current_status as keyof typeof statusConfig
-                        ]?.className || ""
-                      }
-                    >
-                      {statusConfig[
-                        land.current_status as keyof typeof statusConfig
-                      ]?.label || "Неизвестно"}
-                    </Badge>
-                  </td>
-                  <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                    {land.responsible}
-                  </td>
-                  <td className="p-2">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/edit-land/${land.id}`);
-                      }}
-                      variant="default"
-                    >
-                      Редактировать
-                    </Button>
-                  </td>
-                </tr>
-                {expandedRow === land.id && (
-                  <tr className="bg-gray-50 dark:bg-gray-800">
-                    <td colSpan={11}>
-                      <div className="p-4 space-y-4 text-sm">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Площадь
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.square_area} м²
-                            </div>
+                  Произошла ошибка: {error}
+                </td>
+              </tr>
+            ) : lands.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={11}
+                  className="text-center text-sm text-gray-500 dark:text-gray-400"
+                >
+                  Нет доступных данных
+                </td>
+              </tr>
+            ) : (
+              lands.map((land, index) => (
+                <React.Fragment key={land.id}>
+                  <tr
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                    onClick={() => handleRowClick(land.id)}
+                  >
+                    <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
+                    <td className="w-[50px] p-2 text-center">
+                      <Checkbox
+                        checked={selectedRows.includes(land.id)}
+                        onCheckedChange={() => toggleRow(land.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <div
+                        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openModal(
+                            `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
+                          );
+                        }}
+                      >
+                        {land.media && land.media[0] ? (
+                          <Image
+                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
+                            alt={land.title || "Preview image"}
+                            layout="fill"
+                            objectFit="cover"
+                            className="bg-gray-200 dark:bg-gray-800"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+                            Нет изображения
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Парковка
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.parking_place ? "Да" : "Нет"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              CRM ID
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.crm_id || "Не указан"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Комиссия агента
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.agent_commission}% ({land.agent_percent})
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Описание
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.description || "Описание отсутствует"}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Комментарий
-                            </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {land.comment || "Комментарий отсутствует"}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {land.media &&
-                            land.media.map((image: Media) => (
-                              <div
-                                key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                onClick={() =>
-                                  openModal(
-                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
-                                  )
-                                }
-                              >
-                                <Image
-                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                  alt="Apartment Image"
-                                  layout="fill"
-                                  objectFit="cover"
-                                  className="bg-gray-200 dark:bg-gray-800"
-                                />
-                              </div>
-                            ))}
-                        </div>
+                        )}
                       </div>
                     </td>
+                    <td className="p-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {land.title}
+                      </div>
+                    </td>
+                    <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      ${land.price}
+                    </td>
+                    <td className="p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {land.action_type === "rent" ? "Аренда" : "Продажа"}
+                    </td>
+                    <td className="text-sm text-gray-500 dark:text-gray-400">
+                      {locationOptions.find(
+                        (option) => option.value === land.location
+                      )?.label || land.location}
+                    </td>
+                    <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {landConditionTranslation[land.house_condition] ||
+                        land.house_condition}
+                    </td>
+                    <td className="p-2">
+                      <Badge
+                        className={
+                          statusConfig[
+                            land.current_status as keyof typeof statusConfig
+                          ]?.className || ""
+                        }
+                      >
+                        {statusConfig[
+                          land.current_status as keyof typeof statusConfig
+                        ]?.label || "Неизвестно"}
+                      </Badge>
+                    </td>
+                    <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
+                      {land.responsible}
+                    </td>
+                    <td className="p-2">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/edit-land/${land.id}`);
+                        }}
+                        variant="default"
+                      >
+                        Редактировать
+                      </Button>
+                    </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))}
+                  {expandedRow === land.id && (
+                    <tr className="bg-gray-50 dark:bg-gray-800">
+                      <td colSpan={11}>
+                        <div className="p-4 space-y-4 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Площадь
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.square_area} м²
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Парковка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.parking_place ? "Да" : "Нет"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                CRM ID
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.crm_id || "Не указан"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.agent_commission}$ ({land.agent_percent}%)
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Описание
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.description || "Описание отсутствует"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комментарий
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.comment || "Комментарий отсутствует"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {land.media &&
+                              land.media.map((image: Media) => (
+                                <div
+                                  key={image.id}
+                                  className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                  onClick={() =>
+                                    openModal(
+                                      `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
+                                    )
+                                  }
+                                >
+                                  <Image
+                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                    alt="Apartment Image"
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="bg-gray-200 dark:bg-gray-800"
+                                  />
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))
+            )}
           </tbody>
         </table>
       </div>

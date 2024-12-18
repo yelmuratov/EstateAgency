@@ -17,7 +17,7 @@ export default function AddCommercialPage() {
   useAuth();
 
   if (!user) {
-    router.replace("/login");
+    router.push("/login");
     return null; // Prevent further rendering until redirection
   }
 

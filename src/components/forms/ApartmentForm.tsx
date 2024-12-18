@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import {
   Select,
@@ -53,6 +54,7 @@ export default function ApartmentForm() {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast(); // Initialize the toast hook
+  const router = useRouter();
 
   const {
     register,
@@ -73,13 +75,13 @@ export default function ApartmentForm() {
   const onSubmit = async (data: ApartmentFormData) => {
     try {
       const formData = new FormData();
-  
+
       if (mediaFiles && mediaFiles.length > 0) {
         for (let i = 0; i < mediaFiles.length; i++) {
           formData.append("media", mediaFiles[i]); // Add each file under the "media" key
         }
       }
-  
+
       const params = new URLSearchParams();
       (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
         const value = data[key];
@@ -87,7 +89,7 @@ export default function ApartmentForm() {
           params.append(key, value.toString());
         }
       });
-  
+
       console.log("Query parameters:", params.toString());
       if (mediaFiles && mediaFiles.length > 0) {
         console.log("FormData content (media only):");
@@ -95,7 +97,7 @@ export default function ApartmentForm() {
           console.log(`${key}:`, value);
         }
       }
-  
+
       setIsSubmitting(true);
       await api.post(
         `/apartment/?${params.toString()}`,
@@ -109,30 +111,35 @@ export default function ApartmentForm() {
           },
         }
       );
-  
+
       // Handle success response
       toast({
         title: "Success",
         description: "Квартира успешно добавлена", // "Apartment successfully added"
         variant: "default",
       });
-  
+
       reset(); // Resets all form fields
       setPreviewImages([]); // Clears image previews
       setMediaFiles(null);
-  
-      window.location.href = `/`; // Redirect to the newly created apartment
       setIsSubmitting(false);
+
+      // Redirect to the home page
+      router.push("/");
     } catch (error: unknown) {
-      const axiosError = error as AxiosError<{ detail?: string | { loc?: string[]; msg?: string }[]; msg?: string }>;
+      const axiosError = error as AxiosError<{
+        detail?: string | { loc?: string[]; msg?: string }[];
+        msg?: string;
+      }>;
       const statusCode = axiosError.response?.status;
       const errorDetail = axiosError.response?.data?.detail;
       const isTimeout = axiosError.code === "ECONNABORTED";
-    
+
       if (isTimeout) {
         toast({
           title: "Timeout Error",
-          description: "The request took too long to complete. Please try again.",
+          description:
+            "The request took too long to complete. Please try again.",
           variant: "destructive",
           action: (
             <button
@@ -147,7 +154,8 @@ export default function ApartmentForm() {
         // Handle network or unreachable server issues
         toast({
           title: "Network Error",
-          description: "Unable to reach the server. Check your connection and try again.",
+          description:
+            "Unable to reach the server. Check your connection and try again.",
           variant: "destructive",
         });
       } else if (statusCode === 400 || statusCode === 422) {
@@ -166,7 +174,7 @@ export default function ApartmentForm() {
               return `- ${loc}: ${msg}`;
             })
             .join("\n");
-    
+
           toast({
             title: "Validation Error",
             description: `The following issues were found:\n${formattedErrors}`,
@@ -183,14 +191,15 @@ export default function ApartmentForm() {
         // Handle all other errors
         toast({
           title: "Error",
-          description: axiosError.response?.data?.msg || "An unknown error occurred.",
+          description:
+            axiosError.response?.data?.msg || "An unknown error occurred.",
           variant: "destructive",
         });
       }
-    
+
       setIsSubmitting(false);
-    }   
-  }
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -708,23 +717,23 @@ export default function ApartmentForm() {
         {previewImages.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
-  <div key={index} className="relative">
-    <Image
-      src={image}
-      alt={`Preview ${index + 1}`}
-      width={150} // Specify appropriate width
-      height={128} // Specify appropriate height
-      className="w-full h-32 object-cover rounded-md"
-    />
-    <button
-      type="button"
-      onClick={() => removeImage(index)}
-      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-    >
-      <X size={16} />
-    </button>
-  </div>
-))}
+              <div key={index} className="relative">
+                <Image
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  width={150} // Specify appropriate width
+                  height={128} // Specify appropriate height
+                  className="w-full h-32 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

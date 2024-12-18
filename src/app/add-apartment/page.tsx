@@ -15,7 +15,7 @@ export default function AddApartmentPage() {
   useAuth();
 
   if (!user) {
-    router.replace("/login");
+    router.push("/login");
     return null; // Prevent further rendering until redirection
   }
 

@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -18,7 +19,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import Spinner from "../local-components/spinner";
+import Spinner from "@/components/local-components/spinner";
 
 const statusConfig = {
   free: {
@@ -61,24 +62,32 @@ const CommercialTable: React.FC = ({}) => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageCommercial")) || 1;
-  });  
+  });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     localStorage.setItem("currentPageCommercial", String(currentPage));
-  }, [currentPage]);  
+  }, [currentPage]);
 
   const { commercials, total, loading, error, fetchCommercials } =
     useCommercialStore();
 
   useEffect(() => {
-    fetchCommercials(currentPage, itemsPerPage);
-  }, [fetchCommercials, currentPage, itemsPerPage]);
+    const timer = setTimeout(() => {
+      if (searchQuery.trim() !== "") {
+        useCommercialStore.getState().searchCommercial(searchQuery);
+      } else if (fetchCommercials) {
+        fetchCommercials(currentPage, itemsPerPage);
+      }
+    }, 300); // Debounced input
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchCommercials, currentPage, itemsPerPage]);
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -112,12 +121,24 @@ const CommercialTable: React.FC = ({}) => {
     return <div>Error: {error}</div>;
   }
 
-  if (commercials.length === 0) {
-    return <div>No commercial properties available.</div>;
-  }
-
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="relative flex-grow sm:max-w-md w-full">
+          <Input
+            type="text"
+            placeholder="Поиск"
+            className="pl-10 pr-4 py-2 w-full"
+            value={searchQuery} // Bind searchQuery to input
+            onChange={(e) => setSearchQuery(e.target.value)} // Update state on change
+          />
+
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <Button variant="default" className="ml-2 hidden sm:flex">
+          <Filter className="mr-2 h-4 w-4" /> Фильтр
+        </Button>
+      </div>
       {/* Table View for Medium and Larger Screens */}
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -159,7 +180,16 @@ const CommercialTable: React.FC = ({}) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Array.isArray(commercials) && commercials.length > 0 ? (
+            {error ? (
+              <tr>
+                <td
+                  colSpan={11}
+                  className="text-center py-4 text-red-500 dark:text-red-400"
+                >
+                  Произошла ошибка: {error}
+                </td>
+              </tr>
+            ) : Array.isArray(commercials) && commercials.length > 0 ? (
               commercials.map((commercial, index) => (
                 <React.Fragment key={commercial.id}>
                   <tr
@@ -217,7 +247,8 @@ const CommercialTable: React.FC = ({}) => {
                         commercial.location}
                     </td>
                     <td className="hidden lg:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
-                      {commercial.house_condition && houseTypeTranslation[commercial.house_condition] ||
+                      {(commercial.house_condition &&
+                        houseTypeTranslation[commercial.house_condition]) ||
                         commercial.house_condition}
                     </td>
                     <td className="p-2">
@@ -254,64 +285,87 @@ const CommercialTable: React.FC = ({}) => {
                         <div className="p-4 space-y-4 text-sm">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
-                              <div className="text-gray-900 dark:text-gray-100">{commercial.square_area} м²</div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
-                              <div className="text-gray-900 dark:text-gray-100">{commercial.parking_place ? "Да" : "Нет"}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">CRM ID</div>
-                              <div className="text-gray-900 dark:text-gray-100">{commercial.crm_id || "Не указан"}</div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">Комиссия агента</div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Площадь
+                              </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.agent_commission}% ({commercial.agent_percent})
+                                {commercial.square_area} м²
                               </div>
                             </div>
                             <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {commercial.description || "Описание отсутствует"}
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Парковка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.parking_place ? "Да" : "Нет"}
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {commercial.comment || "Комментарий отсутствует"}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                CRM ID
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.crm_id || "Не указан"}
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Ответственный
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.agent_commission}$ (
+                                {commercial.agent_percent}%)
+                              </div>
                             </div>
-                            <div className="text-gray-900 dark:text-gray-100">
-                              {commercial.responsible || "Ответственный не указан"}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Описание
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.description ||
+                                  "Описание отсутствует"}
+                              </div>
                             </div>
-                          </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комментарий
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.comment ||
+                                  "Комментарий отсутствует"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ответственный
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.responsible ||
+                                  "Ответственный не указан"}
+                              </div>
+                            </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {commercial.media && commercial.media.map((image) => (
-                              <div
-                                key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                onClick={() =>
-                                  openModal(
-                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
-                                  )
-                                }
-                              >
-                                <Image
-                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                  alt="Apartment Image"
-                                  layout="fill"
-                                  objectFit="cover"
-                                  className="bg-gray-200 dark:bg-gray-800"
-                                />
-                              </div>
-                            ))}
+                            {commercial.media &&
+                              commercial.media.map((image) => (
+                                <div
+                                  key={image.id}
+                                  className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                  onClick={() =>
+                                    openModal(
+                                      `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
+                                    )
+                                  }
+                                >
+                                  <Image
+                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                    alt="Apartment Image"
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="bg-gray-200 dark:bg-gray-800"
+                                  />
+                                </div>
+                              ))}
                           </div>
                         </div>
                       </td>
@@ -321,8 +375,11 @@ const CommercialTable: React.FC = ({}) => {
               ))
             ) : (
               <tr>
-                <td colSpan={11} className="text-center p-4 text-gray-500">
-                  No commercial properties available.
+                <td
+                  colSpan={11}
+                  className="text-center text-sm text-gray-500 dark:text-gray-400"
+                >
+                  Нет доступных данных
                 </td>
               </tr>
             )}
@@ -343,7 +400,8 @@ const CommercialTable: React.FC = ({}) => {
                   {commercial.title}
                 </div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {houseTypeTranslation[commercial.location] || commercial.location}
+                  {houseTypeTranslation[commercial.location] ||
+                    commercial.location}
                 </div>
                 <div className="text-sm text-gray-900 dark:text-gray-100">
                   ${commercial.price}
@@ -362,7 +420,9 @@ const CommercialTable: React.FC = ({}) => {
               </div>
               <div className="flex justify-between items-center">
                 <Button
-                  onClick={() => router.push(`/edit-commercial/${commercial.id}`)}
+                  onClick={() =>
+                    router.push(`/edit-commercial/${commercial.id}`)
+                  }
                   variant="default"
                 >
                   Редактировать
@@ -372,7 +432,11 @@ const CommercialTable: React.FC = ({}) => {
                   variant="ghost"
                   className="p-2"
                 >
-                  {expandedRow === commercial.id ? <ChevronUp /> : <ChevronDown />}
+                  {expandedRow === commercial.id ? (
+                    <ChevronUp />
+                  ) : (
+                    <ChevronDown />
+                  )}
                 </Button>
               </div>
             </div>
@@ -380,22 +444,34 @@ const CommercialTable: React.FC = ({}) => {
               <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Площадь</div>
-                    <div className="text-gray-900 dark:text-gray-100">{commercial.square_area} м²</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Площадь
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {commercial.square_area} м²
+                    </div>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-500 dark:text-gray-400">Парковка</div>
-                    <div className="text-gray-900 dark:text-gray-100">{commercial.parking_place ? "Да" : "Нет"}</div>
+                    <div className="font-medium text-gray-500 dark:text-gray-400">
+                      Парковка
+                    </div>
+                    <div className="text-gray-900 dark:text-gray-100">
+                      {commercial.parking_place ? "Да" : "Нет"}
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Описание</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Описание
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {commercial.description || "Описание отсутствует"}
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-gray-500 dark:text-gray-400">Комментарий</div>
+                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                    Комментарий
+                  </div>
                   <div className="text-gray-900 dark:text-gray-100">
                     {commercial.comment || "Комментарий отсутствует"}
                   </div>
@@ -417,30 +493,30 @@ const CommercialTable: React.FC = ({}) => {
               ✕
             </button>
             {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={closeModal}
-        >
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
-            >
-              <span className="text-2xl font-bold">✕</span>
-            </button>
-            {modalImage && (
-              <Image
-                src={modalImage}
-                alt="Preview"
-                className="rounded-lg shadow-lg max-w-full max-h-screen"
-                width={900}
-                height={600}
-                objectFit="contain"
-              />
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+                onClick={closeModal}
+              >
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={closeModal}
+                    className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+                  >
+                    <span className="text-2xl font-bold">✕</span>
+                  </button>
+                  {modalImage && (
+                    <Image
+                      src={modalImage}
+                      alt="Preview"
+                      className="rounded-lg shadow-lg max-w-full max-h-screen"
+                      width={900}
+                      height={600}
+                      objectFit="contain"
+                    />
+                  )}
+                </div>
+              </div>
             )}
-          </div>
-        </div>
-      )}
           </div>
         </div>
       )}
@@ -499,4 +575,3 @@ const CommercialTable: React.FC = ({}) => {
 };
 
 export default CommercialTable;
-

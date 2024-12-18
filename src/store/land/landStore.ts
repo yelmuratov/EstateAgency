@@ -44,6 +44,9 @@ interface LandStore {
   error: string | null;
   fetchLands: (page: number, limit: number) => Promise<void>;
   fetchLandById: (id: number) => Promise<Land | null>;
+  searchLands: (query: string) => Promise<void>;
+  searchError: string | null;
+  searchLoading: boolean;
 }
 
 export const useLandStore = create<LandStore>((set) => ({
@@ -51,6 +54,8 @@ export const useLandStore = create<LandStore>((set) => ({
   total: 0,
   loading: false,
   error: null,
+  searchError: null,
+  searchLoading: false,
   fetchLands: async (page: number, limit: number) => {
     set({ loading: true, error: null });
     try {
@@ -102,6 +107,30 @@ export const useLandStore = create<LandStore>((set) => ({
         loading: false,
       });
       return null; // Return null in case of error
+    }
+  },
+  searchLands: async (query: string) => {
+    set({ searchLoading: true, searchError: null });
+    try {
+      const response = await api.get(`/additional/search/?text=${query}&table=land`);
+      console.log(Array.isArray(response.data) ? response.data : []);
+      set({
+        lands: Array.isArray(response.data) ? response.data : [], // Use `data` key
+        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        searchLoading: false,
+      });
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      console.log(apiError);
+      set({
+        searchError:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+        searchLoading: false,
+        lands: [], // Reset to an empty array in case of error
+      });
     }
   }
 }));

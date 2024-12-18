@@ -114,9 +114,11 @@ export default function Dashboard() {
         </DropdownMenu>
       </div>
 
-      {selectedType === "apartments" && <ApartmentTable />}
-      {selectedType === "lands" && <LandTable />}
-      {selectedType === "commercial" && <CommercialTable />}
+      <div>
+        {selectedType === "apartments" && <ApartmentTable />}
+        {selectedType === "lands" && <LandTable />}
+        {selectedType === "commercial" && <CommercialTable />}
+      </div>
     </DashboardLayout>
   );
 }

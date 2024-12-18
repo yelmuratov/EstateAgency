@@ -19,7 +19,7 @@ export default function AddLandPage() {
 
   useEffect(() => {
     if (!user) {
-      router.replace("/login"); // Use router to redirect
+      router.push("/login"); // Use router to redirect
     }
   }, [user, router]);
 

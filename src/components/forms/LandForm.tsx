@@ -5,7 +5,8 @@ import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import Image from 'next/image';
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -16,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 
 interface LandFormData {
@@ -31,7 +32,15 @@ interface LandFormData {
   square_area: number;
   live_square_area: number;
   floor_number: number;
-  location: "city" | "suburb" | "countryside" | "along_road" | "near_pond" | "foothills" | "cottage_area" | "closed_area";
+  location:
+    | "city"
+    | "suburb"
+    | "countryside"
+    | "along_road"
+    | "near_pond"
+    | "foothills"
+    | "cottage_area"
+    | "closed_area";
   furnished: boolean;
   house_condition: "euro" | "normal" | "repair";
   current_status?: "free" | "soon" | "busy";
@@ -47,6 +56,7 @@ export default function LandPropertyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const router = useRouter();
   const { toast } = useToast();
 
   const {
@@ -103,6 +113,9 @@ export default function LandPropertyForm() {
       setPreviewImages([]);
       setMediaFiles(null);
       setIsSubmitting(false);
+
+      // redirect to the property list page
+      router.push("/");
     } catch (error) {
       const apiError = error as {
         code?: string;
@@ -115,15 +128,16 @@ export default function LandPropertyForm() {
         };
         message?: string;
       };
-    
+
       const statusCode = apiError.response?.status;
       const errorDetail = apiError.response?.data?.detail;
       const isTimeout = apiError.code === "ECONNABORTED";
-    
+
       if (isTimeout) {
         toast({
           title: "Timeout Error",
-          description: "The request took too long to complete. Please try again.",
+          description:
+            "The request took too long to complete. Please try again.",
           variant: "destructive",
           action: (
             <button
@@ -137,7 +151,8 @@ export default function LandPropertyForm() {
       } else if (!apiError.response) {
         toast({
           title: "Network Error",
-          description: "Unable to reach the server. Check your connection and try again.",
+          description:
+            "Unable to reach the server. Check your connection and try again.",
           variant: "destructive",
         });
       } else if (statusCode === 400 || statusCode === 422) {
@@ -151,7 +166,7 @@ export default function LandPropertyForm() {
           const formattedErrors = errorDetail
             .map((err) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
             .join("\n");
-    
+
           toast({
             title: "Validation Error",
             description: `The following issues were found:\n${formattedErrors}`,
@@ -167,10 +182,13 @@ export default function LandPropertyForm() {
       } else {
         toast({
           title: "Error",
-          description: apiError.response?.data?.msg || "An unknown error occurred.",
+          description:
+            apiError.response?.data?.msg || "An unknown error occurred.",
           variant: "destructive",
         });
       }
+    }finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -521,30 +539,30 @@ export default function LandPropertyForm() {
         )}
       </div>
 
-    <div>
-      <Label htmlFor="parking_place">Парковка</Label>
-      <Controller
-        name="parking_place"
-        control={control}
-        rules={{ required: "Это поле обязательно" }}
-        render={({ field }) => (
-        <Select onValueChange={(value) => field.onChange(value === "true")}>
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="true">Да</SelectItem>
-            <SelectItem value="false">Нет</SelectItem>
-          </SelectContent>
-        </Select>
+      <div>
+        <Label htmlFor="parking_place">Парковка</Label>
+        <Controller
+          name="parking_place"
+          control={control}
+          rules={{ required: "Это поле обязательно" }}
+          render={({ field }) => (
+            <Select onValueChange={(value) => field.onChange(value === "true")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.parking_place && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.parking_place.message}
+          </p>
         )}
-      />
-      {errors.parking_place && (
-        <p className="text-red-500 text-sm mt-1">
-        {errors.parking_place.message}
-        </p>
-      )}
-    </div>
+      </div>
 
       <div>
         <Label htmlFor="agent_percent">Процент агента</Label>
@@ -636,32 +654,32 @@ export default function LandPropertyForm() {
         {previewImages.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-4">
             {previewImages.map((image, index) => (
-  <div key={index} className="relative">
-    <Image
-      src={image}
-      alt={`Preview ${index + 1}`}
-      width={128} // Replace with actual width
-      height={128} // Replace with actual height
-      className="w-full h-32 object-cover rounded-md"
-    />
-    <button
-      type="button"
-      onClick={() => removeImage(index)}
-      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-    >
-      <X size={16} />
-    </button>
-    {index < previewImages.length - 1 && (
-      <button
-        type="button"
-        onClick={() => removeImage(index + 1)}
-        className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1"
-      >
-        Next
-      </button>
-    )}
-  </div>
-))}
+              <div key={index} className="relative">
+                <Image
+                  src={image}
+                  alt={`Preview ${index + 1}`}
+                  width={128} // Replace with actual width
+                  height={128} // Replace with actual height
+                  className="w-full h-32 object-cover rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                >
+                  <X size={16} />
+                </button>
+                {index < previewImages.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index + 1)}
+                    className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1"
+                  >
+                    Next
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -679,4 +697,3 @@ export default function LandPropertyForm() {
     </form>
   );
 }
-
