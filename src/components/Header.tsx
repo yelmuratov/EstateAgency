@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Plus, ArrowLeft, LogOut, UserCircle } from "lucide-react";
+import { Plus, ArrowLeft, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import { PropertyFilter } from '@/components/property-filter'
 
 import {
   Pagination,
@@ -103,6 +104,7 @@ export default function PropertyTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const router = useRouter();
 
@@ -165,7 +167,11 @@ export default function PropertyTable() {
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
-        <Button variant="default" className="ml-2 hidden sm:flex">
+        <Button 
+          variant="default" 
+          className="ml-2 hidden sm:flex"
+          onClick={() => setFilterOpen(true)}
+        >
           <Filter className="mr-2 h-4 w-4" /> Фильтр
         </Button>
       </div>
@@ -637,6 +643,9 @@ export default function PropertyTable() {
           )}
         </PaginationContent>
       </Pagination>
+
+      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} />
     </div>
   );
 }
+

@@ -20,6 +20,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import Spinner from "@/components/local-components/spinner";
+import { CommercialFilterModal } from "../commercial-filter";
 
 const statusConfig = {
   free: {
@@ -68,6 +69,7 @@ const CommercialTable: React.FC = ({}) => {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -135,7 +137,7 @@ const CommercialTable: React.FC = ({}) => {
 
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
-        <Button variant="default" className="ml-2 hidden sm:flex">
+        <Button variant="default" className="ml-2 hidden sm:flex"  onClick={() => setFilterOpen(true)}>
           <Filter className="mr-2 h-4 w-4" /> Фильтр
         </Button>
       </div>
@@ -570,6 +572,12 @@ const CommercialTable: React.FC = ({}) => {
           )}
         </PaginationContent>
       </Pagination>
+      
+      {/* Filter Modal */}
+      <CommercialFilterModal
+        open={filterOpen}
+        onOpenChange={() => setFilterOpen(false)}
+      />
     </div>
   );
 };

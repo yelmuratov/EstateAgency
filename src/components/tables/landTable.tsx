@@ -20,6 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
+import { LandFilterModal } from "../land-filter";
 
 interface Media {
   id: number;
@@ -72,6 +73,7 @@ const LandTable: React.FC = () => {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const router = useRouter();
   const { lands, total, loading, error, fetchLands } = useLandStore();
@@ -140,9 +142,9 @@ const LandTable: React.FC = () => {
 
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
-        <Button variant="default" className="ml-2 hidden sm:flex">
-          <Filter className="mr-2 h-4 w-4" /> Фильтр
-        </Button>
+        <Button variant="default" className="ml-2 hidden sm:flex"  onClick={() => setFilterOpen(true)}>
+                  <Filter className="mr-2 h-4 w-4" /> Фильтр
+                </Button>
       </div>
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -543,6 +545,7 @@ const LandTable: React.FC = () => {
           )}
         </PaginationContent>
       </Pagination>
+      <LandFilterModal open={filterOpen} onOpenChange={() => setFilterOpen(false)} />
     </div>
   );
 };
