@@ -64,8 +64,8 @@ export function PropertyFilter({
     const handleSubmit = () => {
       // Filter out empty fields
       const changedFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value.trim() !== "")
-      );
+        Object.entries(filters).filter(([, value]) => value.trim() !== "")
+      );      
   
       filterApartments(changedFilters); // Send only changed filters
       onApplyFilters(changedFilters); // Pass filters back to parent component
@@ -249,11 +249,19 @@ export function PropertyFilter({
             {/* Bathroom */}
             <div>
               <Label>Санузел</Label>
-              <Input
-                placeholder="Тип санузла (раздельный, совмещенный)"
+              <Select
+                onValueChange={(value) => handleChange("bathroom", value)}
                 value={filters.bathroom}
-                onChange={(e) => handleChange("bathroom", e.target.value)}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите тип санузла" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="separated">Раздельный</SelectItem>
+                  <SelectItem value="combined">Совмещенный</SelectItem>
+                  <SelectItem value="many">Много</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
   
             {/* Responsible */}
