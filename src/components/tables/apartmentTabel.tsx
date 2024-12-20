@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PropertyFilter } from '@/components/property-filter'
+import { PropertyFilter } from "@/components/property-filter";
 
 import {
   Pagination,
@@ -167,8 +167,8 @@ export default function PropertyTable() {
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
-        <Button 
-          variant="default" 
+        <Button
+          variant="default"
           className="ml-2 hidden sm:flex"
           onClick={() => setFilterOpen(true)}
         >
@@ -414,11 +414,11 @@ export default function PropertyTable() {
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                             {apartment.media.map((image) => (
                               <div
                                 key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
+                                className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
                                 onClick={() =>
                                   openModal(
                                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
@@ -644,15 +644,7 @@ export default function PropertyTable() {
         </PaginationContent>
       </Pagination>
 
-      <PropertyFilter 
-        open={filterOpen} 
-        onOpenChange={setFilterOpen} 
-        onApplyFilters={(filters) => {
-          const queryParams = Object.fromEntries(new URLSearchParams(filters).entries());
-          useApartmentStore.getState().filterApartments(queryParams)
-        }} 
-      />
+      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} />
     </div>
   );
 }
-

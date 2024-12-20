@@ -24,13 +24,11 @@ import {
 interface PropertyFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApplyFilters: (filters: Record<string, string>) => void;
 }
 
 export function PropertyFilter({
     open,
     onOpenChange,
-    onApplyFilters,
   }: PropertyFilterProps) {
     const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
     const { filterApartments } = useApartmentStore();
@@ -68,7 +66,6 @@ export function PropertyFilter({
       );
   
       filterApartments(changedFilters); // Send only changed filters
-      onApplyFilters(changedFilters); // Pass filters back to parent component
       onOpenChange(false); // Close modal
     };
   
@@ -90,7 +87,6 @@ export function PropertyFilter({
         responsible: "",
       });
       filterApartments({ table: "apartment" }); // Reset with table filter
-      onApplyFilters({ table: "apartment" }); // Reset to base state
       onOpenChange(false);
     };
   

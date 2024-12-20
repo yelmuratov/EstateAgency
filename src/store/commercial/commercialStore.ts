@@ -42,9 +42,11 @@ interface CommercialStore {
   error: string | null;
   searchError: string | null;
   searchLoading: boolean;
+  filterError: string | null;
   fetchCommercials: (page: number, limit: number) => Promise<void>;
   fetchCommercialById: (id: number) => Promise<Commercial | null>;
   searchCommercial: (search: string) => Promise<void>;
+  filterCommercials: (filters: Record<string, string>) => Promise<void>;
 }
 
 export const useCommercialStore = create<CommercialStore>((set) => ({
@@ -54,6 +56,7 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
   error: null,
   searchError: null,
   searchLoading: false,
+  filterError: null,
   // Fetch a paginated list of commercials
   fetchCommercials: async (page: number, limit: number) => {
     set({ loading: true, error: null });
@@ -121,5 +124,33 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         commercials: [], // Reset to an empty array in case of error
       });
     }
-  }
+  },
+  // Filter commercials
+  filterCommercials: async (filters: Record<string, string>) => {
+    set({ loading: true, error: null });
+    try {
+      // Build query string from filters
+      const queryParams = new URLSearchParams({ table: "commercial", ...filters }).toString();
+  
+      // Send request with proper query parameters
+      const response = await api.get(`/additional/filter/?${queryParams}`);
+  
+      set({
+        commercials: Array.isArray(response.data.data) ? response.data.data : [],
+        total: response.data.total_count || 0,
+        loading: false,
+      });
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+  
+      set({
+        filterError:
+          apiError.response?.data?.detail || apiError.message || "Failed to filter commercials",
+        loading: false,
+      });
+    }
+  },
 }));
