@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -39,6 +39,16 @@ const statusConfig = {
       "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800 dark:text-red-100",
   },
 };
+
+
+interface Media {
+  media_type: string;
+  updated_at: string;
+  apartment_id?: number;
+  id: number;
+  url: string;
+  created_at: string;
+}
 
 const houseTypeTranslation: { [key: string]: string } = {
   new_building: "Новостройка",
@@ -114,6 +124,46 @@ const CommercialTable: React.FC = ({}) => {
   const handleRowClick = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
+
+  const renderPreviewCell = (media: Media[]) => {
+    if (!media || media.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+          Нет медиа
+        </div>
+      );
+    }
+
+    const firstMedia = media[0];
+    return (
+      <div
+        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+        onClick={() => openModal(firstMedia.url)}
+        title="Click to view in modal"
+      >
+        {firstMedia.media_type === 'video' ? (
+          <video
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${firstMedia.url}`}
+            className="object-cover w-full h-full"
+            muted
+            playsInline
+          />
+        ) : (
+          <Image
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${firstMedia.url}`}
+            alt="Preview"
+            layout="fill"
+            objectFit="cover"
+            className="bg-gray-200 dark:bg-gray-800"
+          />
+        )}
+        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center py-1">
+          Click to view
+        </div>
+      </div>
+    );
+  };
+  
 
   if (loading) {
     return <Spinner theme="dark" />;
@@ -209,29 +259,7 @@ const CommercialTable: React.FC = ({}) => {
                       />
                     </td>
                     <td className="p-2">
-                      <div
-                        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openModal(
-                            `${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media?.[0]?.url}`
-                          );
-                        }}
-                      >
-                        {commercial.media && commercial.media[0] ? (
-                          <Image
-                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${commercial.media[0].url}`}
-                            alt={commercial.title || "Preview image"}
-                            layout="fill"
-                            objectFit="cover"
-                            className="bg-gray-200 dark:bg-gray-800"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                            Нет изображения
-                          </div>
-                        )}
-                      </div>
+                      {renderPreviewCell(commercial.media || [])}
                     </td>
                     <td className="p-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -296,14 +324,6 @@ const CommercialTable: React.FC = ({}) => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Парковка
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.parking_place ? "Да" : "Нет"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 CRM ID
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
@@ -312,20 +332,10 @@ const CommercialTable: React.FC = ({}) => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Комиссия агента
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.agent_commission}$ (
-                                {commercial.agent_percent}%)
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Описание
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.description ||
-                                  "Описание отсутствует"}
+                                {commercial.description || "Описание отсутствует"}
                               </div>
                             </div>
                             <div>
@@ -333,39 +343,33 @@ const CommercialTable: React.FC = ({}) => {
                                 Комментарий
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.comment ||
-                                  "Комментарий отсутствует"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Ответственный
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.responsible ||
-                                  "Ответственный не указан"}
+                                {commercial.comment || "Комментарий отсутствует"}
                               </div>
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {commercial.media &&
-                              commercial.media.map((image) => (
+                              commercial.media.map((media) => (
                                 <div
-                                  key={image.id}
+                                  key={media.id}
                                   className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                  onClick={() =>
-                                    openModal(
-                                      `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
-                                    )
-                                  }
+                                  onClick={() => openModal(media.url)}
                                 >
-                                  <Image
-                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                    alt="Apartment Image"
-                                    layout="fill"
-                                    objectFit="cover"
-                                    className="bg-gray-200 dark:bg-gray-800"
-                                  />
+                                  {media.media_type === "video" ? (
+                                    <video
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      className="object-cover w-full h-full"
+                                      muted
+                                      playsInline
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      alt="Media preview"
+                                      layout="fill"
+                                      objectFit="cover"
+                                    />
+                                  )}
                                 </div>
                               ))}
                           </div>
@@ -373,6 +377,7 @@ const CommercialTable: React.FC = ({}) => {
                       </td>
                     </tr>
                   )}
+
                 </React.Fragment>
               ))
             ) : (
@@ -486,38 +491,35 @@ const CommercialTable: React.FC = ({}) => {
 
       {/* Modal for Image Preview */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={closeModal}
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closeModal}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
             >
-              ✕
+              <span className="text-2xl font-bold">✕</span>
             </button>
-            {modalOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-                onClick={closeModal}
-              >
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={closeModal}
-                    className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
-                  >
-                    <span className="text-2xl font-bold">✕</span>
-                  </button>
-                  {modalImage && (
-                    <Image
-                      src={modalImage}
-                      alt="Preview"
-                      className="rounded-lg shadow-lg max-w-full max-h-screen"
-                      width={900}
-                      height={600}
-                      objectFit="contain"
-                    />
-                  )}
-                </div>
-              </div>
+            {modalImage && (
+              modalImage.toLowerCase().endsWith('.mp4') ? (
+                <video
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${modalImage}`}
+                  className="w-full h-full object-contain"
+                  controls
+                  autoPlay
+                />
+              ) : (
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${modalImage}`}
+                  alt="Preview"
+                  className="rounded-lg shadow-lg"
+                  width={900}
+                  height={600}
+                  objectFit="contain"
+                />
+              )
             )}
           </div>
         </div>
@@ -583,3 +585,4 @@ const CommercialTable: React.FC = ({}) => {
 };
 
 export default CommercialTable;
+

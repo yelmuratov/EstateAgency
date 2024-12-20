@@ -106,8 +106,13 @@ const LandTable: React.FC = () => {
   };
 
   const openModal = (imageUrl: string) => {
-    setModalImage(imageUrl);
-    setModalOpen(true);
+    try {
+      const validUrl = new URL(imageUrl, process.env.NEXT_PUBLIC_API_BASE_URL).toString();
+      setModalImage(validUrl);
+      setModalOpen(true);
+    } catch (error) {
+      console.error("Invalid URL:", error);
+    }
   };
 
   const closeModal = () => {
@@ -233,12 +238,12 @@ const LandTable: React.FC = () => {
                       >
                         {land.media && land.media[0] ? (
                           <Image
-                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0].url}`}
-                            alt={land.title || "Preview image"}
-                            layout="fill"
-                            objectFit="cover"
-                            className="bg-gray-200 dark:bg-gray-800"
-                          />
+                          src={new URL(land.media[0].url, process.env.NEXT_PUBLIC_API_BASE_URL).toString()}
+                          alt={land.title || "Preview image"}
+                          layout="fill"
+                          objectFit="cover"
+                          className="bg-gray-200 dark:bg-gray-800"
+                        />
                         ) : (
                           <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
                             Нет изображения
@@ -295,7 +300,7 @@ const LandTable: React.FC = () => {
                     </td>
                   </tr>
                   {expandedRow === land.id && (
-                    <tr className="bg-gray-50 dark:bg-gray-800">
+                    <tr className="bg-gray-50 dark:bg-gray-600">
                       <td colSpan={11}>
                         <div className="p-4 space-y-4 text-sm">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -309,26 +314,10 @@ const LandTable: React.FC = () => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Парковка
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {land.parking_place ? "Да" : "Нет"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 CRM ID
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {land.crm_id || "Не указан"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Комиссия агента
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {land.agent_commission}$ ({land.agent_percent}%)
                               </div>
                             </div>
                             <div>
@@ -350,23 +339,27 @@ const LandTable: React.FC = () => {
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {land.media &&
-                              land.media.map((image: Media) => (
+                              land.media.map((media) => (
                                 <div
-                                  key={image.id}
+                                  key={media.id}
                                   className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                  onClick={() =>
-                                    openModal(
-                                      `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
-                                    )
-                                  }
+                                  onClick={() => openModal(media.url)}
                                 >
-                                  <Image
-                                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                    alt="Apartment Image"
-                                    layout="fill"
-                                    objectFit="cover"
-                                    className="bg-gray-200 dark:bg-gray-800"
-                                  />
+                                  {media.media_type === "video" ? (
+                                    <video
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      className="object-cover w-full h-full"
+                                      muted
+                                      playsInline
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      alt="Media preview"
+                                      layout="fill"
+                                      objectFit="cover"
+                                    />
+                                  )}
                                 </div>
                               ))}
                           </div>

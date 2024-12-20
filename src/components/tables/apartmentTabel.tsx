@@ -148,11 +148,11 @@ export default function PropertyTable() {
       const fullUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`;
       setModalContent({
         url: fullUrl,
-        type: media.media_type
+        type: media.media_type, // 'video' or 'image'
       });
       setModalOpen(true);
     }
-  };
+  };  
 
   const closeModal = () => {
     setModalContent(null);
@@ -171,7 +171,7 @@ export default function PropertyTable() {
         </div>
       );
     }
-
+  
     const firstMedia = media[0];
     return (
       <div
@@ -197,6 +197,7 @@ export default function PropertyTable() {
       </div>
     );
   };
+  
 
   const renderMediaGallery = (media: Media[]) => {
     return (
@@ -231,7 +232,7 @@ export default function PropertyTable() {
 
   const renderModalContent = () => {
     if (!modalContent) return null;
-
+  
     return (
       <div
         className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -269,6 +270,8 @@ export default function PropertyTable() {
       </div>
     );
   };
+  
+  
 
   if (error) {
     return (
