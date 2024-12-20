@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import {
   Select,
@@ -19,7 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload} from 'lucide-react';
+import { Loader2, Upload } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useCommercialStore } from "@/store/commercial/commercialStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -65,7 +65,9 @@ export default function EditCommercialPropertyForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImages, setPreviewImages] = useState<{ id: number; url: string }[]>([]);
+  const [previewImages, setPreviewImages] = useState<
+    { id: number; url: string }[]
+  >([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -94,8 +96,10 @@ export default function EditCommercialPropertyForm() {
   }, [fetchDistricts]);
 
   const errorTranslations: { [key: string]: string } = {
-    "401: This object created by another agent": "401: Этот объект создан другим агентом",
-    "Network Error: Unable to reach the server.": "Ошибка сети: Не удалось подключиться к серверу.",
+    "401: This object created by another agent":
+      "401: Этот объект создан другим агентом",
+    "Network Error: Unable to reach the server.":
+      "Ошибка сети: Не удалось подключиться к серверу.",
     "Server Error: 500": "Ошибка сервера: 500",
     // Add more translations as needed
   };
@@ -103,7 +107,6 @@ export default function EditCommercialPropertyForm() {
   const translateError = (message: string): string => {
     return errorTranslations[message] || message; // Fallback to the original message
   };
-
 
   useEffect(() => {
     const loadCommercial = async () => {
@@ -115,9 +118,16 @@ export default function EditCommercialPropertyForm() {
               ...commercialData,
               category: "commercial",
               action_type: commercialData.action_type as "rent" | "sale",
-              location: commercialData.location as CommercialFormData["location"],
-              house_condition: commercialData.house_condition as "euro" | "normal" | "repair",
-              current_status: commercialData.current_status as "free" | "soon" | "busy",
+              location:
+                commercialData.location as CommercialFormData["location"],
+              house_condition: commercialData.house_condition as
+                | "euro"
+                | "normal"
+                | "repair",
+              current_status: commercialData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
             });
             if (commercialData.media) {
               setPreviewImages(
@@ -143,7 +153,9 @@ export default function EditCommercialPropertyForm() {
     loadCommercial();
   }, [id, fetchCommercialById, reset, toast]);
 
-  const [initialData, setInitialData] = useState<CommercialFormData | null>(null);
+  const [initialData, setInitialData] = useState<CommercialFormData | null>(
+    null
+  );
 
   useEffect(() => {
     const loadCommercial = async () => {
@@ -162,10 +174,17 @@ export default function EditCommercialPropertyForm() {
               rooms: commercialData.rooms || 0,
               square_area: commercialData.square_area || 0,
               floor_number: commercialData.floor_number || 0,
-              location: commercialData.location as CommercialFormData["location"],
+              location:
+                commercialData.location as CommercialFormData["location"],
               furnished: commercialData.furnished || false,
-              house_condition: commercialData.house_condition as "euro" | "normal" | "repair",
-              current_status: commercialData.current_status as "free" | "soon" | "busy",
+              house_condition: commercialData.house_condition as
+                | "euro"
+                | "normal"
+                | "repair",
+              current_status: commercialData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
               parking_place: commercialData.parking_place || false,
               agent_percent: commercialData.agent_percent || 0,
               agent_commission: commercialData.agent_commission || 0,
@@ -208,7 +227,10 @@ export default function EditCommercialPropertyForm() {
         const currentValue = data[key];
         const initialValue = initialData[key];
 
-        if (key !== "media" as keyof CommercialFormData && currentValue !== initialValue) {
+        if (
+          key !== ("media" as keyof CommercialFormData) &&
+          currentValue !== initialValue
+        ) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
         }
@@ -238,9 +260,13 @@ export default function EditCommercialPropertyForm() {
           const uniqueDeletedIds = [...new Set(deletedImageIds)];
           const deleteParams = new URLSearchParams();
           deleteParams.append("table", "commercial");
-          uniqueDeletedIds.forEach((id) => deleteParams.append("media", id.toString()));
+          uniqueDeletedIds.forEach((id) =>
+            deleteParams.append("media", id.toString())
+          );
 
-          await api.delete(`/additional/delete_media/?${deleteParams.toString()}`);
+          await api.delete(
+            `/additional/delete_media/?${deleteParams.toString()}`
+          );
           toast({
             title: "Success",
             description: "Deleted images successfully.",
@@ -289,15 +315,21 @@ export default function EditCommercialPropertyForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-    
+
       // Check if the error is an AxiosError
       if (error && typeof error === "object" && "isAxiosError" in error) {
-        const axiosError = error as AxiosError<{ detail?: string | Record<string, string> }>;
-    
+        const axiosError = error as AxiosError<{
+          detail?: string | Record<string, string>;
+        }>;
+
         if (axiosError.response) {
           const details = axiosError.response.data?.detail;
-    
-          if (details && typeof details === "object" && !Array.isArray(details)) {
+
+          if (
+            details &&
+            typeof details === "object" &&
+            !Array.isArray(details)
+          ) {
             // Handle validation error object (e.g., 422)
             errorMessage = Object.values(details)
               .map((msg) => `${msg}`)
@@ -307,17 +339,21 @@ export default function EditCommercialPropertyForm() {
             errorMessage = translateError(details);
           } else {
             // Default fallback for server errors
-            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            errorMessage = translateError(
+              `Server Error: ${axiosError.response.status}`
+            );
           }
         } else {
           // Network error fallback
-          errorMessage = translateError("Network Error: Unable to reach the server.");
+          errorMessage = translateError(
+            "Network Error: Unable to reach the server."
+          );
         }
       } else if (error instanceof Error) {
         // Handle generic JavaScript errors
         errorMessage = translateError(error.message);
       }
-    
+
       toast({
         title: "Ошибка",
         description: errorMessage,
@@ -330,35 +366,42 @@ export default function EditCommercialPropertyForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files);
+    setMediaFiles(files); // Store new files
 
     if (files) {
       const newPreviewImages: { id: number; url: string }[] = [];
       for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push({
-              id: Date.now() + i,
+              id: Date.now() + i, // Use a unique ID for new images
               url: e.target.result as string,
             });
             if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]);
+              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images/videos
             }
           }
         };
-        reader.readAsDataURL(files[i]);
+
+        // Check if the file is an image or video
+        if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+          reader.readAsDataURL(file);
+        } else {
+          console.warn(`Unsupported file type: ${file.type}`);
+        }
       }
     }
   };
 
   const removeImage = (imageId: number) => {
-    setDeletedImageIds((prev) => [...prev, imageId]);
-    setPreviewImages((prev) => prev.filter((image) => image.id !== imageId));
+    setDeletedImageIds((prev) => [...prev, imageId]); // Mark file as deleted
+    setPreviewImages((prev) => prev.filter((media) => media.id !== imageId)); // Remove preview
 
     toast({
-      title: "Image removed",
-      description: "Image marked for deletion.",
+      title: "File Removed",
+      description: "File marked for deletion.",
       variant: "default",
     });
   };
@@ -526,7 +569,9 @@ export default function EditCommercialPropertyForm() {
                     <SelectValue placeholder="Выберите расположение" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="business_center">Бизнес-центр</SelectItem>
+                    <SelectItem value="business_center">
+                      Бизнес-центр
+                    </SelectItem>
                     <SelectItem value="administrative_building">
                       Административное здание
                     </SelectItem>
@@ -534,7 +579,9 @@ export default function EditCommercialPropertyForm() {
                       Жилое здание
                     </SelectItem>
                     <SelectItem value="cottage">Коттедж</SelectItem>
-                    <SelectItem value="shopping_mall">Торговый центр</SelectItem>
+                    <SelectItem value="shopping_mall">
+                      Торговый центр
+                    </SelectItem>
                     <SelectItem value="industrial_zone">
                       Промышленная зона
                     </SelectItem>
@@ -724,45 +771,73 @@ export default function EditCommercialPropertyForm() {
         </div>
 
         <div>
-          <Label htmlFor="images">Фотографии</Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <Label htmlFor="media">Файлы (Изображения и Видео)</Label>
+          <div
+            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
+            onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+            onDrop={(e) => {
+              e.preventDefault();
+              const dt = new DataTransfer();
+              for (const file of e.dataTransfer.files) {
+                dt.items.add(file);
+              }
+              if (fileInputRef.current) {
+                fileInputRef.current.files = dt.files;
+                handleImageChange({ target: { files: dt.files } } as any);
+              }
+            }}
+            onDragOver={(e) => e.preventDefault()}
+          >
             <div className="space-y-1 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <div className="flex text-sm text-gray-600">
                 <label
-                  htmlFor="images"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  htmlFor="media"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
                 >
                   <span>Загрузить файлы</span>
-                  <input
-                    id="images"
-                    type="file"
-                    className="sr-only"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                  />
                 </label>
+                <input
+                  id="media"
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  accept="image/*,video/*" // Accept both images and videos
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
                 <p className="pl-1">или перетащите сюда</p>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+              <p className="text-xs text-gray-500">
+                Поддерживаемые форматы: PNG, JPG, GIF (до 10MB), MP4, MOV (до
+                50MB)
+              </p>
             </div>
           </div>
           {previewImages.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-4">
-              {previewImages.map((image) => (
-                <div key={image.id} className="relative">
-                  <Image
-                    src={image.url}
-                    alt={`Preview ${image.id}`}
-                    width={150}
-                    height={150}
-                    className="w-full h-32 object-cover rounded-md"
-                  />
+              {previewImages.map((media) => (
+                <div key={media.id} className="relative">
+                  {media.url.match(/\.(mp4|mov)$/i) ||
+                  media.url.includes("blob:") ? (
+                    <video
+                      src={media.url}
+                      controls
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  ) : (
+                    <Image
+                      src={media.url}
+                      alt={`Preview ${media.id}`}
+                      width={150}
+                      height={150}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
                   <button
                     type="button"
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                    onClick={() => removeImage(image.id)}
+                    onClick={() => removeImage(media.id)}
                   >
                     ✕
                   </button>

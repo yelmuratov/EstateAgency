@@ -19,9 +19,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
-import { validateFile, ACCEPTED_IMAGE_TYPES, ACCEPTED_VIDEO_TYPES } from "@/utils/file-validation";
+import {
+  validateFile,
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES,
+} from "@/utils/file-validation";
 
 interface ApartmentFormData {
   district: string;
@@ -71,7 +75,15 @@ export default function ApartmentForm() {
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
-  }, [fetchMetros, fetchDistricts]);
+    return () => {
+      // Cleanup video URLs when component unmounts
+      previewImages.forEach((preview) => {
+        if (preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
+      });
+    };
+  }, [previewImages]);
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -204,28 +216,35 @@ export default function ApartmentForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files);
-    if (files) {
-      const newPreviewImages: string[] = [];
-      Array.from(files).forEach((file) => {
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (e.target?.result) {
-              newPreviewImages.push(e.target.result as string);
-              if (newPreviewImages.length === files.length) {
-                setPreviewImages(newPreviewImages);
-              }
-            }
-          };
-          reader.readAsDataURL(file);
-        } else if (file.type.startsWith('video/')) {
-          // For videos, we'll use a video thumbnail or a placeholder
-          newPreviewImages.push('/video-thumbnail-placeholder.svg');
-        }
-      });
-    }
+    if (!files) return;
+  
+    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
+    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
+  
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            newPreviewImages.push(e.target.result as string);
+            setPreviewImages([...newPreviewImages]); // Update state with appended previews
+          }
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type.startsWith("video/")) {
+        const videoUrl = URL.createObjectURL(file);
+        newPreviewImages.push(videoUrl);
+        setPreviewImages([...newPreviewImages]); // Update state with appended previews
+      }
+  
+      newMediaFiles.push(file); // Add the file to the preserved list
+    });
+  
+    const dt = new DataTransfer();
+    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
+    setMediaFiles(dt.files); // Update media files state
   };
+  
 
   const removeImage = (index: number) => {
     const newPreviewImages = [...previewImages];
@@ -695,6 +714,7 @@ export default function ApartmentForm() {
       </div>
       <div
         className="mt-1 relative"
+        onClick={() => fileInputRef.current?.click()} // Trigger file input on click
         onDrop={(e) => {
           e.preventDefault();
           const droppedFiles = Array.from(e.dataTransfer.files);
@@ -713,14 +733,14 @@ export default function ApartmentForm() {
           if (errors.length > 0) {
             toast({
               title: "Ошибка загрузки",
-              description: errors.join('\n'),
+              description: errors.join("\n"),
               variant: "destructive",
             });
           }
 
           if (validFiles.length > 0) {
             const dt = new DataTransfer();
-            validFiles.forEach(file => dt.items.add(file));
+            validFiles.forEach((file) => dt.items.add(file));
             if (fileInputRef.current) {
               fileInputRef.current.files = dt.files;
               handleImageChange({ target: { files: dt.files } } as any);
@@ -729,11 +749,11 @@ export default function ApartmentForm() {
         }}
         onDragOver={(e) => {
           e.preventDefault();
-          e.currentTarget.classList.add('border-primary');
+          e.currentTarget.classList.add("border-primary");
         }}
         onDragLeave={(e) => {
           e.preventDefault();
-          e.currentTarget.classList.remove('border-primary');
+          e.currentTarget.classList.remove("border-primary");
         }}
       >
         <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors duration-200 ease-in-out hover:border-primary">
@@ -745,46 +765,6 @@ export default function ApartmentForm() {
                 className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
               >
                 <span>Загрузить файлы</span>
-                <input
-                  id="images"
-                  type="file"
-                  className="sr-only"
-                  multiple
-                  accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(',')}
-                  {...register("media")}
-                  ref={fileInputRef}
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files) {
-                      const validFiles: File[] = [];
-                      const errors: string[] = [];
-
-                      Array.from(files).forEach((file) => {
-                        const { isValid, error } = validateFile(file);
-                        if (isValid) {
-                          validFiles.push(file);
-                        } else if (error) {
-                          errors.push(error);
-                        }
-                      });
-
-                      if (errors.length > 0) {
-                        toast({
-                          title: "Ошибка загрузки",
-                          description: errors.join('\n'),
-                          variant: "destructive",
-                        });
-                      }
-
-                      if (validFiles.length > 0) {
-                        const dt = new DataTransfer();
-                        validFiles.forEach(file => dt.items.add(file));
-                        e.target.files = dt.files;
-                        handleImageChange(e);
-                      }
-                    }
-                  }}
-                />
               </label>
               <p className="pl-1">или перетащите сюда</p>
             </div>
@@ -795,17 +775,68 @@ export default function ApartmentForm() {
             </p>
           </div>
         </div>
-        {previewImages.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {previewImages.map((preview, index) => (
+        <input
+          id="images"
+          type="file"
+          className="sr-only"
+          multiple
+          accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
+          ref={fileInputRef}
+          onChange={(e) => {
+            const files = e.target.files;
+            if (files) {
+              const validFiles: File[] = [];
+              const errors: string[] = [];
+
+              Array.from(files).forEach((file) => {
+                const { isValid, error } = validateFile(file);
+                if (isValid) {
+                  validFiles.push(file);
+                } else if (error) {
+                  errors.push(error);
+                }
+              });
+
+              if (errors.length > 0) {
+                toast({
+                  title: "Ошибка загрузки",
+                  description: errors.join("\n"),
+                  variant: "destructive",
+                });
+              }
+
+              if (validFiles.length > 0) {
+                const dt = new DataTransfer();
+                validFiles.forEach((file) => dt.items.add(file));
+                e.target.files = dt.files;
+                handleImageChange(e);
+              }
+            }
+          }}
+        />
+      </div>
+      {previewImages.length > 0 && (
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {previewImages.map((preview, index) => {
+            const isVideo =
+              mediaFiles && mediaFiles[index]?.type.startsWith("video/");
+            return (
               <div key={index} className="relative group">
-                <Image
-                  src={preview}
-                  alt={`Preview ${index + 1}`}
-                  width={200}
-                  height={200}
-                  className="object-cover rounded-lg h-32 w-full"
-                />
+                {isVideo ? (
+                  <video
+                    src={preview}
+                    className="object-cover rounded-lg h-32 w-full"
+                    controls
+                  />
+                ) : (
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    width={200}
+                    height={200}
+                    className="object-cover rounded-lg h-32 w-full"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
@@ -814,10 +845,11 @@ export default function ApartmentForm() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? (
           <>
@@ -831,4 +863,3 @@ export default function ApartmentForm() {
     </form>
   );
 }
-

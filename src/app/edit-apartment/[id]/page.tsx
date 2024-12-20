@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect} from "react";
+import { useState, useRef, useEffect } from "react";
 import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
@@ -62,7 +62,9 @@ export default function EditApartmentForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImages, setPreviewImages] = useState<{ id: number; url: string }[]>([]);
+  const [previewImages, setPreviewImages] = useState<
+    { id: number; url: string }[]
+  >([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +72,7 @@ export default function EditApartmentForm() {
 
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
-  const { fetchApartmentById } = useApartmentStore(); 
+  const { fetchApartmentById } = useApartmentStore();
 
   const { user } = UserStore();
 
@@ -103,10 +105,21 @@ export default function EditApartmentForm() {
               ...apartmentData,
               category: "apartment",
               action_type: apartmentData.action_type as "rent" | "sale",
-              house_type: apartmentData.house_type as "new_building" | "secondary",
-              bathroom: apartmentData.bathroom as "seperated" | "combined" | "many",
-              house_condition: apartmentData.house_condition as "euro" | "normal" | "repair",
-              current_status: apartmentData.current_status as "free" | "soon" | "busy",
+              house_type: apartmentData.house_type as
+                | "new_building"
+                | "secondary",
+              bathroom: apartmentData.bathroom as
+                | "seperated"
+                | "combined"
+                | "many",
+              house_condition: apartmentData.house_condition as
+                | "euro"
+                | "normal"
+                | "repair",
+              current_status: apartmentData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
             });
             if (apartmentData.media) {
               setPreviewImages(
@@ -120,7 +133,9 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: `Failed to load apartment data: ${(error as Error).message}`,
+            description: `Failed to load apartment data: ${
+              (error as Error).message
+            }`,
             variant: "destructive",
           });
         } finally {
@@ -186,23 +201,27 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: `Failed to load apartment data: ${(error as Error).message}`,
+            description: `Failed to load apartment data: ${
+              (error as Error).message
+            }`,
             variant: "destructive",
           });
-        } 
+        }
       }
     };
 
     loadApartment();
   }, [id, fetchApartmentById, reset, toast]);
 
-  if(loading) {
+  if (loading) {
     return <Spinner theme="dark" />;
   }
 
   const errorTranslations: { [key: string]: string } = {
-    "401: This object created by another agent": "401: Этот объект создан другим агентом",
-    "Network Error: Unable to reach the server.": "Ошибка сети: Не удалось подключиться к серверу.",
+    "401: This object created by another agent":
+      "401: Этот объект создан другим агентом",
+    "Network Error: Unable to reach the server.":
+      "Ошибка сети: Не удалось подключиться к серверу.",
     "Server Error: 500": "Ошибка сервера: 500",
     // Add more translations as needed
   };
@@ -211,38 +230,40 @@ export default function EditApartmentForm() {
     return errorTranslations[message] || message; // Fallback to the original message
   };
 
-
   const onSubmit = async (data: ApartmentFormData) => {
     try {
       if (!initialData) {
         throw new Error("Initial data not loaded.");
       }
-  
+
       const queryParams: Record<string, string> = {};
-      let hasTextChanges = false; 
+      let hasTextChanges = false;
       let hasFileChanges = false;
-  
+
       // Detect text changes (excluding media)
       (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
         const currentValue = data[key];
         const initialValue = initialData[key];
-  
-        if (key !== "media" as keyof ApartmentFormData && currentValue !== initialValue) {
+
+        if (
+          key !== ("media" as keyof ApartmentFormData) &&
+          currentValue !== initialValue
+        ) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
         }
       });
-  
+
       // Check for new media files
       if (mediaFiles && mediaFiles.length > 0) {
         hasFileChanges = true;
       }
-  
+
       // Check for deleted images
       if (deletedImageIds.length > 0) {
         hasFileChanges = true;
       }
-  
+
       // If no changes detected, exit early
       if (!hasTextChanges && !hasFileChanges) {
         toast({
@@ -252,18 +273,22 @@ export default function EditApartmentForm() {
         });
         return;
       }
-  
+
       setIsSubmitting(true);
-  
+
       // Step 1: Handle Deleted Images
       if (deletedImageIds.length > 0) {
         try {
           const uniqueDeletedIds = [...new Set(deletedImageIds)];
           const queryParams = new URLSearchParams();
           queryParams.append("table", "apartment");
-          uniqueDeletedIds.forEach((id) => queryParams.append("media", id.toString()));
-  
-          await api.delete(`/additional/delete_media/?${queryParams.toString()}`);
+          uniqueDeletedIds.forEach((id) =>
+            queryParams.append("media", id.toString())
+          );
+
+          await api.delete(
+            `/additional/delete_media/?${queryParams.toString()}`
+          );
           toast({
             title: "Success",
             description: "Deleted images successfully.",
@@ -272,27 +297,29 @@ export default function EditApartmentForm() {
         } catch (deleteError) {
           toast({
             title: "Error",
-            description: `Failed to delete images: ${(deleteError as Error).message}`,
+            description: `Failed to delete images: ${
+              (deleteError as Error).message
+            }`,
             variant: "destructive",
           });
-          return; 
+          return;
         }
       }
-  
+
       // Step 2: Handle PUT Request
       if (hasFileChanges || hasTextChanges) {
         const queryString = new URLSearchParams(queryParams).toString();
         const url = `/apartment/${id}${queryString ? `?${queryString}` : ""}`;
-      
+
         if (hasFileChanges) {
           const formData = new FormData();
-      
+
           // Add media files only if they exist
           if (mediaFiles && mediaFiles?.length > 0) {
             for (const file of mediaFiles) {
               formData.append("media", file);
             }
-      
+
             // Send request with FormData
             await api.put(url, formData, {
               headers: {
@@ -300,15 +327,17 @@ export default function EditApartmentForm() {
               },
             });
           } else {
-            console.warn("No media files to upload. Skipping FormData submission.");
+            console.warn(
+              "No media files to upload. Skipping FormData submission."
+            );
           }
-        } 
-      
+        }
+
         // Handle text changes separately
         if (hasTextChanges && !hasFileChanges) {
           await api.put(url, queryParams);
         }
-      
+
         toast({
           title: "Success",
           description: "Apartment updated successfully.",
@@ -318,25 +347,29 @@ export default function EditApartmentForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-      
+
       if (error && typeof error === "object" && "isAxiosError" in error) {
         const axiosError = error as AxiosError<{ detail?: string }>;
-        
+
         if (axiosError.response) {
           const detail = axiosError.response.data?.detail;
-          
+
           if (detail) {
             errorMessage = translateError(detail); // Translate the error message
           } else {
-            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            errorMessage = translateError(
+              `Server Error: ${axiosError.response.status}`
+            );
           }
         } else {
-          errorMessage = translateError("Network Error: Unable to reach the server.");
+          errorMessage = translateError(
+            "Network Error: Unable to reach the server."
+          );
         }
       } else if (error instanceof Error) {
         errorMessage = translateError(error.message);
       }
-      
+
       toast({
         title: "Ошибка",
         description: errorMessage,
@@ -346,13 +379,11 @@ export default function EditApartmentForm() {
       setIsSubmitting(false);
     }
   };
-  
-  
-  
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     setMediaFiles(files); // Store new files
-  
+
     if (files) {
       const newPreviewImages: { id: number; url: string }[] = [];
       for (let i = 0; i < files.length; i++) {
@@ -372,20 +403,18 @@ export default function EditApartmentForm() {
       }
     }
   };
-  
-  
+
   const removeImage = (imageId: number) => {
     // Remove the image ID from the preview
     setDeletedImageIds((prev) => [...prev, imageId]);
     setPreviewImages((prev) => prev.filter((image) => image.id !== imageId));
-  
+
     toast({
       title: "Image removed",
       description: "Image marked for deletion.",
       variant: "default",
     });
   };
-
 
   return (
     <DashboardLayout>
@@ -721,24 +750,24 @@ export default function EditApartmentForm() {
             )}
           </div>
 
-            <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="agent_percent">Процент агента</Label>
             <Input
               id="agent_percent"
               type="number"
               step="0.01" // Allow floating point numbers
               {...register("agent_percent", {
-              required: "Это поле обязательно",
-              valueAsNumber: true,
+                required: "Это поле обязательно",
+                valueAsNumber: true,
               })}
               placeholder="Введите процент агента"
             />
             {errors.agent_percent && (
               <p className="text-red-500 text-sm mt-1">
-              {errors.agent_percent.message}
+                {errors.agent_percent.message}
               </p>
             )}
-            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="agent_commission">Комиссия агента</Label>
@@ -834,57 +863,81 @@ export default function EditApartmentForm() {
         </div>
 
         <div>
-          <Label htmlFor="images">Фотографии</Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <Label htmlFor="media">Файлы (Изображения и Видео)</Label>
+          <div
+            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
+            onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+            onDrop={(e) => {
+              e.preventDefault();
+              const dt = new DataTransfer();
+              for (const file of e.dataTransfer.files) {
+                dt.items.add(file);
+              }
+              if (fileInputRef.current) {
+                fileInputRef.current.files = dt.files;
+                handleImageChange({ target: { files: dt.files } } as any);
+              }
+            }}
+            onDragOver={(e) => e.preventDefault()}
+          >
             <div className="space-y-1 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <div className="flex text-sm text-gray-600">
                 <label
-                  htmlFor="images"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  htmlFor="media"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
                 >
                   <span>Загрузить файлы</span>
-                  <input
-                    id="images"
-                    type="file"
-                    className="sr-only"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                  />
                 </label>
+                <input
+                  id="media"
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  accept="image/*,video/*" // Accept both images and videos
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
                 <p className="pl-1">или перетащите сюда</p>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+              <p className="text-xs text-gray-500">
+                Поддерживаемые форматы: PNG, JPG, GIF (до 10MB), MP4, MOV (до
+                50MB)
+              </p>
             </div>
           </div>
           {previewImages.length > 0 && (
-             <div>
-             {previewImages.length > 0 && (
-               <div className="mt-4 grid grid-cols-3 gap-4">
-                 {previewImages.map((image) => (
-                   <div key={image.id} className="relative">
-                     <Image
-                       src={image.url}
-                       alt={`Preview ${image.id}`}
-                       width={150}
-                       height={150}
-                       className="w-full h-32 object-cover rounded-md"
-                     />
-                     <button
-                       type="button"
-                       className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                       onClick={() => removeImage(image.id)} // Pass the image ID
-                     >
-                       ✕
-                     </button>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {previewImages.map((media) => (
+                <div key={media.id} className="relative">
+                  {media.url.endsWith(".mp4") || media.url.endsWith(".mov") ? (
+                    <video
+                      src={media.url}
+                      controls
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  ) : (
+                    <Image
+                      src={media.url}
+                      alt={`Preview ${media.id}`}
+                      width={150}
+                      height={150}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                    onClick={() => removeImage(media.id)} // Pass the media ID
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
+
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? (
             <>

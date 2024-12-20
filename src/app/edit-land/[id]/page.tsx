@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
 import {
@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useLandStore } from "@/store/land/landStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -38,8 +38,16 @@ interface LandFormData {
   comment?: string;
   price: number;
   square_area: number;
-  location: "city" | "suburb" | "countryside" | "along_road" | "near_pond" | "foothills" | "cottage_area" | "closed_area";
-  house_condition: "euro" | "repair" | "normal"
+  location:
+    | "city"
+    | "suburb"
+    | "countryside"
+    | "along_road"
+    | "near_pond"
+    | "foothills"
+    | "cottage_area"
+    | "closed_area";
+  house_condition: "euro" | "repair" | "normal";
   current_status: "free" | "soon" | "busy";
   parking_place: boolean;
   agent_percent: number;
@@ -54,7 +62,9 @@ export default function EditLandForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImages, setPreviewImages] = useState<{ id: number; url: string }[]>([]);
+  const [previewImages, setPreviewImages] = useState<
+    { id: number; url: string }[]
+  >([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +82,10 @@ export default function EditLandForm() {
   }, [user, router]);
 
   const errorTranslations: { [key: string]: string } = {
-    "401: This object created by another agent": "401: Этот объект создан другим агентом",
-    "Network Error: Unable to reach the server.": "Ошибка сети: Не удалось подключиться к серверу.",
+    "401: This object created by another agent":
+      "401: Этот объект создан другим агентом",
+    "Network Error: Unable to reach the server.":
+      "Ошибка сети: Не удалось подключиться к серверу.",
     "Server Error: 500": "Ошибка сервера: 500",
     // Add more translations as needed
   };
@@ -105,8 +117,12 @@ export default function EditLandForm() {
               category: "land",
               action_type: landData.action_type as "rent" | "sale",
               location: landData.location as LandFormData["location"],
-              house_condition: landData.house_condition as LandFormData["house_condition"],
-              current_status: landData.current_status as "free" | "soon" | "busy",
+              house_condition:
+                landData.house_condition as LandFormData["house_condition"],
+              current_status: landData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
             });
             if (landData.media) {
               setPreviewImages(
@@ -150,8 +166,12 @@ export default function EditLandForm() {
               price: landData.price || 0,
               square_area: landData.square_area || 0,
               location: landData.location as LandFormData["location"],
-              house_condition: landData.house_condition as LandFormData["house_condition"],
-              current_status: landData.current_status as "free" | "soon" | "busy",
+              house_condition:
+                landData.house_condition as LandFormData["house_condition"],
+              current_status: landData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
               parking_place: landData.parking_place || false,
               agent_percent: landData.agent_percent || 0,
               agent_commission: landData.agent_commission || 0,
@@ -194,7 +214,10 @@ export default function EditLandForm() {
         const currentValue = data[key];
         const initialValue = initialData[key];
 
-        if (key !== "media" as keyof LandFormData && currentValue !== initialValue) {
+        if (
+          key !== ("media" as keyof LandFormData) &&
+          currentValue !== initialValue
+        ) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
         }
@@ -224,9 +247,13 @@ export default function EditLandForm() {
           const uniqueDeletedIds = [...new Set(deletedImageIds)];
           const deleteParams = new URLSearchParams();
           deleteParams.append("table", "land");
-          uniqueDeletedIds.forEach((id) => deleteParams.append("media", id.toString()));
+          uniqueDeletedIds.forEach((id) =>
+            deleteParams.append("media", id.toString())
+          );
 
-          await api.delete(`/additional/delete_media/?${deleteParams.toString()}`);
+          await api.delete(
+            `/additional/delete_media/?${deleteParams.toString()}`
+          );
           toast({
             title: "Success",
             description: "Deleted images successfully.",
@@ -275,13 +302,15 @@ export default function EditLandForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-    
+
       if (error && typeof error === "object" && "isAxiosError" in error) {
-        const axiosError = error as AxiosError<{ detail?: string | Record<string, string> }>;
-    
+        const axiosError = error as AxiosError<{
+          detail?: string | Record<string, string>;
+        }>;
+
         if (axiosError.response) {
           const detail = axiosError.response.data?.detail;
-    
+
           if (typeof detail === "string") {
             // Handle a single string error message
             errorMessage = translateError(detail);
@@ -292,17 +321,21 @@ export default function EditLandForm() {
               .join(", ");
           } else {
             // Fallback for server errors
-            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            errorMessage = translateError(
+              `Server Error: ${axiosError.response.status}`
+            );
           }
         } else {
           // Network error
-          errorMessage = translateError("Network Error: Unable to reach the server.");
+          errorMessage = translateError(
+            "Network Error: Unable to reach the server."
+          );
         }
       } else if (error instanceof Error) {
         // Handle generic JavaScript errors
         errorMessage = translateError(error.message);
       }
-    
+
       toast({
         title: "Ошибка",
         description: errorMessage,
@@ -315,24 +348,31 @@ export default function EditLandForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files);
+    setMediaFiles(files); // Store new files
 
     if (files) {
       const newPreviewImages: { id: number; url: string }[] = [];
       for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push({
-              id: Date.now() + i,
+              id: Date.now() + i, // Use a unique ID for new images
               url: e.target.result as string,
             });
             if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]);
+              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images/videos
             }
           }
         };
-        reader.readAsDataURL(files[i]);
+
+        // Check if the file is an image or video
+        if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+          reader.readAsDataURL(file);
+        } else {
+          console.warn(`Unsupported file type: ${file.type}`);
+        }
       }
     }
   };
@@ -477,12 +517,16 @@ export default function EditLandForm() {
                   <SelectContent>
                     <SelectItem value="city">Город</SelectItem>
                     <SelectItem value="suburb">Пригород</SelectItem>
-                    <SelectItem value="countryside">Сельская местность</SelectItem>
+                    <SelectItem value="countryside">
+                      Сельская местность
+                    </SelectItem>
                     <SelectItem value="along_road">Вдоль дороги</SelectItem>
                     <SelectItem value="near_pond">У водоема</SelectItem>
                     <SelectItem value="foothills">Предгорье</SelectItem>
                     <SelectItem value="cottage_area">Дачный массив</SelectItem>
-                    <SelectItem value="closed_area">Закрытая территория</SelectItem>
+                    <SelectItem value="closed_area">
+                      Закрытая территория
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -666,45 +710,73 @@ export default function EditLandForm() {
         </div>
 
         <div>
-          <Label htmlFor="images">Фотографии</Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <Label htmlFor="media">Файлы (Изображения и Видео)</Label>
+          <div
+            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
+            onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+            onDrop={(e) => {
+              e.preventDefault();
+              const dt = new DataTransfer();
+              for (const file of e.dataTransfer.files) {
+                dt.items.add(file);
+              }
+              if (fileInputRef.current) {
+                fileInputRef.current.files = dt.files;
+                handleImageChange({ target: { files: dt.files } } as any);
+              }
+            }}
+            onDragOver={(e) => e.preventDefault()}
+          >
             <div className="space-y-1 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <div className="flex text-sm text-gray-600">
                 <label
-                  htmlFor="images"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  htmlFor="media"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
                 >
                   <span>Загрузить файлы</span>
-                  <input
-                    id="images"
-                    type="file"
-                    className="sr-only"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                  />
                 </label>
+                <input
+                  id="media"
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  accept="image/*,video/*" // Accept both images and videos
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
                 <p className="pl-1">или перетащите сюда</p>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+              <p className="text-xs text-gray-500">
+                Поддерживаемые форматы: PNG, JPG, GIF (до 10MB), MP4, MOV (до
+                50MB)
+              </p>
             </div>
           </div>
           {previewImages.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-4">
-              {previewImages.map((image) => (
-                <div key={image.id} className="relative">
-                  <Image
-                    src={image.url}
-                    alt={`Preview ${image.id}`}
-                    width={150}
-                    height={150}
-                    className="w-full h-32 object-cover rounded-md"
-                  />
+              {previewImages.map((media) => (
+                <div key={media.id} className="relative">
+                  {media.url.match(/\.(mp4|mov)$/i) ||
+                  media.url.includes("blob:") ? (
+                    <video
+                      src={media.url}
+                      controls
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  ) : (
+                    <Image
+                      src={media.url}
+                      alt={`Preview ${media.id}`}
+                      width={150}
+                      height={150}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
                   <button
                     type="button"
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                    onClick={() => removeImage(image.id)}
+                    onClick={() => removeImage(media.id)}
                   >
                     ✕
                   </button>
@@ -735,4 +807,3 @@ export default function EditLandForm() {
     </DashboardLayout>
   );
 }
-
