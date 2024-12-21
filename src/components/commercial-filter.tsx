@@ -62,7 +62,7 @@ export function CommercialFilter({
     const handleSubmit = () => {
       // Filter out empty fields
       const changedFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value.trim() !== "")
+        Object.entries(filters).filter(([,value]) => value.trim() !== "")
       );
   
       filterCommercials(changedFilters); // Send only changed filters

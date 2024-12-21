@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,7 +96,6 @@ const houseTypeTranslation: { [key: string]: string } = {
 };
 
 export default function PropertyTable() {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
@@ -108,7 +106,7 @@ export default function PropertyTable() {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string }>({});
+  const [previewUrls] = useState<{ [key: string]: string }>({});
 
   const router = useRouter();
 
@@ -134,12 +132,6 @@ export default function PropertyTable() {
       });
     };
   }, [previewUrls]);
-
-  const toggleRow = (id: number) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -230,7 +222,6 @@ export default function PropertyTable() {
       </div>
     );
   };
-
   const renderModalContent = () => {
     if (!modalContent) return null;
 

@@ -52,7 +52,7 @@ export function PropertyFilter({
       fetchMetros();
       fetchDistricts();
       fetchUsers();
-    }, [fetchMetros, fetchDistricts]);
+    }, [fetchMetros, fetchDistricts,fetchUsers]);
   
     const [filters, setFilters] = useState<Record<string, string>>({
       table: "apartment",
@@ -79,7 +79,7 @@ export function PropertyFilter({
     const handleSubmit = () => {
       // Filter out empty fields
       const changedFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value.trim() !== "")
+        Object.entries(filters).filter(([, value]) => value.trim() !== "")
       );
   
       filterApartments(changedFilters); // Send only changed filters
@@ -103,7 +103,7 @@ export function PropertyFilter({
         floor_max: "",
         responsible: "",
       });
-      filterApartments({ table: "apartment" }); // Reset with table filter
+      filterApartments({ table: "apartment" });
       onOpenChange(false);
     };
   

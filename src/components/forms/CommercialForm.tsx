@@ -89,7 +89,7 @@ export default function CommercialPropertyForm() {
         }
       });
     };
-  }, [previewImages]);
+  }, [previewImages, fetchDistricts]);
 
   const onSubmit = async (data: CommercialFormData) => {
     setIsSubmitting(true);
@@ -693,7 +693,7 @@ export default function CommercialPropertyForm() {
               validFiles.forEach((file) => dt.items.add(file));
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as any);
+                handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
               }
             }
           }}

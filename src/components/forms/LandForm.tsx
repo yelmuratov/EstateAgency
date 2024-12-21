@@ -98,7 +98,7 @@ export default function LandPropertyForm() {
   useEffect(() => {
     fetchDistricts();
     fetchUsers();
-  }, [fetchDistricts]);
+  }, [fetchDistricts, fetchUsers]);
 
   const onSubmit = async (data: LandFormData) => {
     try {
@@ -757,7 +757,7 @@ export default function LandPropertyForm() {
               validFiles.forEach((file) => dt.items.add(file));
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as any);
+                handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
               }
             }
           }}

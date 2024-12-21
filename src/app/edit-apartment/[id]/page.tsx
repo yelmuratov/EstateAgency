@@ -30,12 +30,6 @@ import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
 
-interface Media {
-  id: number;
-  url: string;
-  media_type: string;
-}
-
 interface ApartmentFormData {
   district: string;
   metro_st: string;
@@ -64,7 +58,8 @@ interface ApartmentFormData {
 }
 
 export default function EditApartmentForm() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -387,7 +382,7 @@ export default function EditApartmentForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList } }) => {
     const files = e.target.files;
     setMediaFiles(files);
 
@@ -884,7 +879,7 @@ export default function EditApartmentForm() {
               }
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as any);
+                handleImageChange({ target: { files: dt.files } });
               }
             }}
             onDragOver={(e) => e.preventDefault()}

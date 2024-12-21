@@ -35,7 +35,9 @@ interface Land {
   square_area: number;
   responsible: string;
   second_responsible: string;
+  status_date: string;
   media: Media[];
+  second_agent_percent: number;
 }
 
 interface LandStore {
@@ -48,6 +50,8 @@ interface LandStore {
   searchLands: (query: string) => Promise<void>;
   searchError: string | null;
   searchLoading: boolean;
+  filterLands: (filters: Record<string, string>) => Promise<void>;
+  filterError: string | null;
 }
 
 export const useLandStore = create<LandStore>((set) => ({
@@ -57,6 +61,7 @@ export const useLandStore = create<LandStore>((set) => ({
   error: null,
   searchError: null,
   searchLoading: false,
+  filterError: null,
   fetchLands: async (page: number, limit: number) => {
     set({ loading: true, error: null });
     try {
@@ -130,6 +135,30 @@ export const useLandStore = create<LandStore>((set) => ({
         searchError:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         searchLoading: false,
+        lands: [], // Reset to an empty array in case of error
+      });
+    }
+  },
+  filterLands: async (filters) => {
+    set({ loading: true, filterError: null });
+    try {
+      const response = await api.get(`/additional/filter/?table=lands&${filters}`, {
+        params: filters,
+      });
+      set({
+        lands: Array.isArray(response.data) ? response.data : [], // Use `data` key
+        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of lands array
+        loading: false,
+      });
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      set({
+        filterError:
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
+        loading: false,
         lands: [], // Reset to an empty array in case of error
       });
     }

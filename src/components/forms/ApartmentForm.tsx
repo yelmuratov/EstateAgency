@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
@@ -82,7 +82,7 @@ export default function ApartmentForm() {
         }
       });
     };
-  }, [previewImages]);
+  }, [previewImages, fetchMetros, fetchDistricts]);
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -702,7 +702,7 @@ export default function ApartmentForm() {
             validFiles.forEach((file) => dt.items.add(file));
             if (fileInputRef.current) {
               fileInputRef.current.files = dt.files;
-              handleImageChange({ target: { files: dt.files } } as any);
+              handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
             }
           }
         }}

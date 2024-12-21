@@ -61,7 +61,8 @@ interface CommercialFormData {
 }
 
 export default function EditCommercialPropertyForm() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -783,7 +784,7 @@ export default function EditCommercialPropertyForm() {
               }
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as any);
+                handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
               }
             }}
             onDragOver={(e) => e.preventDefault()}

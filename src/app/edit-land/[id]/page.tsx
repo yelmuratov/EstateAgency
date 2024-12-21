@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from 'lucide-react';
 import Image from "next/image";
 
 import {
@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useLandStore } from "@/store/land/landStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -29,6 +29,11 @@ import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
 import { UserStore as usersStore } from "@/store/users/userStore";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from 'lucide-react';
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface LandFormData {
   district: string;
@@ -38,7 +43,10 @@ interface LandFormData {
   description?: string;
   comment?: string;
   price: number;
+  rooms: number;
   square_area: number;
+  live_square_area: number;
+  floor_number: number;
   location:
     | "city"
     | "suburb"
@@ -48,18 +56,25 @@ interface LandFormData {
     | "foothills"
     | "cottage_area"
     | "closed_area";
+  furnished: boolean;
   house_condition: "euro" | "repair" | "normal";
   current_status: "free" | "soon" | "busy";
-  parking_place: boolean;
+  parking_place: string;
   agent_percent: number;
   agent_commission?: number;
   crm_id?: string;
   second_responsible?: string;
   id?: number;
+  status_date?: string;
+  second_agent_percent: number;
 }
 
+const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif"];
+const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/mov", "video/avi"];
+
 export default function EditLandForm() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,7 +122,9 @@ export default function EditLandForm() {
   useEffect(() => {
     fetchDistricts();
     fetchUsers();
-  }, [fetchDistricts]);
+  }, [fetchDistricts, fetchUsers]);
+
+  const [initialData, setInitialData] = useState<LandFormData | null>(null);
 
   useEffect(() => {
     const loadLand = async () => {
@@ -115,18 +132,38 @@ export default function EditLandForm() {
         try {
           const landData = await fetchLandById(Number(id));
           if (landData) {
-            reset({
-              ...landData,
+            const mappedData: LandFormData = {
+              district: landData.district || "",
+              title: landData.title || "",
               category: "land",
               action_type: landData.action_type as "rent" | "sale",
+              description: landData.description || "",
+              comment: landData.comment || "",
+              price: landData.price || 0,
+              rooms: landData.rooms || 0,
+              square_area: landData.square_area || 0,
+              live_square_area: landData.live_square_area || 0,
+              floor_number: landData.floor_number || 0,
               location: landData.location as LandFormData["location"],
+              furnished: landData.furnished || false,
               house_condition:
                 landData.house_condition as LandFormData["house_condition"],
               current_status: landData.current_status as
                 | "free"
                 | "soon"
                 | "busy",
-            });
+              parking_place: landData.parking_place ? "true" : "false",
+              agent_percent: landData.agent_percent || 0,
+              agent_commission: landData.agent_commission || 0,
+              crm_id: landData.crm_id || "",
+              second_responsible: landData.second_responsible || "",
+              id: landData.id || 0,
+              status_date: landData.status_date || "",
+              second_agent_percent: landData.second_agent_percent || 0,
+            };
+
+            setInitialData(mappedData);
+            reset(mappedData);
             if (landData.media) {
               setPreviewImages(
                 landData.media.map((m: { id: number; url: string }) => ({
@@ -151,53 +188,6 @@ export default function EditLandForm() {
     loadLand();
   }, [id, fetchLandById, reset, toast]);
 
-  const [initialData, setInitialData] = useState<LandFormData | null>(null);
-
-  useEffect(() => {
-    const loadLand = async () => {
-      if (id) {
-        try {
-          const landData = await fetchLandById(Number(id));
-          if (landData) {
-            const mappedData: LandFormData = {
-              district: landData.district || "",
-              title: landData.title || "",
-              category: "land",
-              action_type: landData.action_type as "rent" | "sale",
-              description: landData.description || "",
-              comment: landData.comment || "",
-              price: landData.price || 0,
-              square_area: landData.square_area || 0,
-              location: landData.location as LandFormData["location"],
-              house_condition:
-                landData.house_condition as LandFormData["house_condition"],
-              current_status: landData.current_status as
-                | "free"
-                | "soon"
-                | "busy",
-              parking_place: landData.parking_place || false,
-              agent_percent: landData.agent_percent || 0,
-              agent_commission: landData.agent_commission || 0,
-              crm_id: landData.crm_id || "",
-              second_responsible: landData.second_responsible || "",
-              id: landData.id || 0,
-            };
-
-            setInitialData(mappedData);
-            reset(mappedData);
-          }
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: `Failed to load land data: ${error}`,
-            variant: "destructive",
-          });
-        }
-      }
-    };
-
-    loadLand();
-  }, [id, fetchLandById, reset, toast]);
 
   if (loading) {
     return <Spinner theme="dark" />;
@@ -349,35 +339,68 @@ export default function EditLandForm() {
     }
   };
 
+  const validateFile = (file: File) => {
+    const fileSizeInMB = file.size / (1024 * 1024);
+    if (file.type.startsWith("image/")) {
+      if (fileSizeInMB > 5) {
+        return { isValid: false, error: "Размер изображения превышает 5MB" };
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        return { isValid: false, error: "Неподдерживаемый формат изображения" };
+      }
+    } else if (file.type.startsWith("video/")) {
+      if (fileSizeInMB > 30) {
+        return { isValid: false, error: "Размер видео превышает 30MB" };
+      }
+      if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) {
+        return { isValid: false, error: "Неподдерживаемый формат видео" };
+      }
+    } else {
+      return { isValid: false, error: "Неподдерживаемый тип файла" };
+    }
+    return { isValid: true, error: null };
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files); // Store new files
+    if (!files) return;
 
-    if (files) {
-      const newPreviewImages: { id: number; url: string }[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newPreviewImages.push({
-              id: Date.now() + i, // Use a unique ID for new images
-              url: e.target.result as string,
-            });
-            if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images/videos
+    const newPreviewImages: { id: number; url: string }[] = [...previewImages];
+    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : [];
+
+    Array.from(files).forEach((file) => {
+      const { isValid, error } = validateFile(file);
+      if (isValid) {
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              newPreviewImages.push({
+                id: Date.now(),
+                url: e.target.result as string,
+              });
+              setPreviewImages([...newPreviewImages]);
             }
-          }
-        };
-
-        // Check if the file is an image or video
-        if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
+          };
           reader.readAsDataURL(file);
-        } else {
-          console.warn(`Unsupported file type: ${file.type}`);
+        } else if (file.type.startsWith("video/")) {
+          const videoUrl = URL.createObjectURL(file);
+          newPreviewImages.push({ id: Date.now(), url: videoUrl });
+          setPreviewImages([...newPreviewImages]);
         }
+        newMediaFiles.push(file);
+      } else if (error) {
+        toast({
+          title: "Ошибка загрузки",
+          description: error,
+          variant: "destructive",
+        });
       }
-    }
+    });
+
+    const dt = new DataTransfer();
+    newMediaFiles.forEach((file) => dt.items.add(file));
+    setMediaFiles(dt.files);
   };
 
   const removeImage = (imageId: number) => {
@@ -406,23 +429,23 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите район" />
-            </SelectTrigger>
-            <SelectContent>
-              {districts.map((district) => (
-                <SelectItem key={district.id} value={district.name}>
-            {district.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите район" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             />
             {errors.district && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.district.message}
+                {errors.district.message}
               </p>
             )}
           </div>
@@ -432,15 +455,15 @@ export default function EditLandForm() {
             <Input
               id="title"
               {...register("title", {
-          required: "Это поле обязательно",
-          minLength: { value: 3, message: "Минимум 3 символа" },
-          maxLength: { value: 50, message: "Максимум 50 символов" },
+                required: "Это поле обязательно",
+                minLength: { value: 3, message: "Минимум 3 символа" },
+                maxLength: { value: 50, message: "Максимум 50 символов" },
               })}
               placeholder="Введите название"
             />
             {errors.title && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.title.message}
+                {errors.title.message}
               </p>
             )}
           </div>
@@ -452,20 +475,20 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите тип действия" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="rent">Аренда</SelectItem>
-              <SelectItem value="sale">Продажа</SelectItem>
-            </SelectContent>
-          </Select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите тип действия" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rent">Аренда</SelectItem>
+                    <SelectItem value="sale">Продажа</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
             {errors.action_type && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.action_type.message}
+                {errors.action_type.message}
               </p>
             )}
           </div>
@@ -476,14 +499,14 @@ export default function EditLandForm() {
               id="price"
               type="number"
               {...register("price", {
-          required: "Это поле обязательно",
-          valueAsNumber: true,
+                required: "Это поле обязательно",
+                valueAsNumber: true,
               })}
               placeholder="Введите цену"
             />
             {errors.price && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.price.message}
+                {errors.price.message}
               </p>
             )}
           </div>
@@ -494,14 +517,14 @@ export default function EditLandForm() {
               id="square_area"
               type="number"
               {...register("square_area", {
-          required: "Это поле обязательно",
-          valueAsNumber: true,
+                required: "Это поле обязательно",
+                valueAsNumber: true,
               })}
               placeholder="Введите общую площадь"
             />
             {errors.square_area && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.square_area.message}
+                {errors.square_area.message}
               </p>
             )}
           </div>
@@ -513,30 +536,30 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите расположение" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="city">Город</SelectItem>
-              <SelectItem value="suburb">Пригород</SelectItem>
-              <SelectItem value="countryside">
-                Сельская местность
-              </SelectItem>
-              <SelectItem value="along_road">Вдоль дороги</SelectItem>
-              <SelectItem value="near_pond">У водоема</SelectItem>
-              <SelectItem value="foothills">Предгорье</SelectItem>
-              <SelectItem value="cottage_area">Дачный массив</SelectItem>
-              <SelectItem value="closed_area">
-                Закрытая территория
-              </SelectItem>
-            </SelectContent>
-          </Select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите расположение" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="city">Город</SelectItem>
+                    <SelectItem value="suburb">Пригород</SelectItem>
+                    <SelectItem value="countryside">
+                      Сельская местность
+                    </SelectItem>
+                    <SelectItem value="along_road">Вдоль дороги</SelectItem>
+                    <SelectItem value="near_pond">У водоема</SelectItem>
+                    <SelectItem value="foothills">Предгорье</SelectItem>
+                    <SelectItem value="cottage_area">Дачный массив</SelectItem>
+                    <SelectItem value="closed_area">
+                      Закрытая территория
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
             {errors.location && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.location.message}
+                {errors.location.message}
               </p>
             )}
           </div>
@@ -548,21 +571,21 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите состояние" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="euro">Евро</SelectItem>
-              <SelectItem value="repair">Ремонт</SelectItem>
-              <SelectItem value="normal">Обычное</SelectItem>
-            </SelectContent>
-          </Select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите состояние" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="euro">Евро</SelectItem>
+                    <SelectItem value="repair">Ремонт</SelectItem>
+                    <SelectItem value="normal">Обычное</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
             {errors.house_condition && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.house_condition.message}
+                {errors.house_condition.message}
               </p>
             )}
           </div>
@@ -574,21 +597,21 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-          <Select onValueChange={field.onChange} value={field.value}>
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите текущий статус" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="free">Свободно</SelectItem>
-              <SelectItem value="soon">Скоро освободится</SelectItem>
-              <SelectItem value="busy">Занято</SelectItem>
-            </SelectContent>
-          </Select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите текущий статус" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Свободно</SelectItem>
+                    <SelectItem value="soon">Скоро освободится</SelectItem>
+                    <SelectItem value="busy">Занято</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
             {errors.current_status && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.current_status.message}
+                {errors.current_status.message}
               </p>
             )}
           </div>
@@ -599,18 +622,18 @@ export default function EditLandForm() {
               name="parking_place"
               control={control}
               render={({ field }) => (
-          <Select
-            onValueChange={(value) => field.onChange(value === "true")}
-            value={field.value ? "true" : "false"}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Выберите" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Да</SelectItem>
-              <SelectItem value="false">Нет</SelectItem>
-            </SelectContent>
-          </Select>
+                <Select
+                  onValueChange={(value) => field.onChange(value === "true")}
+                  value={field.value ? "true" : "false"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Да</SelectItem>
+                    <SelectItem value="false">Нет</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
           </div>
@@ -622,38 +645,173 @@ export default function EditLandForm() {
               type="number"
               step="0.01"
               {...register("agent_percent", {
-          required: "Это поле обязательно",
-          valueAsNumber: true,
+                required: "Это поле обязательно",
+                valueAsNumber: true,
               })}
               placeholder="Введите процент агента"
             />
             {errors.agent_percent && (
               <p className="text-red-500 text-sm mt-1">
-          {errors.agent_percent.message}
+                {errors.agent_percent.message}
               </p>
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="rooms">Количество комнат</Label>
+            <Input
+              id="rooms"
+              type="number"
+              {...register("rooms", {
+                required: "Это поле обязательно",
+                valueAsNumber: true,
+              })}
+              placeholder="Введите количество комнат"
+            />
+            {errors.rooms && (
+              <p className="text-red-500 text-sm mt-1">{errors.rooms.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="live_square_area">Жилая площадь</Label>
+            <Input
+              id="live_square_area"
+              type="number"
+              {...register("live_square_area", {
+                required: "Это поле обязательно",
+                valueAsNumber: true,
+              })}
+              placeholder="Введите жилую площадь"
+            />
+            {errors.live_square_area && (
+              <p className="text-red-500 text-sm mt-1">{errors.live_square_area.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="floor_number">Этажность</Label>
+            <Input
+              id="floor_number"
+              type="number"
+              {...register("floor_number", {
+                required: "Это поле обязательно",
+                valueAsNumber: true,
+              })}
+              placeholder="Введите этажность"
+            />
+            {errors.floor_number && (
+              <p className="text-red-500 text-sm mt-1">{errors.floor_number.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="furnished">Меблированная</Label>
+            <Controller
+              name="furnished"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={(value) => field.onChange(value === "true")}
+                  value={field.value ? "true" : "false"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Да</SelectItem>
+                    <SelectItem value="false">Нет</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
           <div>
-        <Label>Второй ответственный</Label>
-        <Controller
-          name="second_responsible"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите Второй ответственный" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.full_name}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
+            <Label>Второй ответственный</Label>
+            <Controller
+              name="second_responsible"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите Второй ответственный" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status_date">Дата статуса</Label>
+            <Controller
+              name="status_date"
+              control={control}
+              rules={{
+                validate: (value) => {
+                  const currentStatus = control._formValues.current_status;
+                  if (currentStatus !== "free" && !value) {
+                    return "Это поле обязательно";
+                  }
+                  return true;
+                },
+              }}
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(new Date(field.value), "yyyy-MM-dd")
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) =>
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            />
+            {errors.status_date && (
+              <p className="text-red-500 text-sm mt-1">{errors.status_date.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="second_agent_percent">Процент второго агента</Label>
+            <Input
+              id="second_agent_percent"
+              type="number"
+              {...register("second_agent_percent", {
+                valueAsNumber: true,
+                min: { value: 0, message: "Процент не может быть меньше 0" },
+                max: { value: 100, message: "Процент не может быть больше 100" },
+              })}
+              placeholder="Введите процент второго агента"
+            />
+            {errors.second_agent_percent && (
+              <p className="text-red-500 text-sm mt-1">{errors.second_agent_percent.message}</p>
+            )}
           </div>
         </div>
 
@@ -693,7 +851,7 @@ export default function EditLandForm() {
           <Label htmlFor="media">Файлы (Изображения и Видео)</Label>
           <div
             className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
-            onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+            onClick={() => fileInputRef.current?.click()}
             onDrop={(e) => {
               e.preventDefault();
               const dt = new DataTransfer();
@@ -702,7 +860,7 @@ export default function EditLandForm() {
               }
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as any);
+                handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
               }
             }}
             onDragOver={(e) => e.preventDefault()}
@@ -721,15 +879,16 @@ export default function EditLandForm() {
                   type="file"
                   multiple
                   className="sr-only"
-                  accept="image/*,video/*" // Accept both images and videos
+                  accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
                   ref={fileInputRef}
                   onChange={handleImageChange}
                 />
                 <p className="pl-1">или перетащите сюда</p>
               </div>
               <p className="text-xs text-gray-500">
-                Поддерживаемые форматы: PNG, JPG, GIF (до 10MB), MP4, MOV (до
-                50MB)
+                Изображения (до 5MB): PNG, JPG, GIF
+                <br />
+                Видео (до 30MB): MP4, MOV, AVI
               </p>
             </div>
           </div>
@@ -737,8 +896,7 @@ export default function EditLandForm() {
             <div className="mt-4 grid grid-cols-3 gap-4">
               {previewImages.map((media) => (
                 <div key={media.id} className="relative">
-                  {media.url.match(/\.(mp4|mov)$/i) ||
-                  media.url.includes("blob:") ? (
+                  {media.url.match(/\.(mp4|mov|avi)$/i) ? (
                     <video
                       src={media.url}
                       controls
@@ -787,3 +945,4 @@ export default function EditLandForm() {
     </DashboardLayout>
   );
 }
+
