@@ -68,7 +68,6 @@ const houseTypeTranslation: { [key: string]: string } = {
 };
 
 const CommercialTable: React.FC = ({}) => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageCommercial")) || 1;
   });
@@ -101,12 +100,6 @@ const CommercialTable: React.FC = ({}) => {
 
     return () => clearTimeout(timer);
   }, [searchQuery, fetchCommercials, currentPage, itemsPerPage]);
-
-  const toggleRow = (id: number) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
