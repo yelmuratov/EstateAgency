@@ -593,9 +593,9 @@ export default function ApartmentForm() {
                 <SelectValue placeholder="Выберите состояние" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="euro">Евроремонт</SelectItem>
+                <SelectItem value="euro">Евро ремонт</SelectItem>
                 <SelectItem value="normal">Обычное</SelectItem>
-                <SelectItem value="repair">Требует ремонта</SelectItem>
+                <SelectItem value="repair">Требует Требует ремонтаа</SelectItem>
               </SelectContent>
             </Select>
           )}

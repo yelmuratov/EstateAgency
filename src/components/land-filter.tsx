@@ -43,7 +43,7 @@ const LOCATION_OPTIONS = {
 const HOUSE_CONDITION_OPTIONS = {
   euro: "Евро",
   normal: "Обычное",
-  repair: "Требует ремонта",
+  repair: "Требует Требует ремонтаа",
 };
 
 const STATUS_OPTIONS = {

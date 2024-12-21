@@ -36,6 +36,7 @@ interface Commercial {
   floor_number?: number; // Optional field
   parking_place?: boolean; // Optional field
   media?: Media[];
+  status_date?: string;
 }
 
 interface CommercialStore {
@@ -129,17 +130,15 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
     }
   },
   // Filter commercials
-  filterCommercials: async (filters: Record<string, string>) => {
-    set({ loading: true, error: null });
+  filterCommercials: async (filters) => {
+    set({ loading: true, filterError: null });
     try {
-      // Build query string from filters
-      const queryParams = new URLSearchParams({ table: "commercial", ...filters }).toString();
-  
-      // Send request with proper query parameters
-      const response = await api.get(`/additional/filter/?${queryParams}`);
+      const response = await api.get(`/additional/filter/?table=commercial&${filters}`, {
+        params: filters,
+      });
       set({
-        commercials: Array.isArray(response.data.data) ? response.data.data : [],
-        total: response.data.total_count || 0,
+        commercials: Array.isArray(response.data) ? response.data : [], // Use `data` key
+        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
         loading: false,
       });
     } catch (error) {
@@ -149,9 +148,10 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
       };
       set({
         filterError:
-          apiError.response?.data?.detail || apiError.message || "Failed to filter commercials",
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         loading: false,
+        commercials: [], // Reset to an empty array in case of error
       });
     }
-  },
+  }
 }));

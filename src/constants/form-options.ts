@@ -15,9 +15,9 @@ export const ACTION_TYPES = [
   ];
   
   export const HOUSE_CONDITIONS = [
-    { value: 'euro', label: 'Евроремонт' },
+    { value: 'euro', label: 'Евро ремонт' },
     { value: 'normal', label: 'Среднее' },
-    { value: 'repair', label: 'Требует ремонта' },
+    { value: 'repair', label: 'Требует Требует ремонтаа' },
   ];
   
   export const CURRENT_STATUSES = [

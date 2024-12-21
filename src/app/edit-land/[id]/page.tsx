@@ -659,7 +659,7 @@ export default function EditLandForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="euro">Евро</SelectItem>
-                  <SelectItem value="repair">Ремонт</SelectItem>
+                  <SelectItem value="repair">Требует ремонта</SelectItem>
                   <SelectItem value="normal">Обычное</SelectItem>
                 </SelectContent>
               </Select>

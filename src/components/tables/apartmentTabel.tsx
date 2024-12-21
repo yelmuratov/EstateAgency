@@ -47,7 +47,7 @@ interface Apartment {
   description: string;
   category: string;
   furnished: boolean;
-  updated_at: string;
+  status_date: string;
   comment: string;
   house_condition: string;
   house_type: string;
@@ -89,8 +89,8 @@ const houseTypeTranslation: { [key: string]: string } = {
   house: "Дом",
   townhouse: "Таунхаус",
   normal: "Обычное",
-  repair: "Требует ремонта",
-  euro: "Евроремонт",
+  repair: "Требует Требует ремонтаа",
+  euro: "Евро ремонт",
   rent: "Аренда",
   sale: "Продажа",
   seperated: "Раздельный",
@@ -303,7 +303,7 @@ export default function PropertyTable() {
                 #
               </th>
               {/* crm id */}
-              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -355,7 +355,7 @@ export default function PropertyTable() {
                     <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <td className="p-2 text-sm font-medium text-gray-900 dark:text-gray-100">
                       {apartment.crm_id}
                     </td>
                     <td className="p-2">
@@ -398,6 +398,14 @@ export default function PropertyTable() {
                           apartment.current_status as keyof typeof statusConfig
                         ]?.label || "Неизвестно"}
                       </Badge>
+                      {/* status date */}
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {
+                          apartment.status_date && (
+                            new Date(apartment.status_date).toLocaleDateString()
+                          )
+                        }
+                      </div>
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                       {apartment.square_area} м²

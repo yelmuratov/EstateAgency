@@ -48,11 +48,11 @@ const statusConfig = {
 const landConditionTranslation: { [key: string]: string } = {
   new: "Новый",
   good: "Хороший",
-  needs_repair: "Требует ремонта",
+  needs_repair: "Требует Требует ремонтаа",
   old: "Старый",
   euro: "Евро",
   normal: "Обычное",
-  repair: "Ремонт",
+  repair: "Требует ремонта",
 };
 
 const locationOptions = [
@@ -197,7 +197,7 @@ const LandTable: React.FC = () => {
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 #
               </th>
-              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
@@ -258,7 +258,7 @@ const LandTable: React.FC = () => {
                     <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="w-[50px] p-2 text-center">{land.crm_id}</td>
+                    <td className="p-2">{land.crm_id}</td>
                     <td className="p-2">
                       <div
                         className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"

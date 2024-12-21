@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCommercialStore } from "@/store/commercial/commercialStore";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ const statusConfig = {
   },
 };
 
-
 interface Media {
   media_type: string;
   updated_at: string;
@@ -57,8 +55,8 @@ const houseTypeTranslation: { [key: string]: string } = {
   house: "Дом",
   townhouse: "Таунхаус",
   normal: "Обычное",
-  repair: "Требует ремонта",
-  euro: "Евроремонт",
+  repair: "Требует Требует ремонтаа",
+  euro: "Евро ремонт",
   business_center: "Бизнес-центр",
   administrative_building: "Административное здание",
   residential_building: "Жилое здание",
@@ -205,8 +203,8 @@ const CommercialTable: React.FC = ({}) => {
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 #
               </th>
-              <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                <Checkbox />
+              <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ПРЕВЬЮ
@@ -257,12 +255,8 @@ const CommercialTable: React.FC = ({}) => {
                     <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="w-[50px] p-2 text-center">
-                      <Checkbox
-                        checked={selectedRows.includes(commercial.id)}
-                        onCheckedChange={() => toggleRow(commercial.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                    <td className="p-2">
+                      {commercial.crm_id}
                     </td>
                     <td className="p-2">
                       {renderPreviewCell(commercial.media || [])}
@@ -270,6 +264,9 @@ const CommercialTable: React.FC = ({}) => {
                     <td className="p-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {commercial.title}
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {commercial.district}
+                        </div>
                       </div>
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
@@ -299,6 +296,13 @@ const CommercialTable: React.FC = ({}) => {
                           commercial.current_status as keyof typeof statusConfig
                         ]?.label || "Неизвестно"}
                       </Badge>
+                      {
+                        commercial.status_date && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(commercial.status_date).toLocaleDateString()}
+                          </div>
+                        )
+                      }
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
                       {commercial.responsible}

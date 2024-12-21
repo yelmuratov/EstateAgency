@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { format } from "date-fns";
 import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
@@ -9,6 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -19,7 +25,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useCommercialStore } from "@/store/commercial/commercialStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -27,6 +34,8 @@ import { Toaster } from "@/components/ui/toaster";
 import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
+import {UserStore as UsersStore} from "@/store/users/userStore";
+import { cn } from "@/lib/utils";
 
 interface CommercialFormData {
   district: string;
@@ -58,6 +67,9 @@ interface CommercialFormData {
   responsible?: string;
   id?: number;
   media?: { id: number; url: string }[];
+  status_date: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function EditCommercialPropertyForm() {
@@ -77,7 +89,8 @@ export default function EditCommercialPropertyForm() {
   useAuth();
   const { districts, fetchDistricts } = usePropertyStore();
   const { fetchCommercialById } = useCommercialStore();
-  const { user } = UserStore();
+  const { user} = UserStore();
+  const {users, fetchUsers } = UsersStore();
 
   useEffect(() => {
     if (!user) {
@@ -94,7 +107,8 @@ export default function EditCommercialPropertyForm() {
 
   useEffect(() => {
     fetchDistricts();
-  }, [fetchDistricts]);
+    fetchUsers();
+  }, [fetchDistricts, fetchUsers]);
 
   const errorTranslations: { [key: string]: string } = {
     "401: This object created by another agent":
@@ -129,6 +143,9 @@ export default function EditCommercialPropertyForm() {
                 | "free"
                 | "soon"
                 | "busy",
+              status_date: commercialData.status_date || "",
+              second_responsible: commercialData.second_responsible || "",
+              second_agent_percent: commercialData.second_agent_percent || 0,
             });
             if (commercialData.media) {
               setPreviewImages(
@@ -192,6 +209,9 @@ export default function EditCommercialPropertyForm() {
               crm_id: commercialData.crm_id || "",
               responsible: commercialData.responsible || "",
               id: commercialData.id || 0,
+              status_date: commercialData.status_date || "",
+              second_responsible: commercialData.second_responsible || "",
+              second_agent_percent: commercialData.second_agent_percent || 0,
             };
 
             setInitialData(mappedData);
@@ -322,6 +342,26 @@ export default function EditCommercialPropertyForm() {
         const axiosError = error as AxiosError<{
           detail?: string | Record<string, string>;
         }>;
+
+        if(axiosError.response?.status === 422) {
+          const details = axiosError.response.data?.detail;
+
+          if (
+            details &&
+            typeof details === "object" &&
+            !Array.isArray(details)
+          ) { 
+            errorMessage = Object.values(details)
+              .map((msg) => `${msg}`)
+              .join(", ");
+          } else if (typeof details === "string") {
+            errorMessage = translateError(details);
+          } else {
+            errorMessage = translateError(
+              `Server Error: ${axiosError.response.status}`
+            );
+          }
+        }
 
         if (axiosError.response) {
           const details = axiosError.response.data?.detail;
@@ -613,9 +653,9 @@ export default function EditCommercialPropertyForm() {
                     <SelectValue placeholder="Выберите состояние" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="euro">Евроремонт</SelectItem>
+                    <SelectItem value="euro">Евро ремонт</SelectItem>
                     <SelectItem value="normal">Обычное</SelectItem>
-                    <SelectItem value="repair">Требует ремонта</SelectItem>
+                    <SelectItem value="repair">Требует Требует ремонтаа</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -625,6 +665,28 @@ export default function EditCommercialPropertyForm() {
                 {errors.house_condition.message}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="parking_place">Парковка</Label>
+            <Controller
+              name="parking_place"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={(value) => field.onChange(value === "true")}
+                  value={field.value ? "true" : "false"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Да</SelectItem>
+                    <SelectItem value="false">Нет</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-2">
@@ -653,25 +715,69 @@ export default function EditCommercialPropertyForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="parking_place">Парковка</Label>
+            <Label htmlFor="status_date">Дата статуса</Label>
             <Controller
-              name="parking_place"
+              name="status_date"
               control={control}
+              rules={{
+                validate: (value) => {
+                  const currentStatus = control._formValues.current_status;
+                  if (currentStatus !== "free" && !value) {
+                    return "Это поле обязательно";
+                  }
+                  return true;
+                },
+              }}
               render={({ field }) => (
-                <Select
-                  onValueChange={(value) => field.onChange(value === "true")}
-                  value={field.value ? "true" : "false"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Да</SelectItem>
-                    <SelectItem value="false">Нет</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(new Date(field.value), "yyyy-MM-dd")
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) =>
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               )}
             />
+            {errors.status_date && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.status_date.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responsible">Ответственный</Label>
+            <Input
+              id="responsible"
+              {...register("responsible")}
+              placeholder="Введите ответственного (необязательно)"
+            />
+            {errors.responsible && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.responsible.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -694,46 +800,42 @@ export default function EditCommercialPropertyForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="agent_commission">Комиссия агента</Label>
+            <Label>Второй ответственный</Label>
+            <Controller
+              name="second_responsible"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите Второй ответственный" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="second_agent_percent">Процент второго агента</Label>
             <Input
-              id="agent_commission"
+              id="second_agent_percent"
               type="number"
-              {...register("agent_commission", { valueAsNumber: true })}
-              placeholder="Введите комиссию агента (необязательно)"
-            />
-            {errors.agent_commission && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.agent_commission.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="crm_id">CRM ID</Label>
-            <Input
-              id="crm_id"
-              {...register("crm_id", {
-                maxLength: { value: 255, message: "Максимум 255 символов" },
+              {...register("second_agent_percent", {
+                valueAsNumber: true,
+                min: { value: 0, message: "Процент не может быть меньше 0" },
+                max: { value: 100, message: "Процент не может быть больше 100" },
               })}
-              placeholder="Введите CRM ID (необязательно)"
+              placeholder="Введите процент второго агента"
             />
-            {errors.crm_id && (
+            {errors.second_agent_percent && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.crm_id.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="responsible">Ответственный</Label>
-            <Input
-              id="responsible"
-              {...register("responsible")}
-              placeholder="Введите ответственного (необязательно)"
-            />
-            {errors.responsible && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.responsible.message}
+                {errors.second_agent_percent.message}
               </p>
             )}
           </div>

@@ -550,9 +550,9 @@ export default function CommercialPropertyForm() {
                 <SelectValue placeholder="Выберите состояние" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="euro">Евроремонт</SelectItem>
+                <SelectItem value="euro">Евро ремонт</SelectItem>
                 <SelectItem value="normal">Обычное</SelectItem>
-                <SelectItem value="repair">Требует ремонта</SelectItem>
+                <SelectItem value="repair">Требует Требует ремонтаа</SelectItem>
               </SelectContent>
             </Select>
           )}
@@ -586,56 +586,6 @@ export default function CommercialPropertyForm() {
         {errors.current_status && (
           <p className="text-red-500 text-sm mt-1">
         {errors.current_status.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="parking_place">Парковка</Label>
-        <Controller
-          name="parking_place"
-          control={control}
-          rules={{
-            required: "Это поле обязательно",
-            validate: (value) =>
-              value === "true" ||
-              value === "false" ||
-              "Пожалуйста, выберите значение",
-          }}
-          defaultValue={""} // Ensure no pre-selected value
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите парковку" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Да</SelectItem>
-                <SelectItem value="false">Нет</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {errors.parking_place && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.parking_place.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="agent_percent">Процент агента</Label>
-        <Input
-          id="agent_percent"
-          type="number"
-          {...register("agent_percent", {
-            required: "Это поле обязательно",
-            valueAsNumber: true,
-          })}
-          placeholder="Введите процент агента"
-        />
-        {errors.agent_percent && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.agent_percent.message}
           </p>
         )}
       </div>
@@ -688,6 +638,56 @@ export default function CommercialPropertyForm() {
         {errors.status_date && (
           <p className="text-red-500 text-sm mt-1">
             {errors.status_date.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="parking_place">Парковка</Label>
+        <Controller
+          name="parking_place"
+          control={control}
+          rules={{
+            required: "Это поле обязательно",
+            validate: (value) =>
+              value === "true" ||
+              value === "false" ||
+              "Пожалуйста, выберите значение",
+          }}
+          defaultValue={""} // Ensure no pre-selected value
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите парковку" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+        {errors.parking_place && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.parking_place.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="agent_percent">Процент агента</Label>
+        <Input
+          id="agent_percent"
+          type="number"
+          {...register("agent_percent", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите процент агента"
+        />
+        {errors.agent_percent && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.agent_percent.message}
           </p>
         )}
       </div>
