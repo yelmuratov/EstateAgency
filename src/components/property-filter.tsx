@@ -120,11 +120,11 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle>Фильтр недвижимости</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto scrollbar-hide">
+        <div className="grid gap-4 py-4 max-h-[80vh] overflow-y-auto scrollbar-hide px-4">
           {/* District and Metro */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -272,7 +272,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
 
           {/* house type rent or sale */}
           <div>
-            <Label>Тип недвижимости</Label>
+            <Label>Тип действия</Label>
             <Select
               onValueChange={(value) => handleChange("action_type", value)}
               value={filters.action_type}
@@ -318,10 +318,9 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
                 <SelectValue placeholder="Выберите состояние дома" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="new_building">Новостройка</SelectItem>
-                <SelectItem value="secondary">
-                  Вторичное жилье
-                </SelectItem>
+                <SelectItem value="euro">Евро</SelectItem>
+                <SelectItem value="normal">Обычный</SelectItem>
+                <SelectItem value="repair">Требует ремонта</SelectItem>
               </SelectContent>
             </Select>
           </div>
