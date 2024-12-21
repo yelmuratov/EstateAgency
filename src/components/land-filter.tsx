@@ -90,6 +90,14 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
     fetchUsers();
   }, [fetchDistricts, fetchUsers]);
 
+  useEffect(() => {
+    const savedFilters = localStorage.getItem("landFilters");
+    if (savedFilters) {
+      const parsedFilters = JSON.parse(savedFilters);
+      setFilters(parsedFilters);
+    }
+  }, []);
+
   const [filters, setFilters] = useState<Record<string, string>>({
     table: "land",
     district: "",
@@ -116,10 +124,10 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
   const handleSubmit = () => {
     const updatedFilters = {
       ...filters,
-      date_min: filters.date_min ? format(new Date(filters.date_min), "yyyy-MM-dd") : "",
-      date_max: filters.date_max ? format(new Date(filters.date_max), "yyyy-MM-dd") : "",
-      status_date_min: filters.status_date_min ? format(new Date(filters.status_date_min), "yyyy-MM-dd") : "",
-      status_date_max: filters.status_date_max ? format(new Date(filters.status_date_max), "yyyy-MM-dd") : "",
+      date_min: filters.date_min ? format(new Date(filters.date_min), "yyyy-MM-dd") : filters.date_min,
+      date_max: filters.date_max ? format(new Date(filters.date_max), "yyyy-MM-dd") : filters.date_max,
+      status_date_min: filters.status_date_min ? format(new Date(filters.status_date_min), "yyyy-MM-dd") : filters.status_date_min,
+      status_date_max: filters.status_date_max ? format(new Date(filters.status_date_max), "yyyy-MM-dd") : filters.status_date_max,
     };
 
     // Filter out empty fields
