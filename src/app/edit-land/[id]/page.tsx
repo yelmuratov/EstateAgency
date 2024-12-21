@@ -28,6 +28,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
+import { UserStore as usersStore } from "@/store/users/userStore";
 
 interface LandFormData {
   district: string;
@@ -53,7 +54,7 @@ interface LandFormData {
   agent_percent: number;
   agent_commission?: number;
   crm_id?: string;
-  responsible?: string;
+  second_responsible?: string;
   id?: number;
 }
 
@@ -72,6 +73,7 @@ export default function EditLandForm() {
 
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
   const { districts, fetchDistricts } = usePropertyStore();
+  const { users, fetchUsers } = usersStore();
   const { fetchLandById } = useLandStore();
   const { user } = UserStore();
 
@@ -104,6 +106,7 @@ export default function EditLandForm() {
 
   useEffect(() => {
     fetchDistricts();
+    fetchUsers();
   }, [fetchDistricts]);
 
   useEffect(() => {
@@ -176,7 +179,7 @@ export default function EditLandForm() {
               agent_percent: landData.agent_percent || 0,
               agent_commission: landData.agent_commission || 0,
               crm_id: landData.crm_id || "",
-              responsible: landData.responsible || "",
+              second_responsible: landData.second_responsible || "",
               id: landData.id || 0,
             };
 
@@ -403,23 +406,23 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите район" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district.id} value={district.name}>
-                        {district.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите район" />
+            </SelectTrigger>
+            <SelectContent>
+              {districts.map((district) => (
+                <SelectItem key={district.id} value={district.name}>
+            {district.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
               )}
             />
             {errors.district && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.district.message}
+          {errors.district.message}
               </p>
             )}
           </div>
@@ -429,15 +432,15 @@ export default function EditLandForm() {
             <Input
               id="title"
               {...register("title", {
-                required: "Это поле обязательно",
-                minLength: { value: 3, message: "Минимум 3 символа" },
-                maxLength: { value: 50, message: "Максимум 50 символов" },
+          required: "Это поле обязательно",
+          minLength: { value: 3, message: "Минимум 3 символа" },
+          maxLength: { value: 50, message: "Максимум 50 символов" },
               })}
               placeholder="Введите название"
             />
             {errors.title && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.title.message}
+          {errors.title.message}
               </p>
             )}
           </div>
@@ -449,20 +452,20 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите тип действия" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rent">Аренда</SelectItem>
-                    <SelectItem value="sale">Продажа</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите тип действия" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rent">Аренда</SelectItem>
+              <SelectItem value="sale">Продажа</SelectItem>
+            </SelectContent>
+          </Select>
               )}
             />
             {errors.action_type && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.action_type.message}
+          {errors.action_type.message}
               </p>
             )}
           </div>
@@ -473,14 +476,14 @@ export default function EditLandForm() {
               id="price"
               type="number"
               {...register("price", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
+          required: "Это поле обязательно",
+          valueAsNumber: true,
               })}
               placeholder="Введите цену"
             />
             {errors.price && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.price.message}
+          {errors.price.message}
               </p>
             )}
           </div>
@@ -491,14 +494,14 @@ export default function EditLandForm() {
               id="square_area"
               type="number"
               {...register("square_area", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
+          required: "Это поле обязательно",
+          valueAsNumber: true,
               })}
               placeholder="Введите общую площадь"
             />
             {errors.square_area && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.square_area.message}
+          {errors.square_area.message}
               </p>
             )}
           </div>
@@ -510,30 +513,30 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите расположение" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="city">Город</SelectItem>
-                    <SelectItem value="suburb">Пригород</SelectItem>
-                    <SelectItem value="countryside">
-                      Сельская местность
-                    </SelectItem>
-                    <SelectItem value="along_road">Вдоль дороги</SelectItem>
-                    <SelectItem value="near_pond">У водоема</SelectItem>
-                    <SelectItem value="foothills">Предгорье</SelectItem>
-                    <SelectItem value="cottage_area">Дачный массив</SelectItem>
-                    <SelectItem value="closed_area">
-                      Закрытая территория
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите расположение" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="city">Город</SelectItem>
+              <SelectItem value="suburb">Пригород</SelectItem>
+              <SelectItem value="countryside">
+                Сельская местность
+              </SelectItem>
+              <SelectItem value="along_road">Вдоль дороги</SelectItem>
+              <SelectItem value="near_pond">У водоема</SelectItem>
+              <SelectItem value="foothills">Предгорье</SelectItem>
+              <SelectItem value="cottage_area">Дачный массив</SelectItem>
+              <SelectItem value="closed_area">
+                Закрытая территория
+              </SelectItem>
+            </SelectContent>
+          </Select>
               )}
             />
             {errors.location && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.location.message}
+          {errors.location.message}
               </p>
             )}
           </div>
@@ -545,21 +548,21 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите состояние" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="euro">Евро</SelectItem>
-                    <SelectItem value="repair">Ремонт</SelectItem>
-                    <SelectItem value="normal">Обычное</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите состояние" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="euro">Евро</SelectItem>
+              <SelectItem value="repair">Ремонт</SelectItem>
+              <SelectItem value="normal">Обычное</SelectItem>
+            </SelectContent>
+          </Select>
               )}
             />
             {errors.house_condition && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.house_condition.message}
+          {errors.house_condition.message}
               </p>
             )}
           </div>
@@ -571,21 +574,21 @@ export default function EditLandForm() {
               control={control}
               rules={{ required: "Это поле обязательно" }}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите текущий статус" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="free">Свободно</SelectItem>
-                    <SelectItem value="soon">Скоро освободится</SelectItem>
-                    <SelectItem value="busy">Занято</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите текущий статус" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Свободно</SelectItem>
+              <SelectItem value="soon">Скоро освободится</SelectItem>
+              <SelectItem value="busy">Занято</SelectItem>
+            </SelectContent>
+          </Select>
               )}
             />
             {errors.current_status && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.current_status.message}
+          {errors.current_status.message}
               </p>
             )}
           </div>
@@ -596,18 +599,18 @@ export default function EditLandForm() {
               name="parking_place"
               control={control}
               render={({ field }) => (
-                <Select
-                  onValueChange={(value) => field.onChange(value === "true")}
-                  value={field.value ? "true" : "false"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Да</SelectItem>
-                    <SelectItem value="false">Нет</SelectItem>
-                  </SelectContent>
-                </Select>
+          <Select
+            onValueChange={(value) => field.onChange(value === "true")}
+            value={field.value ? "true" : "false"}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">Да</SelectItem>
+              <SelectItem value="false">Нет</SelectItem>
+            </SelectContent>
+          </Select>
               )}
             />
           </div>
@@ -619,61 +622,38 @@ export default function EditLandForm() {
               type="number"
               step="0.01"
               {...register("agent_percent", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
+          required: "Это поле обязательно",
+          valueAsNumber: true,
               })}
               placeholder="Введите процент агента"
             />
             {errors.agent_percent && (
               <p className="text-red-500 text-sm mt-1">
-                {errors.agent_percent.message}
+          {errors.agent_percent.message}
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="agent_commission">Комиссия агента</Label>
-            <Input
-              id="agent_commission"
-              type="number"
-              {...register("agent_commission", { valueAsNumber: true })}
-              placeholder="Введите комиссию агента (необязательно)"
-            />
-            {errors.agent_commission && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.agent_commission.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="crm_id">CRM ID</Label>
-            <Input
-              id="crm_id"
-              {...register("crm_id", {
-                maxLength: { value: 255, message: "Максимум 255 символов" },
-              })}
-              placeholder="Введите CRM ID (необязательно)"
-            />
-            {errors.crm_id && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.crm_id.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="responsible">Ответственный</Label>
-            <Input
-              id="responsible"
-              {...register("responsible")}
-              placeholder="Введите ответственного (необязательно)"
-            />
-            {errors.responsible && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.responsible.message}
-              </p>
-            )}
+          <div>
+        <Label>Второй ответственный</Label>
+        <Controller
+          name="second_responsible"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Второй ответственный" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.full_name}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
           </div>
         </div>
 
