@@ -17,6 +17,7 @@ interface Apartment {
   square_area: number;
   agent_percent: number;
   agent_commission: number;
+  second_agent_commission: number;
   action_type: string;
   location: string;
   created_at: string;
@@ -39,6 +40,9 @@ interface Apartment {
   bathroom: string;
   media: Media[];
   metro_st: string;
+  second_responsible: string;
+  second_agent_percent: number;
+  status_date: string;
 }
 
 interface ApartmentStore {

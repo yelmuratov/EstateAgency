@@ -37,6 +37,9 @@ interface Apartment {
   square_area: number;
   agent_percent: number;
   agent_commission: number;
+  second_responsible: string;
+  second_agent_percent: number;
+  second_agent_commission: number;
   action_type: string;
   location: string;
   created_at: string;
@@ -434,6 +437,14 @@ export default function PropertyTable() {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комнаты
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.rooms}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Ванная
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
@@ -450,11 +461,35 @@ export default function PropertyTable() {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ответственный
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.responsible}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Комиссия агента
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.agent_commission}$ (
                                 {apartment.agent_percent}%)
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Второй агент
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.second_responsible}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия второго агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.second_agent_commission}$ ({apartment.second_agent_percent}%)
                               </div>
                             </div>
                             <div>
@@ -480,14 +515,6 @@ export default function PropertyTable() {
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.comment || "Комментарий отсутствует"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Ответственный
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.responsible}
                               </div>
                             </div>
                             <div>

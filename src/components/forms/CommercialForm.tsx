@@ -24,6 +24,16 @@ import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
 } from "@/utils/file-validation";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { UserStore } from "@/store/users/userStore";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface CommercialFormData {
   district: string;
@@ -48,12 +58,15 @@ interface CommercialFormData {
   furnished: boolean;
   house_condition: "euro" | "normal" | "repair";
   current_status?: "free" | "soon" | "busy";
-  parking_place: boolean;
+  parking_place: string;
   agent_percent: number;
   agent_commission?: number;
   crm_id?: string;
   responsible?: string;
   media?: FileList;
+  status_date: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function CommercialPropertyForm() {
@@ -78,9 +91,11 @@ export default function CommercialPropertyForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { districts, fetchDistricts } = usePropertyStore();
+  const { users, fetchUsers } = UserStore();
 
   useEffect(() => {
     fetchDistricts();
+    fetchUsers();
     return () => {
       // Cleanup video URLs when component unmounts
       previewImages.forEach((preview) => {
@@ -89,7 +104,7 @@ export default function CommercialPropertyForm() {
         }
       });
     };
-  }, [previewImages, fetchDistricts]);
+  }, [previewImages, fetchDistricts, fetchUsers]);
 
   const onSubmit = async (data: CommercialFormData) => {
     setIsSubmitting(true);
@@ -106,7 +121,7 @@ export default function CommercialPropertyForm() {
       // Append query parameters
       const params = new URLSearchParams();
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
+        if (value !== undefined && value !== null && value !== "" && !Number.isNaN(value)) {
           params.append(key, value.toString());
         }
       });
@@ -554,22 +569,23 @@ export default function CommercialPropertyForm() {
         <Controller
           name="current_status"
           control={control}
+          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите текущий статус" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="free">Свободно</SelectItem>
-                <SelectItem value="soon">Скоро освободится</SelectItem>
-                <SelectItem value="busy">Занято</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите текущий статус" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="free">Свободно</SelectItem>
+            <SelectItem value="soon">Скоро освободится</SelectItem>
+            <SelectItem value="busy">Занято</SelectItem>
+          </SelectContent>
+        </Select>
           )}
         />
         {errors.current_status && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.current_status.message}
+        {errors.current_status.message}
           </p>
         )}
       </div>
@@ -579,11 +595,18 @@ export default function CommercialPropertyForm() {
         <Controller
           name="parking_place"
           control={control}
-          rules={{ required: "Это поле обязательно" }}
+          rules={{
+            required: "Это поле обязательно",
+            validate: (value) =>
+              value === "true" ||
+              value === "false" ||
+              "Пожалуйста, выберите значение",
+          }}
+          defaultValue={""} // Ensure no pre-selected value
           render={({ field }) => (
-            <Select onValueChange={(value) => field.onChange(value === "true")}>
+            <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите" />
+                <SelectValue placeholder="Выберите парковку" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="true">Да</SelectItem>
@@ -618,44 +641,94 @@ export default function CommercialPropertyForm() {
       </div>
 
       <div>
-        <Label htmlFor="agent_commission">Комиссия агента</Label>
-        <Input
-          id="agent_commission"
-          type="number"
-          {...register("agent_commission", { valueAsNumber: true })}
-          placeholder="Введите комиссию агента (необязательно)"
+        <Label htmlFor="status_date">Дата статуса</Label>
+        <Controller
+          name="status_date"
+          control={control}
+          rules={{
+            validate: (value) => {
+              const currentStatus = control._formValues.current_status;
+              if (currentStatus !== "free" && !value) {
+                return "Это поле обязательно";
+              }
+              return true;
+            },
+          }}
+          render={({ field }) => (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full pl-3 text-left font-normal",
+                    !field.value && "text-muted-foreground"
+                  )}
+                >
+                  {field.value ? (
+                    format(new Date(field.value), "yyyy-MM-dd")
+                  ) : (
+                    <span>Выберите дату</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={field.value ? new Date(field.value) : undefined}
+                  onSelect={(date) =>
+                    field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          )}
         />
-        {errors.agent_commission && (
+        {errors.status_date && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.agent_commission.message}
+            {errors.status_date.message}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="crm_id">CRM ID</Label>
-        <Input
-          id="crm_id"
-          {...register("crm_id", {
-            maxLength: { value: 255, message: "Максимум 255 символов" },
-          })}
-          placeholder="Введите CRM ID (необязательно)"
+        <Label>Второй ответственный</Label>
+        <Controller
+          name="second_responsible"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Второй ответственный" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.full_name}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         />
-        {errors.crm_id && (
-          <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>
-        )}
       </div>
 
       <div>
-        <Label htmlFor="responsible">Ответственный</Label>
+        <Label htmlFor="second_agent_percent">Процент второго агента</Label>
         <Input
-          id="responsible"
-          {...register("responsible")}
-          placeholder="Введите ответственного (необязательно)"
+          id="second_agent_percent"
+          type="number"
+          {...register("second_agent_percent", {
+            valueAsNumber: true,
+            min: { value: 0, message: "Процент не может быть меньше 0" },
+            max: { value: 100, message: "Процент не может быть больше 100" },
+          })}
+          placeholder="Введите процент второго агента"
         />
-        {errors.responsible && (
+        {errors.second_agent_percent && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.responsible.message}
+            {errors.second_agent_percent.message}
           </p>
         )}
       </div>

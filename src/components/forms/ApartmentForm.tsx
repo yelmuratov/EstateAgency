@@ -8,6 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { UserStore } from "@/store/users/userStore";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 import {
   Select,
@@ -51,6 +61,9 @@ interface ApartmentFormData {
   crm_id?: string;
   responsible?: string;
   media?: FileList;
+  status_date: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function ApartmentForm() {
@@ -70,10 +83,12 @@ export default function ApartmentForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
+  const { users, fetchUsers } = UserStore();
 
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
+    fetchUsers();
     return () => {
       // Cleanup video URLs when component unmounts
       previewImages.forEach((preview) => {
@@ -82,7 +97,7 @@ export default function ApartmentForm() {
         }
       });
     };
-  }, [previewImages, fetchMetros, fetchDistricts]);
+  }, [previewImages, fetchMetros, fetchDistricts, fetchUsers]);
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -667,6 +682,99 @@ export default function ApartmentForm() {
         {errors.agent_percent && (
           <p className="text-red-500 text-sm mt-1">
         {errors.agent_percent.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="status_date">Дата статуса</Label>
+        <Controller
+          name="status_date"
+          control={control}
+          rules={{
+            validate: (value) => {
+              const currentStatus = control._formValues.current_status;
+              if (currentStatus !== "free" && !value) {
+                return "Это поле обязательно";
+              }
+              return true;
+            },
+          }}
+          render={({ field }) => (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full pl-3 text-left font-normal",
+                    !field.value && "text-muted-foreground"
+                  )}
+                >
+                  {field.value ? (
+                    format(new Date(field.value), "yyyy-MM-dd")
+                  ) : (
+                    <span>Выберите дату</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={field.value ? new Date(field.value) : undefined}
+                  onSelect={(date) =>
+                    field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        />
+        {errors.status_date && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.status_date.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label>Второй ответственный</Label>
+        <Controller
+          name="second_responsible"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Второй ответственный" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.full_name}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="second_agent_percent">Процент второго агента</Label>
+        <Input
+          id="second_agent_percent"
+          type="number"
+          {...register("second_agent_percent", {
+            valueAsNumber: true,
+            min: { value: 0, message: "Процент не может быть меньше 0" },
+            max: { value: 100, message: "Процент не может быть больше 100" },
+          })}
+          placeholder="Введите процент второго агента"
+        />
+        {errors.second_agent_percent && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.second_agent_percent.message}
           </p>
         )}
       </div>

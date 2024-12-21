@@ -19,7 +19,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
@@ -28,7 +27,17 @@ import { Toaster } from "@/components/ui/toaster";
 import Image from "next/image";
 import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
+import {UserStore as UsersStore} from "@/store/users/userStore"
 import useAuth from "@/hooks/useAuth";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ApartmentFormData {
   district: string;
@@ -55,6 +64,9 @@ interface ApartmentFormData {
   crm_id?: string;
   responsible?: string;
   id?: number;
+  status_date?: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function EditApartmentForm() {
@@ -76,6 +88,7 @@ export default function EditApartmentForm() {
   const { fetchApartmentById } = useApartmentStore();
 
   const { user } = UserStore();
+  const {users, fetchUsers} = UsersStore();
 
   useEffect(() => {
     if (!user) {
@@ -94,7 +107,8 @@ export default function EditApartmentForm() {
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
-  }, [fetchMetros, fetchDistricts]);
+    fetchUsers();
+  }, [fetchMetros, fetchDistricts, fetchUsers]);
 
   useEffect(() => {
     const loadApartment = async () => {
@@ -195,6 +209,9 @@ export default function EditApartmentForm() {
               crm_id: apartmentData.crm_id || "",
               responsible: apartmentData.responsible || "",
               id: apartmentData.id || 0,
+              status_date: apartmentData.status_date || "",
+              second_responsible: apartmentData.second_responsible || "",
+              second_agent_percent: apartmentData.second_agent_percent || 0,
             };
 
             setInitialData(mappedData); // Set initial data for comparison
@@ -249,7 +266,7 @@ export default function EditApartmentForm() {
 
         if (
           key !== ("media" as keyof ApartmentFormData) &&
-          currentValue !== initialValue
+          currentValue?.toString() !== initialValue?.toString() // Convert to string for comparison
         ) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
@@ -721,7 +738,133 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Имя</Label>
+            <Label htmlFor="status_date">Дата статуса</Label>
+            <Controller
+              name="status_date"
+              control={control}
+              rules={{
+                validate: (value) => {
+                  const currentStatus = control._formValues.current_status;
+                  if (currentStatus !== "free" && !value) {
+                    return "Это поле обязательно";
+                  }
+                  return true;
+                },
+              }}
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(new Date(field.value), "yyyy-MM-dd")
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) =>
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            />
+            {errors.status_date && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.status_date.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responsible">Ответственный</Label>
+            <Input
+              id="responsible"
+              {...register("responsible")}
+              placeholder="Введите ответственного (необязательно)"
+            />
+            {errors.responsible && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.responsible.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="agent_percent">Процент агента</Label>
+            <Input
+              id="agent_percent"
+              type="number"
+              step="0.01" 
+              {...register("agent_percent", {
+                required: "Это поле обязательно",
+                valueAsNumber: true,
+              })}
+              placeholder="Введите процент агента"
+            />
+            {errors.agent_percent && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.agent_percent.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Второй ответственный</Label>
+            <Controller
+              name="second_responsible"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите Второй ответственный" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="second_agent_percent">Процент второго агента</Label>
+            <Input
+              id="second_agent_percent"
+              type="number"
+              {...register("second_agent_percent", {
+                valueAsNumber: true,
+                min: { value: 0, message: "Процент не может быть меньше 0" },
+                max: { value: 100, message: "Процент не может быть больше 100" },
+              })}
+              placeholder="Введите процент второго агента"
+            />
+            {errors.second_agent_percent && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.second_agent_percent.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Имя собственника</Label>
             <Input
               id="name"
               {...register("name", {
@@ -737,7 +880,9 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone_number">Номер телефона</Label>
+            <Label htmlFor="phone_number">
+              Номер телефона собственника
+            </Label>
             <Input
               id="phone_number"
               {...register("phone_number", {
@@ -745,75 +890,11 @@ export default function EditApartmentForm() {
                 minLength: { value: 3, message: "Минимум 3 символа" },
                 maxLength: { value: 13, message: "Максимум 13 символов" },
               })}
-              placeholder="Введите номер телефона"
+              placeholder="Введите номер телефона собственника"
             />
             {errors.phone_number && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.phone_number.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="agent_percent">Процент агента</Label>
-            <Input
-              id="agent_percent"
-              type="number"
-              step="0.01" // Allow floating point numbers
-              {...register("agent_percent", {
-                required: "Это поле обязательно",
-                valueAsNumber: true,
-              })}
-              placeholder="Введите процент агента"
-            />
-            {errors.agent_percent && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.agent_percent.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="agent_commission">Комиссия агента</Label>
-            <Input
-              id="agent_commission"
-              type="number"
-              {...register("agent_commission", { valueAsNumber: true })}
-              placeholder="Введите комиссию агента (необязательно)"
-            />
-            {errors.agent_commission && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.agent_commission.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="crm_id">CRM ID</Label>
-            <Input
-              id="crm_id"
-              {...register("crm_id", {
-                maxLength: { value: 255, message: "Максимум 255 символов" },
-              })}
-              placeholder="Введите CRM ID (необязательно)"
-            />
-            {errors.crm_id && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.crm_id.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="responsible">Ответственный</Label>
-            <Input
-              id="responsible"
-              {...register("responsible")}
-              placeholder="Введите ответственного (необязательно)"
-            />
-            {errors.responsible && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.responsible.message}
               </p>
             )}
           </div>
@@ -851,19 +932,23 @@ export default function EditApartmentForm() {
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="space-y-2">
+          <Label htmlFor="furnished">Меблированная</Label>
           <Controller
             name="furnished"
             control={control}
             render={({ field }) => (
-              <Checkbox
-                id="furnished"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
+              <Select onValueChange={field.onChange} value={field.value ? "yes" : "no"}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="yes">Да</SelectItem>
+            <SelectItem value="no">Нет</SelectItem>
+          </SelectContent>
+              </Select>
             )}
           />
-          <Label htmlFor="furnished">Меблированная</Label>
         </div>
 
         <div>

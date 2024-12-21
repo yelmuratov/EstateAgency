@@ -330,18 +330,19 @@ const CommercialTable: React.FC = ({}) => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Парковка
+                                Комнат
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.parking_place ? "Да" : "Нет"}
+                                {commercial.rooms}
                               </div>
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                CRM ID
+                                Ответственный
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.crm_id || "Не указан"}
+                                {commercial.responsible ||
+                                  "Ответственный не указан"}
                               </div>
                             </div>
                             <div>
@@ -351,6 +352,36 @@ const CommercialTable: React.FC = ({}) => {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {commercial.agent_commission}$ (
                                 {commercial.agent_percent}%)
+                              </div>
+                            </div>
+                            {/* second responsible and agent person */}
+                            {commercial.second_responsible && (
+                              <div>
+                                <div>
+                                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                                    Второй ответственный
+                                  </div>
+                                  <div className="text-gray-900 dark:text-gray-100">
+                                    {commercial.second_responsible}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-500 dark:text-gray-400">
+                                    Комиссия второго агента
+                                  </div>
+                                  <div className="text-gray-900 dark:text-gray-100">
+                                    {commercial.agent_commission}$ (
+                                    {commercial.second_agent_percent}%)
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Парковка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.parking_place ? "Да" : "Нет"}
                               </div>
                             </div>
                             <div>
@@ -369,15 +400,6 @@ const CommercialTable: React.FC = ({}) => {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {commercial.comment ||
                                   "Комментарий отсутствует"}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Ответственный
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.responsible ||
-                                  "Ответственный не указан"}
                               </div>
                             </div>
                           </div>

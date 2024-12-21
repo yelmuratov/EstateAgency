@@ -17,6 +17,8 @@ interface Commercial {
   square_area: number;
   agent_percent: number;
   agent_commission: number;
+  second_responsible?: string;
+  second_agent_percent?: number;
   action_type: string;
   location: string;
   created_at: string;
