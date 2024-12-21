@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useRouter } from "next/navigation";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 
 export default function AddCommercialPage() {
@@ -16,10 +17,16 @@ export default function AddCommercialPage() {
   const { user } = UserStore();
   useAuth();
 
-  if (!user) {
-    router.push("/login");
-    return null; // Prevent further rendering until redirection
-  }
+  useEffect(() => {
+      if (!user) {
+        router.push("/login");
+      }
+    }, [user, router]);
+  
+    // Avoid rendering the page content if user is being redirected
+    if (!user) {
+      return null;
+    }
 
   return (
     <DashboardLayout>

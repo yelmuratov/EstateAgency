@@ -8,6 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { UserStore } from "@/store/users/userStore";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 import {
   Select,
@@ -21,6 +31,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, X } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+import {
+  validateFile,
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES,
+} from "@/utils/file-validation";
 
 interface ApartmentFormData {
   district: string;
@@ -43,10 +58,12 @@ interface ApartmentFormData {
   name: string;
   phone_number: string;
   agent_percent: number;
-  agent_commission?: number;
   crm_id?: string;
   responsible?: string;
   media?: FileList;
+  status_date: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function ApartmentForm() {
@@ -66,11 +83,21 @@ export default function ApartmentForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
+  const { users, fetchUsers } = UserStore();
 
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
-  }, [fetchMetros, fetchDistricts]);
+    fetchUsers();
+    return () => {
+      // Cleanup video URLs when component unmounts
+      previewImages.forEach((preview) => {
+        if (preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
+      });
+    };
+  }, [previewImages, fetchMetros, fetchDistricts, fetchUsers]);
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -203,23 +230,35 @@ export default function ApartmentForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files); // Store files in state
-    if (files) {
-      const newPreviewImages: string[] = [];
-      for (let i = 0; i < files.length; i++) {
+    if (!files) return;
+  
+    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
+    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
+  
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push(e.target.result as string);
-            if (newPreviewImages.length === files.length) {
-              setPreviewImages(newPreviewImages);
-            }
+            setPreviewImages([...newPreviewImages]); // Update state with appended previews
           }
         };
-        reader.readAsDataURL(files[i]);
+        reader.readAsDataURL(file);
+      } else if (file.type.startsWith("video/")) {
+        const videoUrl = URL.createObjectURL(file);
+        newPreviewImages.push(videoUrl);
+        setPreviewImages([...newPreviewImages]); // Update state with appended previews
       }
-    }
+  
+      newMediaFiles.push(file); // Add the file to the preserved list
+    });
+  
+    const dt = new DataTransfer();
+    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
+    setMediaFiles(dt.files); // Update media files state
   };
+  
 
   const removeImage = (index: number) => {
     const newPreviewImages = [...previewImages];
@@ -235,6 +274,7 @@ export default function ApartmentForm() {
         }
       }
       fileInputRef.current.files = dt.files;
+      setMediaFiles(dt.files); 
     }
   };
 
@@ -461,6 +501,22 @@ export default function ApartmentForm() {
       </div>
 
       <div>
+        <Label htmlFor="floor">Этаж</Label>
+        <Input
+          id="floor"
+          type="number"
+          {...register("floor", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите этаж квартиры"
+        />
+        {errors.floor && (
+          <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>
+        )}
+      </div>
+
+      <div>
         <Label htmlFor="floor_number">Этажность</Label>
         <Input
           id="floor_number"
@@ -475,22 +531,6 @@ export default function ApartmentForm() {
           <p className="text-red-500 text-sm mt-1">
             {errors.floor_number.message}
           </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="floor">Этаж</Label>
-        <Input
-          id="floor"
-          type="number"
-          {...register("floor", {
-            required: "Это поле обязательно",
-            valueAsNumber: true,
-          })}
-          placeholder="Введите этаж квартиры"
-        />
-        {errors.floor && (
-          <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>
         )}
       </div>
 
@@ -594,7 +634,7 @@ export default function ApartmentForm() {
       </div>
 
       <div>
-        <Label htmlFor="name">Имя</Label>
+        <Label htmlFor="name">Имя собственника</Label>
         <Input
           id="name"
           {...register("name", {
@@ -602,7 +642,7 @@ export default function ApartmentForm() {
             minLength: { value: 3, message: "Минимум 3 символа" },
             maxLength: { value: 100, message: "Максимум 100 символов" },
           })}
-          placeholder="Введите имя"
+          placeholder="Введите имя собственника"
         />
         {errors.name && (
           <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -613,130 +653,269 @@ export default function ApartmentForm() {
         <Label htmlFor="phone_number">Номер телефона</Label>
         <Input
           id="phone_number"
+          defaultValue="+998"
           {...register("phone_number", {
-            required: "Это поле обязательно",
-            minLength: { value: 3, message: "Минимум 3 символа" },
-            maxLength: { value: 13, message: "Максимум 13 символов" },
+        required: "Это поле обязательно",
+        minLength: { value: 3, message: "Минимум 3 символа" },
+        maxLength: { value: 13, message: "Максимум 13 символов" },
           })}
-          placeholder="Введите номер телефона"
+          placeholder="Введите номер телефона собственника"
         />
         {errors.phone_number && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.phone_number.message}
+        {errors.phone_number.message}
           </p>
         )}
       </div>
-
       <div>
         <Label htmlFor="agent_percent">Процент агента</Label>
         <Input
           id="agent_percent"
           type="number"
           {...register("agent_percent", {
-            required: "Это поле обязательно",
-            valueAsNumber: true,
+        required: "Это поле обязательно",
+        valueAsNumber: true,
+        max: { value: 100, message: "Процент агента не может быть больше 100" },
           })}
           placeholder="Введите процент агента"
         />
         {errors.agent_percent && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.agent_percent.message}
+        {errors.agent_percent.message}
           </p>
         )}
       </div>
 
       <div>
-        <Label htmlFor="agent_commission">Комиссия агента</Label>
+        <Label htmlFor="status_date">Дата статуса</Label>
+        <Controller
+          name="status_date"
+          control={control}
+          rules={{
+            validate: (value) => {
+              const currentStatus = control._formValues.current_status;
+              if (currentStatus !== "free" && !value) {
+                return "Это поле обязательно";
+              }
+              return true;
+            },
+          }}
+          render={({ field }) => (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full pl-3 text-left font-normal",
+                    !field.value && "text-muted-foreground"
+                  )}
+                >
+                  {field.value ? (
+                    format(new Date(field.value), "yyyy-MM-dd")
+                  ) : (
+                    <span>Выберите дату</span>
+                  )}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={field.value ? new Date(field.value) : undefined}
+                  onSelect={(date) =>
+                    field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        />
+        {errors.status_date && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.status_date.message}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label>Второй ответственный</Label>
+        <Controller
+          name="second_responsible"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите Второй ответственный" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.full_name}>
+                    {user.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="second_agent_percent">Процент второго агента</Label>
         <Input
-          id="agent_commission"
+          id="second_agent_percent"
           type="number"
-          {...register("agent_commission", { valueAsNumber: true })}
-          placeholder="Введите комиссию агента (необязательно)"
-        />
-        {errors.agent_commission && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.agent_commission.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="crm_id">CRM ID</Label>
-        <Input
-          id="crm_id"
-          {...register("crm_id", {
-            maxLength: { value: 255, message: "Максимум 255 символов" },
+          {...register("second_agent_percent", {
+            valueAsNumber: true,
+            min: { value: 0, message: "Процент не может быть меньше 0" },
+            max: { value: 100, message: "Процент не может быть больше 100" },
           })}
-          placeholder="Введите CRM ID (необязательно)"
+          placeholder="Введите процент второго агента"
         />
-        {errors.crm_id && (
-          <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="responsible">Ответственный</Label>
-        <Input
-          id="responsible"
-          {...register("responsible", {})}
-          placeholder="Введите ответственного (необязательно)"
-        />
-        {errors.responsible && (
+        {errors.second_agent_percent && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.responsible.message}
+            {errors.second_agent_percent.message}
           </p>
         )}
       </div>
 
-      <div>
-        <Label htmlFor="images">Фотографии</Label>
-        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+      <div
+        className="mt-1 relative"
+        onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+        onDrop={(e) => {
+          e.preventDefault();
+          const droppedFiles = Array.from(e.dataTransfer.files);
+          const validFiles: File[] = [];
+          const errors: string[] = [];
+
+          droppedFiles.forEach((file) => {
+            const { isValid, error } = validateFile(file);
+            if (isValid) {
+              validFiles.push(file);
+            } else if (error) {
+              errors.push(error);
+            }
+          });
+
+          if (errors.length > 0) {
+            toast({
+              title: "Ошибка загрузки",
+              description: errors.join("\n"),
+              variant: "destructive",
+            });
+          }
+
+          if (validFiles.length > 0) {
+            const dt = new DataTransfer();
+            validFiles.forEach((file) => dt.items.add(file));
+            if (fileInputRef.current) {
+              fileInputRef.current.files = dt.files;
+              handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
+            }
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.add("border-primary");
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.currentTarget.classList.remove("border-primary");
+        }}
+      >
+        <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors duration-200 ease-in-out hover:border-primary">
           <div className="space-y-1 text-center">
             <Upload className="mx-auto h-12 w-12 text-gray-400" />
             <div className="flex text-sm text-gray-600">
               <label
-                htmlFor="images"
-                className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+          htmlFor="images"
+          className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary dark:text-primary-light hover:text-primary/80 dark:hover:text-primary-light/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
               >
-                <span>Загрузить файлы</span>
-                <input
-                  id="images"
-                  type="file"
-                  className="sr-only"
-                  multiple
-                  {...register("media")}
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                />
+          <span>Загрузить файлы</span>
               </label>
               <p className="pl-1">или перетащите сюда</p>
             </div>
-            <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Изображения (до 5MB): PNG, JPG, GIF
+              <br />
+              Видео (до 30MB): MP4, MOV, AVI
+            </p>
           </div>
         </div>
-        {previewImages.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            {previewImages.map((image, index) => (
-              <div key={index} className="relative">
-                <Image
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  width={150} // Specify appropriate width
-                  height={128} // Specify appropriate height
-                  className="w-full h-32 object-cover rounded-md"
-                />
+        <input
+          id="images"
+          type="file"
+          className="sr-only"
+          multiple
+          accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
+          ref={fileInputRef}
+          onChange={(e) => {
+            const files = e.target.files;
+            if (files) {
+              const validFiles: File[] = [];
+              const errors: string[] = [];
+
+              Array.from(files).forEach((file) => {
+                const { isValid, error } = validateFile(file);
+                if (isValid) {
+                  validFiles.push(file);
+                } else if (error) {
+                  errors.push(error);
+                }
+              });
+
+              if (errors.length > 0) {
+                toast({
+                  title: "Ошибка загрузки",
+                  description: errors.join("\n"),
+                  variant: "destructive",
+                });
+              }
+
+              if (validFiles.length > 0) {
+                const dt = new DataTransfer();
+                validFiles.forEach((file) => dt.items.add(file));
+                e.target.files = dt.files;
+                handleImageChange(e);
+              }
+            }
+          }}
+        />
+      </div>
+      {previewImages.length > 0 && (
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {previewImages.map((preview, index) => {
+            const isVideo =
+              mediaFiles && mediaFiles[index]?.type.startsWith("video/");
+            return (
+              <div key={index} className="relative group">
+                {isVideo ? (
+                  <video
+                    src={preview}
+                    className="object-cover rounded-lg h-32 w-full"
+                    controls
+                  />
+                ) : (
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    width={200}
+                    height={200}
+                    className="object-cover rounded-lg h-32 w-full"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X size={16} />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? (

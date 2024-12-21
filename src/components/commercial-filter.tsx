@@ -24,15 +24,13 @@ import {
 interface CommercialFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApplyFilters: (filters: Record<string, string>) => void;
 }
 
 export function CommercialFilter({
     open,
     onOpenChange,
-    onApplyFilters,
   }: CommercialFilterProps) {
-    const { metros, districts, fetchMetros,    fetchDistricts } = usePropertyStore();
+    const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
     const { filterCommercials } = useCommercialStore();
   
     useEffect(() => {
@@ -64,11 +62,10 @@ export function CommercialFilter({
     const handleSubmit = () => {
       // Filter out empty fields
       const changedFilters = Object.fromEntries(
-        Object.entries(filters).filter(([, value]) => value.trim() !== "")
-      );      
+        Object.entries(filters).filter(([,value]) => value.trim() !== "")
+      );
   
       filterCommercials(changedFilters); // Send only changed filters
-      onApplyFilters(changedFilters); // Pass filters back to parent component
       onOpenChange(false); // Close modal
     };
   
@@ -90,7 +87,6 @@ export function CommercialFilter({
         responsible: "",
       });
       filterCommercials({ table: "apartment" }); // Reset with table filter
-      onApplyFilters({ table: "apartment" }); // Reset to base state
       onOpenChange(false);
     };
   
@@ -249,19 +245,21 @@ export function CommercialFilter({
             {/* Bathroom */}
             <div>
               <Label>Санузел</Label>
-              <Select
-                onValueChange={(value) => handleChange("bathroom", value)}
+              <Input
+                placeholder="Тип санузла (раздельный, совмещенный)"
                 value={filters.bathroom}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите тип санузла" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="separated">Раздельный</SelectItem>
-                  <SelectItem value="combined">Совмещенный</SelectItem>
-                  <SelectItem value="many">Много</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => handleChange("bathroom", e.target.value)}
+              />
+            </div>
+  
+            {/* Responsible */}
+            <div>
+              <Label>Ответственный</Label>
+              <Input
+                placeholder="Имя ответственного"
+                value={filters.responsible}
+                onChange={(e) => handleChange("responsible", e.target.value)}
+              />
             </div>
   
             {/* Responsible */}

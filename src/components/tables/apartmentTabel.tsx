@@ -3,14 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { PropertyFilter } from '@/components/property-filter'
+import { PropertyFilter } from "@/components/property-filter";
 
 import {
   Pagination,
@@ -38,6 +37,9 @@ interface Apartment {
   square_area: number;
   agent_percent: number;
   agent_commission: number;
+  second_responsible: string;
+  second_agent_percent: number;
+  second_agent_commission: number;
   action_type: string;
   location: string;
   created_at: string;
@@ -93,18 +95,21 @@ const houseTypeTranslation: { [key: string]: string } = {
   sale: "Продажа",
   seperated: "Раздельный",
   combined: "Совмещенный",
-  many: "Несколько",
+  many: "Два и более",
 };
 
 export default function PropertyTable() {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<{
+    url: string;
+    type: string;
+  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [previewUrls] = useState<{ [key: string]: string }>({});
 
   const router = useRouter();
 
@@ -121,30 +126,144 @@ export default function PropertyTable() {
     return () => clearTimeout(timer);
   }, [searchQuery, currentPage, itemsPerPage, fetchApartments]);
 
-  const toggleRow = (id: number) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [previewUrls]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  const openModal = (imageUrl: string) => {
-    if (imageUrl) {
-      setModalImage(imageUrl);
+  const openModal = (media: Media) => {
+    if (media.url) {
+      const fullUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`;
+      setModalContent({
+        url: fullUrl,
+        type: media.media_type, // 'video' or 'image'
+      });
       setModalOpen(true);
     }
   };
 
   const closeModal = () => {
-    setModalImage(null);
+    setModalContent(null);
     setModalOpen(false);
   };
 
   const handleRowClick = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
+  };
+
+  const renderPreviewCell = (media: Media[]) => {
+    if (!media || media.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
+          Нет медиа
+        </div>
+      );
+    }
+
+    const firstMedia = media[0];
+    return (
+      <div
+        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
+        onClick={() => openModal(firstMedia)}
+      >
+        {firstMedia.media_type === "video" ? (
+          <video
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${firstMedia.url}`}
+            className="object-cover w-full h-full"
+            muted
+            playsInline
+          />
+        ) : (
+          <Image
+            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${firstMedia.url}`}
+            alt="Preview"
+            layout="fill"
+            objectFit="cover"
+            className="bg-gray-200 dark:bg-gray-800"
+          />
+        )}
+      </div>
+    );
+  };
+
+  const renderMediaGallery = (media: Media[]) => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+        {media.map((item) => (
+          <div
+            key={item.id}
+            className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
+            onClick={() => openModal(item)}
+          >
+            {item.media_type === "video" ? (
+              <video
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
+                className="object-cover w-full h-full"
+                muted
+                playsInline
+              />
+            ) : (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
+                alt="Property media"
+                layout="fill"
+                objectFit="cover"
+                className="bg-gray-200 dark:bg-gray-800"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+  const renderModalContent = () => {
+    if (!modalContent) return null;
+
+    return (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+        onClick={closeModal}
+      >
+        <div
+          className="relative max-w-4xl max-h-[90vh] p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={closeModal}
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+            aria-label="Close preview"
+          >
+            ✕
+          </button>
+          {modalContent.type === "video" ? (
+            <video
+              src={modalContent.url}
+              className="max-w-full max-h-[80vh] rounded-lg"
+              controls
+              autoPlay
+              playsInline
+            />
+          ) : (
+            <Image
+              src={modalContent.url}
+              alt="Preview"
+              className="rounded-lg shadow-lg max-w-full max-h-[80vh] object-contain"
+              width={1200}
+              height={800}
+            />
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (error) {
@@ -167,8 +286,8 @@ export default function PropertyTable() {
           />
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
-        <Button 
-          variant="default" 
+        <Button
+          variant="default"
           className="ml-2 hidden sm:flex"
           onClick={() => setFilterOpen(true)}
         >
@@ -183,8 +302,9 @@ export default function PropertyTable() {
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 #
               </th>
+              {/* crm id */}
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                <Checkbox />
+                CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ПРЕВЬЮ
@@ -235,35 +355,11 @@ export default function PropertyTable() {
                     <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="w-[50px] p-2 text-center">
-                      <Checkbox
-                        checked={selectedRows.includes(apartment.id)}
-                        onCheckedChange={() => toggleRow(apartment.id)}
-                      />
+                    <td className="p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {apartment.crm_id}
                     </td>
                     <td className="p-2">
-                      <div
-                        className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700"
-                        onClick={() =>
-                          openModal(
-                            `${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0]?.url}`
-                          )
-                        }
-                      >
-                        {apartment.media && apartment.media[0] ? (
-                          <Image
-                            src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${apartment.media[0].url}`}
-                            alt={apartment.title || "Preview image"}
-                            layout="fill"
-                            objectFit="cover"
-                            className="bg-gray-200 dark:bg-gray-800"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                            Нет изображения
-                          </div>
-                        )}
-                      </div>
+                      {renderPreviewCell(apartment.media)}
                     </td>
                     <td className="p-2">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -336,7 +432,15 @@ export default function PropertyTable() {
                                 Этаж
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.floor_number} из {apartment.floor}
+                                {apartment.floor} из {apartment.floor_number}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комнаты
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.rooms}
                               </div>
                             </div>
                             <div>
@@ -357,6 +461,14 @@ export default function PropertyTable() {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ответственный
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.responsible}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Комиссия агента
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
@@ -366,10 +478,18 @@ export default function PropertyTable() {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                CRM ID
+                                Второй агент
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.crm_id}
+                                {apartment.second_responsible}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия второго агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.second_agent_commission}$ ({apartment.second_agent_percent}%)
                               </div>
                             </div>
                             <div>
@@ -399,14 +519,6 @@ export default function PropertyTable() {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Ответственный
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.responsible}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Контакты
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
@@ -414,27 +526,7 @@ export default function PropertyTable() {
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {apartment.media.map((image) => (
-                              <div
-                                key={image.id}
-                                className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                onClick={() =>
-                                  openModal(
-                                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`
-                                  )
-                                }
-                              >
-                                <Image
-                                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
-                                  alt="Apartment Image"
-                                  layout="fill"
-                                  objectFit="cover"
-                                  className="bg-gray-200 dark:bg-gray-800"
-                                />
-                              </div>
-                            ))}
-                          </div>
+                          {renderMediaGallery(apartment.media)}
                         </div>
                       </td>
                     </tr>
@@ -566,36 +658,7 @@ export default function PropertyTable() {
         ))}
       </div>
 
-      {/* Modal for Image Preview */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={closeModal}
-        >
-          <div
-            className="relative max-w-3xl max-h-screen p-4"
-            onClick={(e) => e.stopPropagation()} // Prevents closing modal on inner click
-          >
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-            {modalImage && (
-              <Image
-                src={modalImage}
-                alt="Preview"
-                className="rounded-lg shadow-lg max-w-full max-h-screen"
-                width={900}
-                height={600}
-                objectFit="contain"
-              />
-            )}
-          </div>
-        </div>
-      )}
+      {modalOpen && renderModalContent()}
 
       {/* Pagination */}
       <Pagination>
@@ -644,15 +707,7 @@ export default function PropertyTable() {
         </PaginationContent>
       </Pagination>
 
-      <PropertyFilter 
-        open={filterOpen} 
-        onOpenChange={setFilterOpen} 
-        onApplyFilters={(filters) => {
-          const queryParams = Object.fromEntries(new URLSearchParams(filters).entries());
-          useApartmentStore.getState().filterApartments(queryParams)
-        }} 
-      />
+      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} />
     </div>
   );
 }
-

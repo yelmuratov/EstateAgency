@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect} from "react";
+import { useState, useRef, useEffect } from "react";
 import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from 'lucide-react';
 
 import {
   Select,
@@ -19,8 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -28,7 +27,17 @@ import { Toaster } from "@/components/ui/toaster";
 import Image from "next/image";
 import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
+import {UserStore as UsersStore} from "@/store/users/userStore"
 import useAuth from "@/hooks/useAuth";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ApartmentFormData {
   district: string;
@@ -55,14 +64,20 @@ interface ApartmentFormData {
   crm_id?: string;
   responsible?: string;
   id?: number;
+  status_date?: string;
+  second_responsible: string;
+  second_agent_percent?: number;
 }
 
 export default function EditApartmentForm() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImages, setPreviewImages] = useState<{ id: number; url: string }[]>([]);
+  const [previewImages, setPreviewImages] = useState<
+    { id: number; url: string; media_type: string }[]
+  >([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,9 +85,10 @@ export default function EditApartmentForm() {
 
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]); // Track deleted image IDs
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
-  const { fetchApartmentById } = useApartmentStore(); 
+  const { fetchApartmentById } = useApartmentStore();
 
   const { user } = UserStore();
+  const {users, fetchUsers} = UsersStore();
 
   useEffect(() => {
     if (!user) {
@@ -91,7 +107,8 @@ export default function EditApartmentForm() {
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
-  }, [fetchMetros, fetchDistricts]);
+    fetchUsers();
+  }, [fetchMetros, fetchDistricts, fetchUsers]);
 
   useEffect(() => {
     const loadApartment = async () => {
@@ -103,16 +120,28 @@ export default function EditApartmentForm() {
               ...apartmentData,
               category: "apartment",
               action_type: apartmentData.action_type as "rent" | "sale",
-              house_type: apartmentData.house_type as "new_building" | "secondary",
-              bathroom: apartmentData.bathroom as "seperated" | "combined" | "many",
-              house_condition: apartmentData.house_condition as "euro" | "normal" | "repair",
-              current_status: apartmentData.current_status as "free" | "soon" | "busy",
+              house_type: apartmentData.house_type as
+                | "new_building"
+                | "secondary",
+              bathroom: apartmentData.bathroom as
+                | "seperated"
+                | "combined"
+                | "many",
+              house_condition: apartmentData.house_condition as
+                | "euro"
+                | "normal"
+                | "repair",
+              current_status: apartmentData.current_status as
+                | "free"
+                | "soon"
+                | "busy",
             });
             if (apartmentData.media) {
               setPreviewImages(
-                apartmentData.media.map((m: { id: number; url: string }) => ({
+                apartmentData.media.map((m: { id: number; url: string; media_type: string }) => ({
                   id: m.id,
                   url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/${m.url}`,
+                  media_type: m.media_type
                 }))
               );
             }
@@ -120,7 +149,9 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: `Failed to load apartment data: ${(error as Error).message}`,
+            description: `Failed to load apartment data: ${
+              (error as Error).message
+            }`,
             variant: "destructive",
           });
         } finally {
@@ -178,6 +209,9 @@ export default function EditApartmentForm() {
               crm_id: apartmentData.crm_id || "",
               responsible: apartmentData.responsible || "",
               id: apartmentData.id || 0,
+              status_date: apartmentData.status_date || "",
+              second_responsible: apartmentData.second_responsible || "",
+              second_agent_percent: apartmentData.second_agent_percent || 0,
             };
 
             setInitialData(mappedData); // Set initial data for comparison
@@ -186,23 +220,27 @@ export default function EditApartmentForm() {
         } catch (error) {
           toast({
             title: "Error",
-            description: `Failed to load apartment data: ${(error as Error).message}`,
+            description: `Failed to load apartment data: ${
+              (error as Error).message
+            }`,
             variant: "destructive",
           });
-        } 
+        }
       }
     };
 
     loadApartment();
   }, [id, fetchApartmentById, reset, toast]);
 
-  if(loading) {
+  if (loading) {
     return <Spinner theme="dark" />;
   }
 
   const errorTranslations: { [key: string]: string } = {
-    "401: This object created by another agent": "401: Этот объект создан другим агентом",
-    "Network Error: Unable to reach the server.": "Ошибка сети: Не удалось подключиться к серверу.",
+    "401: This object created by another agent":
+      "401: Этот объект создан другим агентом",
+    "Network Error: Unable to reach the server.":
+      "Ошибка сети: Не удалось подключиться к серверу.",
     "Server Error: 500": "Ошибка сервера: 500",
     // Add more translations as needed
   };
@@ -211,38 +249,40 @@ export default function EditApartmentForm() {
     return errorTranslations[message] || message; // Fallback to the original message
   };
 
-
   const onSubmit = async (data: ApartmentFormData) => {
     try {
       if (!initialData) {
         throw new Error("Initial data not loaded.");
       }
-  
+
       const queryParams: Record<string, string> = {};
-      let hasTextChanges = false; 
+      let hasTextChanges = false;
       let hasFileChanges = false;
-  
+
       // Detect text changes (excluding media)
       (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
         const currentValue = data[key];
         const initialValue = initialData[key];
-  
-        if (key !== "media" as keyof ApartmentFormData && currentValue !== initialValue) {
+
+        if (
+          key !== ("media" as keyof ApartmentFormData) &&
+          currentValue?.toString() !== initialValue?.toString() // Convert to string for comparison
+        ) {
           queryParams[key] = currentValue?.toString() || "";
           hasTextChanges = true;
         }
       });
-  
+
       // Check for new media files
       if (mediaFiles && mediaFiles.length > 0) {
         hasFileChanges = true;
       }
-  
+
       // Check for deleted images
       if (deletedImageIds.length > 0) {
         hasFileChanges = true;
       }
-  
+
       // If no changes detected, exit early
       if (!hasTextChanges && !hasFileChanges) {
         toast({
@@ -252,18 +292,22 @@ export default function EditApartmentForm() {
         });
         return;
       }
-  
+
       setIsSubmitting(true);
-  
+
       // Step 1: Handle Deleted Images
       if (deletedImageIds.length > 0) {
         try {
           const uniqueDeletedIds = [...new Set(deletedImageIds)];
           const queryParams = new URLSearchParams();
           queryParams.append("table", "apartment");
-          uniqueDeletedIds.forEach((id) => queryParams.append("media", id.toString()));
-  
-          await api.delete(`/additional/delete_media/?${queryParams.toString()}`);
+          uniqueDeletedIds.forEach((id) =>
+            queryParams.append("media", id.toString())
+          );
+
+          await api.delete(
+            `/additional/delete_media/?${queryParams.toString()}`
+          );
           toast({
             title: "Success",
             description: "Deleted images successfully.",
@@ -272,27 +316,29 @@ export default function EditApartmentForm() {
         } catch (deleteError) {
           toast({
             title: "Error",
-            description: `Failed to delete images: ${(deleteError as Error).message}`,
+            description: `Failed to delete images: ${
+              (deleteError as Error).message
+            }`,
             variant: "destructive",
           });
-          return; 
+          return;
         }
       }
-  
+
       // Step 2: Handle PUT Request
       if (hasFileChanges || hasTextChanges) {
         const queryString = new URLSearchParams(queryParams).toString();
         const url = `/apartment/${id}${queryString ? `?${queryString}` : ""}`;
-      
+
         if (hasFileChanges) {
           const formData = new FormData();
-      
+
           // Add media files only if they exist
           if (mediaFiles && mediaFiles?.length > 0) {
             for (const file of mediaFiles) {
               formData.append("media", file);
             }
-      
+
             // Send request with FormData
             await api.put(url, formData, {
               headers: {
@@ -300,15 +346,17 @@ export default function EditApartmentForm() {
               },
             });
           } else {
-            console.warn("No media files to upload. Skipping FormData submission.");
+            console.warn(
+              "No media files to upload. Skipping FormData submission."
+            );
           }
-        } 
-      
+        }
+
         // Handle text changes separately
         if (hasTextChanges && !hasFileChanges) {
           await api.put(url, queryParams);
         }
-      
+
         toast({
           title: "Success",
           description: "Apartment updated successfully.",
@@ -318,25 +366,29 @@ export default function EditApartmentForm() {
       }
     } catch (error: unknown) {
       let errorMessage = "Произошла непредвиденная ошибка.";
-      
+
       if (error && typeof error === "object" && "isAxiosError" in error) {
         const axiosError = error as AxiosError<{ detail?: string }>;
-        
+
         if (axiosError.response) {
           const detail = axiosError.response.data?.detail;
-          
+
           if (detail) {
             errorMessage = translateError(detail); // Translate the error message
           } else {
-            errorMessage = translateError(`Server Error: ${axiosError.response.status}`);
+            errorMessage = translateError(
+              `Server Error: ${axiosError.response.status}`
+            );
           }
         } else {
-          errorMessage = translateError("Network Error: Unable to reach the server.");
+          errorMessage = translateError(
+            "Network Error: Unable to reach the server."
+          );
         }
       } else if (error instanceof Error) {
         errorMessage = translateError(error.message);
       }
-      
+
       toast({
         title: "Ошибка",
         description: errorMessage,
@@ -346,46 +398,44 @@ export default function EditApartmentForm() {
       setIsSubmitting(false);
     }
   };
-  
-  
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList } }) => {
     const files = e.target.files;
-    setMediaFiles(files); // Store new files
-  
+    setMediaFiles(files);
+
     if (files) {
-      const newPreviewImages: { id: number; url: string }[] = [];
+      const newPreviewImages: { id: number; url: string; media_type: string }[] = [];
       for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push({
-              id: Date.now() + i, // Use a unique ID for new images
+              id: Date.now() + i,
               url: e.target.result as string,
+              media_type: file.type.startsWith('video/') ? 'video' : 'image'
             });
             if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images
+              setPreviewImages((prev) => [...prev, ...newPreviewImages]);
             }
           }
         };
-        reader.readAsDataURL(files[i]);
+        reader.readAsDataURL(file);
       }
     }
   };
-  
-  
+
   const removeImage = (imageId: number) => {
     // Remove the image ID from the preview
     setDeletedImageIds((prev) => [...prev, imageId]);
     setPreviewImages((prev) => prev.filter((image) => image.id !== imageId));
-  
+
     toast({
       title: "Image removed",
       description: "Image marked for deletion.",
       variant: "default",
     });
   };
-
 
   return (
     <DashboardLayout>
@@ -688,7 +738,133 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Имя</Label>
+            <Label htmlFor="status_date">Дата статуса</Label>
+            <Controller
+              name="status_date"
+              control={control}
+              rules={{
+                validate: (value) => {
+                  const currentStatus = control._formValues.current_status;
+                  if (currentStatus !== "free" && !value) {
+                    return "Это поле обязательно";
+                  }
+                  return true;
+                },
+              }}
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(new Date(field.value), "yyyy-MM-dd")
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) =>
+                        field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            />
+            {errors.status_date && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.status_date.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responsible">Ответственный</Label>
+            <Input
+              id="responsible"
+              {...register("responsible")}
+              placeholder="Введите ответственного (необязательно)"
+            />
+            {errors.responsible && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.responsible.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="agent_percent">Процент агента</Label>
+            <Input
+              id="agent_percent"
+              type="number"
+              step="0.01" 
+              {...register("agent_percent", {
+                required: "Это поле обязательно",
+                valueAsNumber: true,
+              })}
+              placeholder="Введите процент агента"
+            />
+            {errors.agent_percent && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.agent_percent.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Второй ответственный</Label>
+            <Controller
+              name="second_responsible"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите Второй ответственный" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="second_agent_percent">Процент второго агента</Label>
+            <Input
+              id="second_agent_percent"
+              type="number"
+              {...register("second_agent_percent", {
+                valueAsNumber: true,
+                min: { value: 0, message: "Процент не может быть меньше 0" },
+                max: { value: 100, message: "Процент не может быть больше 100" },
+              })}
+              placeholder="Введите процент второго агента"
+            />
+            {errors.second_agent_percent && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.second_agent_percent.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Имя собственника</Label>
             <Input
               id="name"
               {...register("name", {
@@ -704,7 +880,9 @@ export default function EditApartmentForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone_number">Номер телефона</Label>
+            <Label htmlFor="phone_number">
+              Номер телефона собственника
+            </Label>
             <Input
               id="phone_number"
               {...register("phone_number", {
@@ -712,75 +890,11 @@ export default function EditApartmentForm() {
                 minLength: { value: 3, message: "Минимум 3 символа" },
                 maxLength: { value: 13, message: "Максимум 13 символов" },
               })}
-              placeholder="Введите номер телефона"
+              placeholder="Введите номер телефона собственника"
             />
             {errors.phone_number && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.phone_number.message}
-              </p>
-            )}
-          </div>
-
-            <div className="space-y-2">
-            <Label htmlFor="agent_percent">Процент агента</Label>
-            <Input
-              id="agent_percent"
-              type="number"
-              step="0.01" // Allow floating point numbers
-              {...register("agent_percent", {
-              required: "Это поле обязательно",
-              valueAsNumber: true,
-              })}
-              placeholder="Введите процент агента"
-            />
-            {errors.agent_percent && (
-              <p className="text-red-500 text-sm mt-1">
-              {errors.agent_percent.message}
-              </p>
-            )}
-            </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="agent_commission">Комиссия агента</Label>
-            <Input
-              id="agent_commission"
-              type="number"
-              {...register("agent_commission", { valueAsNumber: true })}
-              placeholder="Введите комиссию агента (необязательно)"
-            />
-            {errors.agent_commission && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.agent_commission.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="crm_id">CRM ID</Label>
-            <Input
-              id="crm_id"
-              {...register("crm_id", {
-                maxLength: { value: 255, message: "Максимум 255 символов" },
-              })}
-              placeholder="Введите CRM ID (необязательно)"
-            />
-            {errors.crm_id && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.crm_id.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="responsible">Ответственный</Label>
-            <Input
-              id="responsible"
-              {...register("responsible")}
-              placeholder="Введите ответственного (необязательно)"
-            />
-            {errors.responsible && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.responsible.message}
               </p>
             )}
           </div>
@@ -818,73 +932,101 @@ export default function EditApartmentForm() {
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="space-y-2">
+          <Label htmlFor="furnished">Меблированная</Label>
           <Controller
             name="furnished"
             control={control}
             render={({ field }) => (
-              <Checkbox
-                id="furnished"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
+              <Select onValueChange={field.onChange} value={field.value ? "yes" : "no"}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="yes">Да</SelectItem>
+            <SelectItem value="no">Нет</SelectItem>
+          </SelectContent>
+              </Select>
             )}
           />
-          <Label htmlFor="furnished">Меблированная</Label>
         </div>
 
         <div>
-          <Label htmlFor="images">Фотографии</Label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+          <Label htmlFor="media">Файлы (Изображения и Видео)</Label>
+          <div
+            className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
+            onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+            onDrop={(e) => {
+              e.preventDefault();
+              const dt = new DataTransfer();
+              for (const file of e.dataTransfer.files) {
+                dt.items.add(file);
+              }
+              if (fileInputRef.current) {
+                fileInputRef.current.files = dt.files;
+                handleImageChange({ target: { files: dt.files } });
+              }
+            }}
+            onDragOver={(e) => e.preventDefault()}
+          >
             <div className="space-y-1 text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <div className="flex text-sm text-gray-600">
                 <label
-                  htmlFor="images"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  htmlFor="media"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"
                 >
                   <span>Загрузить файлы</span>
-                  <input
-                    id="images"
-                    type="file"
-                    className="sr-only"
-                    multiple
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                  />
                 </label>
+                <input
+                  id="media"
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  accept="image/*,video/*" // Accept both images and videos
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
                 <p className="pl-1">или перетащите сюда</p>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+              <p className="text-xs text-gray-500">
+                Поддерживаемые форматы: PNG, JPG, GIF (до 10MB), MP4, MOV (до
+                50MB)
+              </p>
             </div>
           </div>
           {previewImages.length > 0 && (
-             <div>
-             {previewImages.length > 0 && (
-               <div className="mt-4 grid grid-cols-3 gap-4">
-                 {previewImages.map((image) => (
-                   <div key={image.id} className="relative">
-                     <Image
-                       src={image.url}
-                       alt={`Preview ${image.id}`}
-                       width={150}
-                       height={150}
-                       className="w-full h-32 object-cover rounded-md"
-                     />
-                     <button
-                       type="button"
-                       className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
-                       onClick={() => removeImage(image.id)} // Pass the image ID
-                     >
-                       ✕
-                     </button>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {previewImages.map((media) => (
+                <div key={media.id} className="relative">
+                  {media.media_type === 'video' ? (
+                    <video
+                      src={media.url}
+                      controls
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  ) : (
+                    <Image
+                      src={media.url}
+                      alt={`Preview ${media.id}`}
+                      width={150}
+                      height={150}
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                    onClick={() => removeImage(media.id)} // Pass the media ID
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
+
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? (
             <>
@@ -908,3 +1050,4 @@ export default function EditApartmentForm() {
     </DashboardLayout>
   );
 }
+

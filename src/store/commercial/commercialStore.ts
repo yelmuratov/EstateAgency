@@ -18,6 +18,8 @@ interface Commercial {
   square_area: number;
   agent_percent: number;
   agent_commission: number;
+  second_responsible?: string;
+  second_agent_percent?: number;
   action_type: string;
   location: string;
   created_at: string;
@@ -128,9 +130,13 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
   },
   // Filter commercials
   filterCommercials: async (filters: Record<string, string>) => {
-    set({ loading: true, filterError: null });
+    set({ loading: true, error: null });
     try {
-      const response = await api.get(`/commercial/filter`, { params: filters });
+      // Build query string from filters
+      const queryParams = new URLSearchParams({ table: "commercial", ...filters }).toString();
+  
+      // Send request with proper query parameters
+      const response = await api.get(`/additional/filter/?${queryParams}`);
       set({
         commercials: Array.isArray(response.data.data) ? response.data.data : [],
         total: response.data.total_count || 0,
@@ -141,10 +147,9 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         message?: string;
         response?: { data?: { detail?: string } };
       };
-
       set({
         filterError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
+          apiError.response?.data?.detail || apiError.message || "Failed to filter commercials",
         loading: false,
       });
     }

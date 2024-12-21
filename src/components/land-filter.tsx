@@ -1,244 +1,412 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+import { useLandStore } from "@/store/land/landStore";
+import { UserStore } from "@/store/users/userStore";
 
-interface LandFilterValues {
-  region: string
-  title: string
-  price: string
-  rooms: string
-  landArea: string
-  livingArea: string
-  totalFloors: string
-  location: string
-  furnished: string
-  condition: string
-  parking: string
-  agent: string
+// UI Components
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
+
+const LOCATION_OPTIONS = {
+  city: "Город",
+  suburb: "Пригород",
+  countryside: "Сельская местность",
+  along_road: "Вдоль дороги",
+  near_pond: "У водоема",
+  foothills: "Предгорье",
+  cottage_area: "Дачный массив",
+  closed_area: "Закрытая территория",
+};
+
+const HOUSE_CONDITION_OPTIONS = {
+  euro: "Евро",
+  normal: "Обычное",
+  repair: "Требует ремонта",
+};
+
+const STATUS_OPTIONS = {
+  free: "Свободно",
+  soon: "Скоро освободится",
+  busy: "Занято",
+};
+
+interface LandFilterProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-interface FilterModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+const FormSchema = z.object({
+  dateRange: z
+    .object({
+      from: z.date().optional(),
+      to: z.date().optional(),
+    })
+    .optional(),
+  statusDateRange: z
+    .object({
+      from: z.date().optional(),
+      to: z.date().optional(),
+    })
+    .optional(),
+});
 
-const regions = ['Мирзо Улугбек', 'Юнусабад', 'Чиланзар', 'Шайхантахур', 'Сергелий']
-const locationTypes = [
-  'В городе',
-  'В пригороде',
-  'В сельской местности',
-  'Вдоль трассы',
-  'Возле водоема',
-  'В горах',
-  'В дачном массиве',
-  'На закрытой территории',
-]
-const agents = ['Акобир', 'Иван Иванов', 'Мария Смирнова']
+export function LandFilter({ open, onOpenChange }: LandFilterProps) {
+  const { districts, fetchDistricts } = usePropertyStore();
+  const { filterLands } = useLandStore();
+  const { fetchUsers, users } = UserStore();
 
-export function LandFilterModal({ open, onOpenChange }: FilterModalProps) {
-  const [filters, setFilters] = useState<LandFilterValues>({
-    region: '',
-    title: '',
-    price: '',
-    rooms: '',
-    landArea: '',
-    livingArea: '',
-    totalFloors: '',
-    location: '',
-    furnished: '',
-    condition: '',
-    parking: '',
-    agent: '',
-  })
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      dateRange: { from: undefined, to: undefined },
+      statusDateRange: { from: undefined, to: undefined },
+    },
+  });
+
+  useEffect(() => {
+    fetchDistricts();
+    fetchUsers();
+  }, [fetchDistricts, fetchUsers]);
+
+  useEffect(() => {
+    const savedFilters = localStorage.getItem("landFilters");
+    if (savedFilters) {
+      const parsedFilters = JSON.parse(savedFilters);
+      setFilters(parsedFilters);
+    }
+  }, []);
+
+  const [filters, setFilters] = useState<Record<string, string>>({
+    table: "land",
+    district: "",
+    action_type: "",
+    price_min: "",
+    price_max: "",
+    area_min: "",
+    area_max: "",
+    location_land: "",
+    house_condition: "",
+    current_status: "",
+    parking_place: "",
+    responsible: "",
+    date_min: "",
+    date_max: "",
+    status_date_min: "",
+    status_date_max: "",
+  });
 
   const handleChange = (name: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [name]: value }))
-  }
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = () => {
-    const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value)
-    })
-    console.log('Land Filter Query:', params.toString())
-    onOpenChange(false)
-  }
+    const updatedFilters = {
+      ...filters,
+      date_min: filters.date_min ? format(new Date(filters.date_min), "yyyy-MM-dd") : filters.date_min,
+      date_max: filters.date_max ? format(new Date(filters.date_max), "yyyy-MM-dd") : filters.date_max,
+      status_date_min: filters.status_date_min ? format(new Date(filters.status_date_min), "yyyy-MM-dd") : filters.status_date_min,
+      status_date_max: filters.status_date_max ? format(new Date(filters.status_date_max), "yyyy-MM-dd") : filters.status_date_max,
+    };
+
+    // Filter out empty fields
+    const changedFilters = Object.fromEntries(
+      Object.entries(updatedFilters).filter(([, value]) => value !== "")
+    );
+
+    localStorage.setItem("landFilters", JSON.stringify(updatedFilters));
+    filterLands({ table: "land", ...changedFilters });
+    onOpenChange(false);
+  };
+
+  const clearFilters = () => {
+    const emptyFilters = {
+      table: "land",
+      district: "",
+      action_type: "",
+      price_min: "",
+      price_max: "",
+      area_min: "",
+      area_max: "",
+      location_land: "",
+      house_condition: "",
+      current_status: "",
+      parking_place: "",
+      responsible: "",
+      date_min: "",
+      date_max: "",
+      status_date_min: "",
+      status_date_max: "",
+    };
+    setFilters(emptyFilters);
+    form.reset();
+    localStorage.removeItem("landFilters");
+    filterLands({ table: "land" });
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Фильтр земельных участков</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          {/* Region and Title */}
-          <div>
-            <Label>Район</Label>
-            <Select onValueChange={(value) => handleChange('region', value)} value={filters.region}>
-              <SelectTrigger>
-                <SelectValue placeholder="Районы Ташкента" />
-              </SelectTrigger>
-              <SelectContent>
-                {regions.map((region) => (
-                  <SelectItem key={region} value={region}>
-                    {region}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Название</Label>
-            <Input
-              placeholder="Проспект Амир Темур 5/5/2"
-              value={filters.title}
-              onChange={(e) => handleChange('title', e.target.value)}
-            />
-          </div>
-
-          {/* Price */}
-          <div>
-            <Label>Цена</Label>
-            <Input
-              type="number"
-              placeholder="300000$"
-              value={filters.price}
-              onChange={(e) => handleChange('price', e.target.value)}
-            />
-          </div>
-
-          {/* Rooms and Land Area */}
-          <div className="grid grid-cols-2 gap-4">
+        <Form {...form}>
+          <div className="grid gap-4 py-4">
+            {/* District */}
             <div>
-              <Label>Количество комнат</Label>
-              <Input
-                placeholder="1/2/3/4/5/6"
-                value={filters.rooms}
-                onChange={(e) => handleChange('rooms', e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Площадь участка (м²)</Label>
-              <Input
-                type="number"
-                placeholder="200"
-                value={filters.landArea}
-                onChange={(e) => handleChange('landArea', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Living Area */}
-          <div>
-            <Label>Жилая площадь (м²)</Label>
-            <Input
-              type="number"
-              placeholder="200"
-              value={filters.livingArea}
-              onChange={(e) => handleChange('livingArea', e.target.value)}
-            />
-          </div>
-
-          {/* Total Floors */}
-          <div>
-            <Label>Этажность</Label>
-            <Input
-              type="number"
-              placeholder="23"
-              value={filters.totalFloors}
-              onChange={(e) => handleChange('totalFloors', e.target.value)}
-            />
-          </div>
-
-          {/* Location */}
-          <div>
-            <Label>Расположение</Label>
-            <Select onValueChange={(value) => handleChange('location', value)} value={filters.location}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите расположение" />
-              </SelectTrigger>
-              <SelectContent>
-                {locationTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Furnished, Condition, Parking */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Меблирован</Label>
-              <Select onValueChange={(value) => handleChange('furnished', value)} value={filters.furnished}>
+              <Label>Район</Label>
+              <Select
+                onValueChange={(value) => handleChange("district", value)}
+                value={filters.district}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Да/Нет" />
+                  <SelectValue placeholder="Выберите район" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Да">Да</SelectItem>
-                  <SelectItem value="Нет">Нет</SelectItem>
+                  {districts.map((district) => (
+                    <SelectItem key={district.id} value={district.name}>
+                      {district.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Action Type */}
+            <div>
+              <Label>Тип действия</Label>
+              <Select
+                onValueChange={(value) => handleChange("action_type", value)}
+                value={filters.action_type}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите тип действия" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sale">Продажа</SelectItem>
+                  <SelectItem value="rent">Аренда</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Price Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Цена от</Label>
+                <Input
+                  type="number"
+                  placeholder="Минимальная цена"
+                  value={filters.price_min}
+                  onChange={(e) => handleChange("price_min", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Цена до</Label>
+                <Input
+                  type="number"
+                  placeholder="Максимальная цена"
+                  value={filters.price_max}
+                  onChange={(e) => handleChange("price_max", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Area Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Площадь от (м²)</Label>
+                <Input
+                  type="number"
+                  placeholder="Минимальная площадь"
+                  value={filters.area_min}
+                  onChange={(e) => handleChange("area_min", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Площадь до (м²)</Label>
+                <Input
+                  type="number"
+                  placeholder="Максимальная площадь"
+                  value={filters.area_max}
+                  onChange={(e) => handleChange("area_max", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <Label>Расположение</Label>
+              <Select
+                onValueChange={(value) => handleChange("location_land", value)}
+                value={filters.location_land}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите расположение" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LOCATION_OPTIONS).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* House Condition */}
             <div>
               <Label>Состояние</Label>
-              <Select onValueChange={(value) => handleChange('condition', value)} value={filters.condition}>
+              <Select
+                onValueChange={(value) =>
+                  handleChange("house_condition", value)
+                }
+                value={filters.house_condition}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите состояние" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Евроремонт">Евроремонт</SelectItem>
-                  <SelectItem value="Среднее">Среднее</SelectItem>
-                  <SelectItem value="Требует ремонта">Требует ремонта</SelectItem>
+                  {Object.entries(HOUSE_CONDITION_OPTIONS).map(
+                    ([key, value]) => (
+                      <SelectItem key={key} value={key}>
+                        {value}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Current Status */}
+            <div>
+              <Label>Текущий статус</Label>
+              <Select
+                onValueChange={(value) => handleChange("current_status", value)}
+                value={filters.current_status}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите статус" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STATUS_OPTIONS).map(([key, value]) => (
+                    <SelectItem key={key} value={key}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Parking Place */}
+            <div>
+              <Label>Парковка</Label>
+              <Select
+                onValueChange={(value) => handleChange("parking_place", value)}
+                value={filters.parking_place}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите наличие парковки" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Да</SelectItem>
+                  <SelectItem value="false">Нет</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Дата от</Label>
+                <Input
+                  type="date"
+                  value={filters.date_min}
+                  onChange={(e) => handleChange("date_min", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Дата до</Label>
+                <Input
+                  type="date"
+                  value={filters.date_max}
+                  onChange={(e) => handleChange("date_max", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Status Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Дата статуса от</Label>
+                <Input
+                  type="date"
+                  value={filters.status_date_min}
+                  onChange={(e) => handleChange("status_date_min", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Дата статуса до</Label>
+                <Input
+                  type="date"
+                  value={filters.status_date_max}
+                  onChange={(e) => handleChange("status_date_max", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Responsible */}
+            <div>
+              <Label>Ответственный</Label>
+              <Select
+                onValueChange={(value) => handleChange("responsible", value)}
+                value={filters.responsible}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите ответственного" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.full_name}>
+                      {user.full_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-
-          <div>
-            <Label>Парковочное место</Label>
-            <Select onValueChange={(value) => handleChange('parking', value)} value={filters.parking}>
-              <SelectTrigger>
-                <SelectValue placeholder="Да/Нет" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Да">Да</SelectItem>
-                <SelectItem value="Нет">Нет</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Agent */}
-          <div>
-            <Label>Агент</Label>
-            <Select onValueChange={(value) => handleChange('agent', value)} value={filters.agent}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите агента" />
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map((agent) => (
-                  <SelectItem key={agent} value={agent}>
-                    {agent}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
+        </Form>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
-          <Button onClick={handleSubmit}>Применить фильтр</Button>
+          <Button variant="secondary" onClick={clearFilters}>
+            Очистить фильтры
+          </Button>
+          <Button onClick={handleSubmit}>Применить</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
