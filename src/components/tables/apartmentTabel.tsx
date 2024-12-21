@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { PropertyFilter } from "@/components/property-filter";
 
@@ -93,14 +93,17 @@ const houseTypeTranslation: { [key: string]: string } = {
   sale: "Продажа",
   seperated: "Раздельный",
   combined: "Совмещенный",
-  many: "Несколько",
+  many: "Два и более",
 };
 
 export default function PropertyTable() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState<{ url: string; type: string } | null>(null);
+  const [modalContent, setModalContent] = useState<{
+    url: string;
+    type: string;
+  } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,14 +127,13 @@ export default function PropertyTable() {
 
   useEffect(() => {
     return () => {
-      Object.values(previewUrls).forEach(url => {
-        if (url.startsWith('blob:')) {
+      Object.values(previewUrls).forEach((url) => {
+        if (url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
         }
       });
     };
   }, [previewUrls]);
-
 
   const toggleRow = (id: number) => {
     setSelectedRows((prev) =>
@@ -152,7 +154,7 @@ export default function PropertyTable() {
       });
       setModalOpen(true);
     }
-  };  
+  };
 
   const closeModal = () => {
     setModalContent(null);
@@ -171,14 +173,14 @@ export default function PropertyTable() {
         </div>
       );
     }
-  
+
     const firstMedia = media[0];
     return (
       <div
         className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
         onClick={() => openModal(firstMedia)}
       >
-        {firstMedia.media_type === 'video' ? (
+        {firstMedia.media_type === "video" ? (
           <video
             src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${firstMedia.url}`}
             className="object-cover w-full h-full"
@@ -197,7 +199,6 @@ export default function PropertyTable() {
       </div>
     );
   };
-  
 
   const renderMediaGallery = (media: Media[]) => {
     return (
@@ -208,7 +209,7 @@ export default function PropertyTable() {
             className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
             onClick={() => openModal(item)}
           >
-            {item.media_type === 'video' ? (
+            {item.media_type === "video" ? (
               <video
                 src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
                 className="object-cover w-full h-full"
@@ -232,7 +233,7 @@ export default function PropertyTable() {
 
   const renderModalContent = () => {
     if (!modalContent) return null;
-  
+
     return (
       <div
         className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -249,7 +250,7 @@ export default function PropertyTable() {
           >
             ✕
           </button>
-          {modalContent.type === 'video' ? (
+          {modalContent.type === "video" ? (
             <video
               src={modalContent.url}
               className="max-w-full max-h-[80vh] rounded-lg"
@@ -270,8 +271,6 @@ export default function PropertyTable() {
       </div>
     );
   };
-  
-  
 
   if (error) {
     return (
@@ -309,8 +308,9 @@ export default function PropertyTable() {
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 #
               </th>
+              {/* crm id */}
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                <Checkbox />
+                CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ПРЕВЬЮ
@@ -361,11 +361,8 @@ export default function PropertyTable() {
                     <td className="w-[50px] p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="w-[50px] p-2 text-center">
-                      <Checkbox
-                        checked={selectedRows.includes(apartment.id)}
-                        onCheckedChange={() => toggleRow(apartment.id)}
-                      />
+                    <td className="p-2 text-center text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {apartment.crm_id}
                     </td>
                     <td className="p-2">
                       {renderPreviewCell(apartment.media)}
@@ -441,7 +438,7 @@ export default function PropertyTable() {
                                 Этаж
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.floor_number} из {apartment.floor}
+                                {apartment.floor} из {apartment.floor_number}
                               </div>
                             </div>
                             <div>
@@ -467,14 +464,6 @@ export default function PropertyTable() {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.agent_commission}$ (
                                 {apartment.agent_percent}%)
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                                CRM ID
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.crm_id}
                               </div>
                             </div>
                             <div>
@@ -704,4 +693,3 @@ export default function PropertyTable() {
     </div>
   );
 }
-

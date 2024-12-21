@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from 'lucide-react';
 
 import {
   Select,
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useApartmentStore } from "@/store/apartment/aparmentStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -29,6 +29,12 @@ import Image from "next/image";
 import Spinner from "@/components/local-components/spinner";
 import { UserStore } from "@/store/userStore";
 import useAuth from "@/hooks/useAuth";
+
+interface Media {
+  id: number;
+  url: string;
+  media_type: string;
+}
 
 interface ApartmentFormData {
   district: string;
@@ -63,7 +69,7 @@ export default function EditApartmentForm() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<
-    { id: number; url: string }[]
+    { id: number; url: string; media_type: string }[]
   >([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
   const { toast } = useToast();
@@ -123,9 +129,10 @@ export default function EditApartmentForm() {
             });
             if (apartmentData.media) {
               setPreviewImages(
-                apartmentData.media.map((m: { id: number; url: string }) => ({
+                apartmentData.media.map((m: { id: number; url: string; media_type: string }) => ({
                   id: m.id,
                   url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/${m.url}`,
+                  media_type: m.media_type
                 }))
               );
             }
@@ -382,24 +389,26 @@ export default function EditApartmentForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files); // Store new files
+    setMediaFiles(files);
 
     if (files) {
-      const newPreviewImages: { id: number; url: string }[] = [];
+      const newPreviewImages: { id: number; url: string; media_type: string }[] = [];
       for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push({
-              id: Date.now() + i, // Use a unique ID for new images
+              id: Date.now() + i,
               url: e.target.result as string,
+              media_type: file.type.startsWith('video/') ? 'video' : 'image'
             });
             if (newPreviewImages.length === files.length) {
-              setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Merge with existing images
+              setPreviewImages((prev) => [...prev, ...newPreviewImages]);
             }
           }
         };
-        reader.readAsDataURL(files[i]);
+        reader.readAsDataURL(file);
       }
     }
   };
@@ -910,7 +919,7 @@ export default function EditApartmentForm() {
             <div className="mt-4 grid grid-cols-3 gap-4">
               {previewImages.map((media) => (
                 <div key={media.id} className="relative">
-                  {media.url.endsWith(".mp4") || media.url.endsWith(".mov") ? (
+                  {media.media_type === 'video' ? (
                     <video
                       src={media.url}
                       controls
@@ -961,3 +970,4 @@ export default function EditApartmentForm() {
     </DashboardLayout>
   );
 }
+

@@ -76,7 +76,10 @@ const CommercialTable: React.FC = ({}) => {
   });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<{
+    url: string;
+    type: string;
+  } | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -111,13 +114,19 @@ const CommercialTable: React.FC = ({}) => {
     setCurrentPage(page);
   };
 
-  const openModal = (imageUrl: string) => {
-    setModalImage(imageUrl);
-    setModalOpen(true);
+  const openModal = (media: Media) => {
+    if (media.url) {
+      const fullUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`;
+      setModalContent({
+        url: fullUrl,
+        type: media.media_type, // 'video' or 'image'
+      });
+      setModalOpen(true);
+    }
   };
 
   const closeModal = () => {
-    setModalImage(null);
+    setModalContent(null);
     setModalOpen(false);
   };
 
@@ -138,7 +147,7 @@ const CommercialTable: React.FC = ({}) => {
     return (
       <div
         className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
-        onClick={() => openModal(firstMedia.url)}
+        onClick={() => openModal(firstMedia)}
         title="Click to view in modal"
       >
         {firstMedia.media_type === 'video' ? (
@@ -157,9 +166,6 @@ const CommercialTable: React.FC = ({}) => {
             className="bg-gray-200 dark:bg-gray-800"
           />
         )}
-        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center py-1">
-          Click to view
-        </div>
       </div>
     );
   };
@@ -324,6 +330,14 @@ const CommercialTable: React.FC = ({}) => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Парковка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.parking_place ? "Да" : "Нет"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 CRM ID
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
@@ -332,10 +346,20 @@ const CommercialTable: React.FC = ({}) => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.agent_commission}$ (
+                                {commercial.agent_percent}%)
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Описание
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.description || "Описание отсутствует"}
+                                {commercial.description ||
+                                  "Описание отсутствует"}
                               </div>
                             </div>
                             <div>
@@ -343,31 +367,42 @@ const CommercialTable: React.FC = ({}) => {
                                 Комментарий
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {commercial.comment || "Комментарий отсутствует"}
+                                {commercial.comment ||
+                                  "Комментарий отсутствует"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Ответственный
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {commercial.responsible ||
+                                  "Ответственный не указан"}
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                             {commercial.media &&
-                              commercial.media.map((media) => (
+                              commercial.media.map((item) => (
                                 <div
-                                  key={media.id}
-                                  className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                  onClick={() => openModal(media.url)}
+                                  key={item.id}
+                                  className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
+                                  onClick={() => openModal(item)}
                                 >
-                                  {media.media_type === "video" ? (
+                                  {item.media_type === "video" ? (
                                     <video
-                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
                                       className="object-cover w-full h-full"
                                       muted
                                       playsInline
                                     />
                                   ) : (
                                     <Image
-                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
-                                      alt="Media preview"
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
+                                      alt="Property media"
                                       layout="fill"
                                       objectFit="cover"
+                                      className="bg-gray-200 dark:bg-gray-800"
                                     />
                                   )}
                                 </div>
@@ -495,31 +530,33 @@ const CommercialTable: React.FC = ({}) => {
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={closeModal}
         >
-          <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative max-w-4xl max-h-[90vh] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+              aria-label="Close preview"
             >
-              <span className="text-2xl font-bold">✕</span>
+              ✕
             </button>
-            {modalImage && (
-              modalImage.toLowerCase().endsWith('.mp4') ? (
-                <video
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${modalImage}`}
-                  className="w-full h-full object-contain"
-                  controls
-                  autoPlay
-                />
-              ) : (
-                <Image
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${modalImage}`}
-                  alt="Preview"
-                  className="rounded-lg shadow-lg"
-                  width={900}
-                  height={600}
-                  objectFit="contain"
-                />
-              )
+            {modalContent && modalContent.type === "video" ? (
+              <video
+                src={modalContent.url}
+                className="max-w-full max-h-[80vh] rounded-lg"
+                controls
+                autoPlay
+                playsInline
+              />
+            ) : (
+              <Image
+                src={modalContent ? modalContent.url : ''}
+                alt="Preview"
+                className="rounded-lg shadow-lg max-w-full max-h-[80vh] object-contain"
+                width={1200}
+                height={800}
+              />
             )}
           </div>
         </div>

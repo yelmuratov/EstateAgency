@@ -48,7 +48,6 @@ interface ApartmentFormData {
   name: string;
   phone_number: string;
   agent_percent: number;
-  agent_commission?: number;
   crm_id?: string;
   responsible?: string;
   media?: FileList;
@@ -260,6 +259,7 @@ export default function ApartmentForm() {
         }
       }
       fileInputRef.current.files = dt.files;
+      setMediaFiles(dt.files); 
     }
   };
 
@@ -486,6 +486,22 @@ export default function ApartmentForm() {
       </div>
 
       <div>
+        <Label htmlFor="floor">Этаж</Label>
+        <Input
+          id="floor"
+          type="number"
+          {...register("floor", {
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+          })}
+          placeholder="Введите этаж квартиры"
+        />
+        {errors.floor && (
+          <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>
+        )}
+      </div>
+
+      <div>
         <Label htmlFor="floor_number">Этажность</Label>
         <Input
           id="floor_number"
@@ -500,22 +516,6 @@ export default function ApartmentForm() {
           <p className="text-red-500 text-sm mt-1">
             {errors.floor_number.message}
           </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="floor">Этаж</Label>
-        <Input
-          id="floor"
-          type="number"
-          {...register("floor", {
-            required: "Это поле обязательно",
-            valueAsNumber: true,
-          })}
-          placeholder="Введите этаж квартиры"
-        />
-        {errors.floor && (
-          <p className="text-red-500 text-sm mt-1">{errors.floor.message}</p>
         )}
       </div>
 
@@ -619,7 +619,7 @@ export default function ApartmentForm() {
       </div>
 
       <div>
-        <Label htmlFor="name">Имя</Label>
+        <Label htmlFor="name">Имя собственника</Label>
         <Input
           id="name"
           {...register("name", {
@@ -627,7 +627,7 @@ export default function ApartmentForm() {
             minLength: { value: 3, message: "Минимум 3 символа" },
             maxLength: { value: 100, message: "Максимум 100 символов" },
           })}
-          placeholder="Введите имя"
+          placeholder="Введите имя собственника"
         />
         {errors.name && (
           <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -638,80 +638,39 @@ export default function ApartmentForm() {
         <Label htmlFor="phone_number">Номер телефона</Label>
         <Input
           id="phone_number"
+          defaultValue="+998"
           {...register("phone_number", {
-            required: "Это поле обязательно",
-            minLength: { value: 3, message: "Минимум 3 символа" },
-            maxLength: { value: 13, message: "Максимум 13 символов" },
+        required: "Это поле обязательно",
+        minLength: { value: 3, message: "Минимум 3 символа" },
+        maxLength: { value: 13, message: "Максимум 13 символов" },
           })}
-          placeholder="Введите номер телефона"
+          placeholder="Введите номер телефона собственника"
         />
         {errors.phone_number && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.phone_number.message}
+        {errors.phone_number.message}
           </p>
         )}
       </div>
-
       <div>
         <Label htmlFor="agent_percent">Процент агента</Label>
         <Input
           id="agent_percent"
           type="number"
           {...register("agent_percent", {
-            required: "Это поле обязательно",
-            valueAsNumber: true,
+        required: "Это поле обязательно",
+        valueAsNumber: true,
+        max: { value: 100, message: "Процент агента не может быть больше 100" },
           })}
           placeholder="Введите процент агента"
         />
         {errors.agent_percent && (
           <p className="text-red-500 text-sm mt-1">
-            {errors.agent_percent.message}
+        {errors.agent_percent.message}
           </p>
         )}
       </div>
 
-      <div>
-        <Label htmlFor="agent_commission">Комиссия агента</Label>
-        <Input
-          id="agent_commission"
-          type="number"
-          {...register("agent_commission", { valueAsNumber: true })}
-          placeholder="Введите комиссию агента (необязательно)"
-        />
-        {errors.agent_commission && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.agent_commission.message}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="crm_id">CRM ID</Label>
-        <Input
-          id="crm_id"
-          {...register("crm_id", {
-            maxLength: { value: 255, message: "Максимум 255 символов" },
-          })}
-          placeholder="Введите CRM ID (необязательно)"
-        />
-        {errors.crm_id && (
-          <p className="text-red-500 text-sm mt-1">{errors.crm_id.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label htmlFor="responsible">Ответственный</Label>
-        <Input
-          id="responsible"
-          {...register("responsible", {})}
-          placeholder="Введите ответственного (необязательно)"
-        />
-        {errors.responsible && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.responsible.message}
-          </p>
-        )}
-      </div>
       <div
         className="mt-1 relative"
         onClick={() => fileInputRef.current?.click()} // Trigger file input on click
@@ -761,14 +720,14 @@ export default function ApartmentForm() {
             <Upload className="mx-auto h-12 w-12 text-gray-400" />
             <div className="flex text-sm text-gray-600">
               <label
-                htmlFor="images"
-                className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+          htmlFor="images"
+          className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary dark:text-primary-light hover:text-primary/80 dark:hover:text-primary-light/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
               >
-                <span>Загрузить файлы</span>
+          <span>Загрузить файлы</span>
               </label>
               <p className="pl-1">или перетащите сюда</p>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Изображения (до 5MB): PNG, JPG, GIF
               <br />
               Видео (до 30MB): MP4, MOV, AVI

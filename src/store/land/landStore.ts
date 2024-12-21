@@ -34,6 +34,7 @@ interface Land {
   parking_place: boolean;
   square_area: number;
   responsible: string;
+  second_responsible: string;
   media: Media[];
 }
 

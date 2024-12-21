@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -25,6 +25,7 @@ import { LandFilterModal } from "../land-filter";
 interface Media {
   id: number;
   url: string;
+  media_type: string;
 }
 
 const statusConfig = {
@@ -70,7 +71,7 @@ const LandTable: React.FC = () => {
   });
   const [itemsPerPage] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalImage, setModalImage] = useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<{ url: string; type: string } | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -95,20 +96,17 @@ const LandTable: React.FC = () => {
     return () => clearTimeout(timer); // Clear the timer on cleanup
   }, [searchQuery, currentPage, itemsPerPage, fetchLands]);
 
-  const toggleRow = (id: number) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
-
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  const openModal = (imageUrl: string) => {
+  const openModal = (media: Media) => {
     try {
-      const validUrl = new URL(imageUrl, process.env.NEXT_PUBLIC_API_BASE_URL).toString();
-      setModalImage(validUrl);
+      const validUrl = new URL(media.url, process.env.NEXT_PUBLIC_API_BASE_URL).toString();
+      setModalContent({
+        url: validUrl,
+        type: media.media_type
+      });
       setModalOpen(true);
     } catch (error) {
       console.error("Invalid URL:", error);
@@ -116,12 +114,42 @@ const LandTable: React.FC = () => {
   };
 
   const closeModal = () => {
-    setModalImage(null);
+    setModalContent(null);
     setModalOpen(false);
   };
 
   const handleRowClick = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
+  };
+
+  const renderMediaGallery = (media: Media[]) => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+        {media && media.map((item) => (
+          <div
+            key={item.id}
+            className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
+            onClick={() => openModal(item)}
+          >
+            {item.media_type === 'video' ? (
+              <video
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
+                className="object-cover w-full h-full"
+                muted
+                playsInline
+              />
+            ) : (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${item.url}`}
+                alt="Media preview"
+                layout="fill"
+                objectFit="cover"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -159,7 +187,7 @@ const LandTable: React.FC = () => {
                 #
               </th>
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
-                <Checkbox />
+                CRM ID
               </th>
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 ПРЕВЬЮ
@@ -220,33 +248,38 @@ const LandTable: React.FC = () => {
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
                     <td className="w-[50px] p-2 text-center">
-                      <Checkbox
-                        checked={selectedRows.includes(land.id)}
-                        onCheckedChange={() => toggleRow(land.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      {land.crm_id}
                     </td>
                     <td className="p-2">
                       <div
                         className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openModal(
-                            `${process.env.NEXT_PUBLIC_API_BASE_URL}/${land.media[0]?.url}`
-                          );
+                          if (land.media && land.media[0]) {
+                            openModal(land.media[0]);
+                          }
                         }}
                       >
                         {land.media && land.media[0] ? (
-                          <Image
-                          src={new URL(land.media[0].url, process.env.NEXT_PUBLIC_API_BASE_URL).toString()}
-                          alt={land.title || "Preview image"}
-                          layout="fill"
-                          objectFit="cover"
-                          className="bg-gray-200 dark:bg-gray-800"
-                        />
+                          land.media[0].media_type === 'video' ? (
+                            <video
+                              src={new URL(land.media[0].url, process.env.NEXT_PUBLIC_API_BASE_URL).toString()}
+                              className="object-cover w-full h-full"
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <Image
+                              src={new URL(land.media[0].url, process.env.NEXT_PUBLIC_API_BASE_URL).toString()}
+                              alt={land.title || "Preview image"}
+                              layout="fill"
+                              objectFit="cover"
+                              className="bg-gray-200 dark:bg-gray-800"
+                            />
+                          )
                         ) : (
                           <div className="flex items-center justify-center h-full w-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-sm font-medium">
-                            Нет изображения
+                            Нет медиа
                           </div>
                         )}
                       </div>
@@ -300,7 +333,7 @@ const LandTable: React.FC = () => {
                     </td>
                   </tr>
                   {expandedRow === land.id && (
-                    <tr className="bg-gray-50 dark:bg-gray-600">
+                    <tr className="bg-gray-50 dark:bg-gray-800">
                       <td colSpan={11}>
                         <div className="p-4 space-y-4 text-sm">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -314,10 +347,36 @@ const LandTable: React.FC = () => {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                CRM ID
+                                Статус
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
-                                {land.crm_id || "Не указан"}
+                                {landConditionTranslation[land.house_condition] ||
+                                  land.house_condition}
+                              </div>  
+                            </div>
+                            {/* if second respinsible  available*/}
+                              <div>
+                                <div className="font-medium text-gray-500 dark:text-gray-400">
+                                  Второй ответственный
+                                </div>
+                                <div className="text-gray-900 dark:text-gray-100">
+                                  {land.second_responsible}
+                                </div>
+                              </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Парковка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.parking_place ? "Да" : "Нет"}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Комиссия агента
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {land.agent_commission}$ ({land.agent_percent}%)
                               </div>
                             </div>
                             <div>
@@ -337,27 +396,28 @@ const LandTable: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                             {land.media &&
-                              land.media.map((media) => (
+                              land.media.map((image: Media) => (
                                 <div
-                                  key={media.id}
-                                  className="relative h-32 w-full border rounded-md overflow-hidden cursor-pointer"
-                                  onClick={() => openModal(media.url)}
+                                  key={image.id}
+                                  className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
+                                  onClick={() => openModal(image)}
                                 >
-                                  {media.media_type === "video" ? (
+                                  {image.media_type === 'video' ? (
                                     <video
-                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
                                       className="object-cover w-full h-full"
                                       muted
                                       playsInline
                                     />
                                   ) : (
                                     <Image
-                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`}
-                                      alt="Media preview"
+                                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/${image.url}`}
+                                      alt="Land Image"
                                       layout="fill"
                                       objectFit="cover"
+                                      className="bg-gray-200 dark:bg-gray-800"
                                     />
                                   )}
                                 </div>
@@ -458,6 +518,7 @@ const LandTable: React.FC = () => {
                     {land.comment || "Комментарий отсутствует"}
                   </div>
                 </div>
+                {land.media && land.media.length > 0 && renderMediaGallery(land.media)}
               </div>
             )}
           </Card>
@@ -465,26 +526,37 @@ const LandTable: React.FC = () => {
       </div>
 
       {/* Modal for Image Preview */}
-      {modalOpen && (
+      {modalOpen && modalContent && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={closeModal}
         >
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative max-w-4xl max-h-[90vh] p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
+              aria-label="Close preview"
             >
-              <span className="text-2xl font-bold">✕</span>
+              ✕
             </button>
-            {modalImage && (
+            {modalContent.type === 'video' ? (
+              <video
+                src={modalContent.url}
+                className="max-w-full max-h-[80vh] rounded-lg"
+                controls
+                autoPlay
+                playsInline
+              />
+            ) : (
               <Image
-                src={modalImage}
+                src={modalContent.url}
                 alt="Preview"
-                className="rounded-lg shadow-lg max-w-full max-h-screen"
-                width={900}
-                height={600}
-                objectFit="contain"
+                className="rounded-lg shadow-lg max-w-full max-h-[80vh] object-contain"
+                width={1200}
+                height={800}
               />
             )}
           </div>
@@ -544,3 +616,4 @@ const LandTable: React.FC = () => {
 };
 
 export default LandTable;
+

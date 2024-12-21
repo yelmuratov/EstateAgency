@@ -16,9 +16,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useRouter } from "next/navigation";
+import {
+  validateFile,
+  ACCEPTED_IMAGE_TYPES,
+  ACCEPTED_VIDEO_TYPES,
+} from "@/utils/file-validation";
 
 interface CommercialFormData {
   district: string;
@@ -76,7 +81,15 @@ export default function CommercialPropertyForm() {
 
   useEffect(() => {
     fetchDistricts();
-  }, [fetchDistricts]);
+    return () => {
+      // Cleanup video URLs when component unmounts
+      previewImages.forEach((preview) => {
+        if (preview.startsWith("blob:")) {
+          URL.revokeObjectURL(preview);
+        }
+      });
+    };
+  }, [previewImages]);
 
   const onSubmit = async (data: CommercialFormData) => {
     setIsSubmitting(true);
@@ -100,11 +113,18 @@ export default function CommercialPropertyForm() {
 
       setIsSubmitting(true);
       // Send API request
-      await api.post(`/commercial/?${params.toString()}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      await api.post(
+        `/commercial/?${params.toString()}`,
+        mediaFiles && mediaFiles.length > 0 ? formData : null,
+        {
+          headers: {
+            "Content-Type":
+              mediaFiles && mediaFiles.length > 0
+                ? "multipart/form-data"
+                : "application/x-www-form-urlencoded",
+          },
+        }
+      );
 
       // Show success notification
       toast({
@@ -198,29 +218,40 @@ export default function CommercialPropertyForm() {
           variant: "destructive",
         });
       } // Ensure the submitting state is reset
-    }finally{
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    setMediaFiles(files);
-    if (files) {
-      const newPreviewImages: string[] = [];
-      for (let i = 0; i < files.length; i++) {
+    if (!files) return;
+  
+    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
+    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
+  
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = (e) => {
           if (e.target?.result) {
             newPreviewImages.push(e.target.result as string);
-            if (newPreviewImages.length === files.length) {
-              setPreviewImages(newPreviewImages);
-            }
+            setPreviewImages([...newPreviewImages]); // Update state with appended previews
           }
         };
-        reader.readAsDataURL(files[i]);
+        reader.readAsDataURL(file);
+      } else if (file.type.startsWith("video/")) {
+        const videoUrl = URL.createObjectURL(file);
+        newPreviewImages.push(videoUrl);
+        setPreviewImages([...newPreviewImages]); // Update state with appended previews
       }
-    }
+  
+      newMediaFiles.push(file); // Add the file to the preserved list
+    });
+  
+    const dt = new DataTransfer();
+    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
+    setMediaFiles(dt.files); // Update media files state
   };
 
   const removeImage = (index: number) => {
@@ -237,6 +268,7 @@ export default function CommercialPropertyForm() {
         }
       }
       fileInputRef.current.files = dt.files;
+      setMediaFiles(dt.files); 
     }
   };
 
@@ -630,51 +662,141 @@ export default function CommercialPropertyForm() {
 
       <div>
         <Label htmlFor="images">Фотографии</Label>
-        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-          <div className="space-y-1 text-center">
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <div className="flex text-sm text-gray-600">
-              <label
-                htmlFor="images"
-                className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-              >
-                <span>Загрузить файлы</span>
-                <input
-                  id="images"
-                  type="file"
-                  className="sr-only"
-                  multiple
-                  {...register("media")}
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                />
-              </label>
-              <p className="pl-1">или перетащите сюда</p>
+        <div
+          className="mt-1 relative"
+          onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+          onDrop={(e) => {
+            e.preventDefault();
+            const droppedFiles = Array.from(e.dataTransfer.files);
+            const validFiles: File[] = [];
+            const errors: string[] = [];
+  
+            droppedFiles.forEach((file) => {
+              const { isValid, error } = validateFile(file);
+              if (isValid) {
+                validFiles.push(file);
+              } else if (error) {
+                errors.push(error);
+              }
+            });
+  
+            if (errors.length > 0) {
+              toast({
+                title: "Ошибка загрузки",
+                description: errors.join("\n"),
+                variant: "destructive",
+              });
+            }
+  
+            if (validFiles.length > 0) {
+              const dt = new DataTransfer();
+              validFiles.forEach((file) => dt.items.add(file));
+              if (fileInputRef.current) {
+                fileInputRef.current.files = dt.files;
+                handleImageChange({ target: { files: dt.files } } as any);
+              }
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.currentTarget.classList.add("border-primary");
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove("border-primary");
+          }}
+        >
+          <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors duration-200 ease-in-out hover:border-primary">
+            <div className="space-y-1 text-center">
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="flex text-sm text-gray-600">
+                <label
+                  htmlFor="images"
+                  className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary dark:text-primary-light hover:text-primary/80 dark:hover:text-primary-light/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                >
+                  <span>Загрузить файлы</span>
+                </label>
+                <p className="pl-1">или перетащите сюда</p>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Изображения (до 5MB): PNG, JPG, GIF
+                <br />
+                Видео (до 30MB): MP4, MOV, AVI
+              </p>
             </div>
-            <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
           </div>
+          <input
+            id="images"
+            type="file"
+            className="sr-only"
+            multiple
+            accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
+            ref={fileInputRef}
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files) {
+                const validFiles: File[] = [];
+                const errors: string[] = [];
+  
+                Array.from(files).forEach((file) => {
+                  const { isValid, error } = validateFile(file);
+                  if (isValid) {
+                    validFiles.push(file);
+                  } else if (error) {
+                    errors.push(error);
+                  }
+                });
+  
+                if (errors.length > 0) {
+                  toast({
+                    title: "Ошибка загрузки",
+                    description: errors.join("\n"),
+                    variant: "destructive",
+                  });
+                }
+  
+                if (validFiles.length > 0) {
+                  const dt = new DataTransfer();
+                  validFiles.forEach((file) => dt.items.add(file));
+                  e.target.files = dt.files;
+                  handleImageChange(e);
+                }
+              }
+            }}
+          />
         </div>
         {previewImages.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            {previewImages.map((image, index) => (
-              <div key={index} className="relative">
-                <Image
-                  src={image}
-                  alt={`Preview ${index + 1}`}
-                  width={128} // Replace with the actual width
-                  height={128} // Replace with the actual height
-                  className="w-full h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                  aria-label={`Remove image ${index + 1}`} // Accessibility improvement
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {previewImages.map((preview, index) => {
+              const isVideo =
+                mediaFiles && mediaFiles[index]?.type.startsWith("video/");
+              return (
+                <div key={index} className="relative group">
+                  {isVideo ? (
+                    <video
+                      src={preview}
+                      className="object-cover rounded-lg h-32 w-full"
+                      controls
+                    />
+                  ) : (
+                    <Image
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      width={200}
+                      height={200}
+                      className="object-cover rounded-lg h-32 w-full"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -692,3 +814,4 @@ export default function CommercialPropertyForm() {
     </form>
   );
 }
+
