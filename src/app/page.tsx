@@ -46,8 +46,11 @@ type PropertyType = {
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<PropertyType>(() => {
-    const savedType = localStorage.getItem("selectedType");
-    return savedType ? JSON.parse(savedType) : { main: "apartments", sub: 'sale' };
+    if (typeof window !== 'undefined') {
+      const savedType = localStorage.getItem("selectedType");
+      return savedType ? JSON.parse(savedType) : { main: "apartments", sub: 'sale' };
+    }
+    return { main: "apartments", sub: 'sale' };
   });
   
   const router = useRouter();
@@ -92,12 +95,21 @@ export default function Dashboard() {
   const handleTypeChange = (main: string, sub: 'rent' | 'sale') => {
     const newType = { main, sub };
     setSelectedType(newType);
-    localStorage.setItem("selectedType", JSON.stringify(newType));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("selectedType", JSON.stringify(newType));
+    }
   };
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("selectedType", JSON.stringify(selectedType));
+    }
+  }, [selectedType]);
 
   if (loading || !token) {
     return <Spinner theme="light" />;
@@ -175,4 +187,3 @@ function getLabel(type: string): string {
   };
   return labels[type] || "Неизвестно";
 }
-

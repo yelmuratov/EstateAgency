@@ -74,7 +74,7 @@ export function CommercialFilter({
     );
 
     localStorage.setItem("commercialFilters", JSON.stringify(filters));
-    filterCommercials(changedFilters);
+    filterCommercials(changedFilters, "commercial");
     onOpenChange(false); // Close modal
   };
 
@@ -98,7 +98,7 @@ export function CommercialFilter({
     };
     setFilters(emptyFilters);
     localStorage.removeItem("commercialFilters");
-    filterCommercials({ table: "commercial" });
+    filterCommercials({ table: "commercial" }, "commercial");
     onOpenChange(false);
   };
 
