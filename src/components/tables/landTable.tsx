@@ -125,11 +125,6 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     localStorage.setItem("currentPageLand", String(currentPage));
   }, [currentPage]);
 
-  // Persist searchQuery to localStorage
-  useEffect(() => {
-    localStorage.setItem("searchQueryLand", searchQuery);
-  }, [searchQuery]);
-
   // Handle initial load and search
   useEffect(() => {
     if (type === "rent") {
@@ -226,7 +221,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     );
   };
 
-  if (loading) {
+  if (loading && searchQuery.trim() === "") {
     return <Spinner theme="dark" />;
   }
 
