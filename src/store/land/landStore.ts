@@ -38,6 +38,7 @@ export interface Land {
   status_date: string;
   media: Media[];
   second_agent_percent: number;
+  deal: boolean;
 }
 
 interface LandStore {

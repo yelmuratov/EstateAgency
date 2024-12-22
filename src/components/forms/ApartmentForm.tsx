@@ -64,13 +64,14 @@ interface ApartmentFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
+  deal: boolean;
 }
 
 export default function ApartmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
-  const { toast } = useToast(); // Initialize the toast hook
+  const { toast } = useToast();
   const router = useRouter();
 
   const {
@@ -777,6 +778,29 @@ export default function ApartmentForm() {
             {errors.second_agent_percent.message}
           </p>
         )}
+      </div>
+
+      <div>
+        <Label htmlFor="deal">Сделка</Label>
+        <Controller
+          name="deal"
+          control={control}
+          defaultValue={false}
+          render={({ field }) => (
+        <Select
+          onValueChange={(value) => field.onChange(value === "true")}
+          defaultValue={field.value ? "true" : "false"}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите сделку" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Да</SelectItem>
+            <SelectItem value="false">Нет</SelectItem>
+          </SelectContent>
+        </Select>
+          )}
+        />
       </div>
 
       <div

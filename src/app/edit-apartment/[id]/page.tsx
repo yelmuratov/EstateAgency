@@ -35,7 +35,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from 'lucide-react';
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +67,7 @@ interface ApartmentFormData {
   status_date?: string;
   second_responsible: string;
   second_agent_percent?: number;
+  deal: boolean; // Updated deal field type
 }
 
 export default function EditApartmentForm() {
@@ -135,6 +136,7 @@ export default function EditApartmentForm() {
                 | "free"
                 | "soon"
                 | "busy",
+              deal: Boolean(apartmentData.deal),
             });
             if (apartmentData.media) {
               setPreviewImages(
@@ -212,6 +214,7 @@ export default function EditApartmentForm() {
               status_date: apartmentData.status_date || "",
               second_responsible: apartmentData.second_responsible || "",
               second_agent_percent: apartmentData.second_agent_percent || 0,
+              deal: Boolean(apartmentData.deal), // Updated deal field mapping
             };
 
             setInitialData(mappedData); // Set initial data for comparison
@@ -259,19 +262,25 @@ export default function EditApartmentForm() {
       let hasTextChanges = false;
       let hasFileChanges = false;
 
-      // Detect text changes (excluding media)
+      // Updated change detection logic
       (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
         const currentValue = data[key];
         const initialValue = initialData[key];
 
-        if (
-          key !== ("media" as keyof ApartmentFormData) &&
-          currentValue?.toString() !== initialValue?.toString() // Convert to string for comparison
-        ) {
-          queryParams[key] = currentValue?.toString() || "";
+        // Special handling for boolean values
+        if (typeof currentValue === 'boolean' && typeof initialValue === 'boolean') {
+          if (currentValue !== initialValue) {
+            queryParams[key] = String(currentValue);
+            hasTextChanges = true;
+          }
+        } 
+        // Regular comparison for other types
+        else if (currentValue?.toString() !== initialValue?.toString()) {
+          queryParams[key] = String(currentValue);
           hasTextChanges = true;
         }
       });
+
 
       // Check for new media files
       if (mediaFiles && mediaFiles.length > 0) {
@@ -946,6 +955,25 @@ export default function EditApartmentForm() {
             <SelectItem value="yes">Да</SelectItem>
             <SelectItem value="no">Нет</SelectItem>
           </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="deal">Сделка</Label>
+          <Controller
+            name="deal"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={(value) => field.onChange(value === "true")} value={String(field.value)}> {/* Updated deal field Controller */}
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Да</SelectItem>
+                  <SelectItem value="false">Нет</SelectItem>
+                </SelectContent>
               </Select>
             )}
           />

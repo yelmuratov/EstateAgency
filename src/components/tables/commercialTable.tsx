@@ -105,6 +105,12 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     return () => clearTimeout(timer);
   }, [searchQuery, filterCommercials, type]);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      filterCommercials({}, type);
+    }
+  }, [currentPage, itemsPerPage, type, filterCommercials, searchQuery]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -358,6 +364,17 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {commercial.agent_commission}$ (
                                 {commercial.agent_percent}%)
+                              </div>
+                            </div>
+                            {/* deal */}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Сделка
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                              <Badge className={commercial.deal ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                {commercial.deal ? "Да" : "Нет"}
+                              </Badge>
                               </div>
                             </div>
                             {/* second responsible and agent person */}

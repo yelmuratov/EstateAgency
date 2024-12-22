@@ -67,6 +67,7 @@ interface CommercialFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
+  deal?: boolean;
 }
 
 export default function CommercialPropertyForm() {
@@ -731,6 +732,29 @@ export default function CommercialPropertyForm() {
             {errors.second_agent_percent.message}
           </p>
         )}
+      </div>
+
+      <div>
+        <Label htmlFor="deal">Сделка</Label>
+        <Controller
+          name="deal"
+          control={control}
+          defaultValue={false}
+          render={({ field }) => (
+        <Select
+          onValueChange={(value) => field.onChange(value === "true")}
+          defaultValue={field.value ? "true" : "false"}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите сделку" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Да</SelectItem>
+            <SelectItem value="false">Нет</SelectItem>
+          </SelectContent>
+        </Select>
+          )}
+        />
       </div>
 
       <div>

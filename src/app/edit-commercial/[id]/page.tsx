@@ -70,6 +70,7 @@ interface CommercialFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
+  deal?: boolean;
 }
 
 export default function EditCommercialPropertyForm() {
@@ -145,6 +146,7 @@ export default function EditCommercialPropertyForm() {
               status_date: commercialData.status_date || "",
               second_responsible: commercialData.second_responsible || "",
               second_agent_percent: commercialData.second_agent_percent || 0,
+              deal: Boolean(commercialData.deal),
             });
             if (commercialData.media) {
               setPreviewImages(
@@ -870,6 +872,25 @@ export default function EditCommercialPropertyForm() {
               {errors.comment.message}
             </p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="deal">Сделка</Label>
+          <Controller
+            name="deal"
+            control={control}
+            render={({ field }) => (
+              <Select onValueChange={(value) => field.onChange(value === "true")} value={String(field.value)}> {/* Updated deal field Controller */}
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Да</SelectItem>
+                  <SelectItem value="false">Нет</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div>

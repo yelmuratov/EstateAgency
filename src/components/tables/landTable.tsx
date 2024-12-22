@@ -48,6 +48,7 @@ interface LandData {
   description: string | null;
   comment: string | null;
   media: Media[];
+  deal: boolean;
 }
 
 
@@ -478,6 +479,21 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {land.comment || "Комментарий отсутствует"}
                               </div>
+                            </div>
+                            {/* deal yes or no  */}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                              Сделка
+                              </div>
+                              <Badge
+                              className={
+                                land.deal
+                                ? "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-800 dark:text-green-100"
+                                : "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-800 dark:text-red-100"
+                              }
+                              >
+                              {land.deal ? "Да" : "Нет"}
+                              </Badge>
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">

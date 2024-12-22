@@ -62,6 +62,7 @@ interface Apartment {
   bathroom: string;
   media: Media[];
   metro_st: string;
+  deal?: "true" | "false";
 }
 
 const statusConfig = {
@@ -440,11 +441,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                       </Badge>
                       {/* status date */}
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {
-                          apartment.status_date && (
-                            new Date(apartment.status_date).toLocaleDateString()
-                          )
-                        }
+                        {apartment.status_date && new Date(apartment.status_date).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="hidden md:table-cell p-2 text-sm text-gray-900 dark:text-gray-100">
@@ -571,6 +568,23 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.name}, {apartment.phone_number}
+                              </div>
+                            </div>
+                            {/* deal value with badge green or red */}
+                            <div>
+                              <div className="font-medium text-gray-500 dark:text-gray-400">
+                                Сделки
+                              </div>
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {apartment.deal ? (
+                                  <Badge className={apartment.deal === "true" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                    {apartment.deal === "true" ? "Да" : "Нет"}
+                                  </Badge>
+                                ) : (
+                                  <Badge className={apartment.deal === "true" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                    Нет
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
