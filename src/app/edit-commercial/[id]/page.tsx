@@ -62,7 +62,6 @@ interface CommercialFormData {
   current_status?: "free" | "soon" | "busy";
   parking_place: boolean;
   agent_percent: number;
-  agent_commission?: number;
   crm_id?: string;
   responsible?: string;
   id?: number;
@@ -206,7 +205,6 @@ export default function EditCommercialPropertyForm() {
                 | "busy",
               parking_place: commercialData.parking_place || false,
               agent_percent: commercialData.agent_percent || 0,
-              agent_commission: commercialData.agent_commission || 0,
               crm_id: commercialData.crm_id || "",
               responsible: commercialData.responsible || "",
               id: commercialData.id || 0,

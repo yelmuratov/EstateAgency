@@ -62,7 +62,7 @@ interface Apartment {
   bathroom: string;
   media: Media[];
   metro_st: string;
-  deal?: "true" | "false";
+  deal?: boolean | undefined;
 }
 
 const statusConfig = {
@@ -577,11 +577,11 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">
                                 {apartment.deal ? (
-                                  <Badge className={apartment.deal === "true" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                                    {apartment.deal === "true" ? "Да" : "Нет"}
+                                  <Badge className={apartment.deal ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                    {apartment.deal ? "Да" : "Нет"}
                                   </Badge>
                                 ) : (
-                                  <Badge className={apartment.deal === "true" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                  <Badge className={apartment.deal ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                                     Нет
                                   </Badge>
                                 )}
