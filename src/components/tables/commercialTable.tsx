@@ -67,11 +67,15 @@ const houseTypeTranslation: { [key: string]: string } = {
   detached_building: "Отдельно стоящее здание",
 };
 
-const CommercialTable: React.FC = ({}) => {
+interface CommercialTableProps {
+  type: "sale" | "rent";
+}
+
+const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageCommercial")) || 1;
   });
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(5);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
     url: string;

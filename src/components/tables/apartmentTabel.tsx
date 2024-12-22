@@ -98,33 +98,73 @@ const houseTypeTranslation: { [key: string]: string } = {
   many: "Два и более",
 };
 
-export default function PropertyTable() {
-  const [itemsPerPage] = useState(10);
+interface PropertyTableProps {
+  type: "rent" | "sale";
+}
+
+
+export default function PropertyTable({ type }: PropertyTableProps) {
+  console.log("PropertyTable", type);
+  const [itemsPerPage] = useState(5);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
     url: string;
     type: string;
   } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return Number(localStorage.getItem("currentPageApartment")) || 1;
+  });
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return localStorage.getItem("searchQueryApartment") || "";
+  });
   const [filterOpen, setFilterOpen] = useState(false);
   const [previewUrls] = useState<{ [key: string]: string }>({});
 
   const router = useRouter();
 
-  const { apartments, total, error, fetchApartments } = useApartmentStore();
+  const { apartments, total, error, filterApartments } = useApartmentStore();
+  const [filteredApartments, setFilteredApartments] = useState<Apartment[]>([]);
+
   useEffect(() => {
+    localStorage.setItem("currentPageApartment", String(currentPage));
+  }, [currentPage]);
+
+  useEffect(() => {
+    localStorage.setItem("searchQueryApartment", searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (type === "rent") {
+      filterApartments({ action_type: "rent" });
+    } else {
+      filterApartments({ action_type: "sale" });
+    }
+
     const timer = setTimeout(() => {
       if (searchQuery.trim() !== "") {
         useApartmentStore.getState().searchApartments(searchQuery);
-      } else if (fetchApartments) {
-        fetchApartments(currentPage, itemsPerPage);
       }
     }, 300); // Debounced
 
     return () => clearTimeout(timer);
-  }, [searchQuery, currentPage, itemsPerPage, fetchApartments]);
+  }, [searchQuery, type, filterApartments]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      if (type === "rent") {
+        filterApartments({ action_type: "rent" });
+      } else {
+        filterApartments({ action_type: "sale" });
+      }
+    }
+  }, [currentPage, itemsPerPage, type, filterApartments, searchQuery]);
+
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setFilteredApartments(apartments.slice(startIndex, endIndex));
+  }, [apartments, currentPage, itemsPerPage]);
 
   useEffect(() => {
     return () => {
@@ -345,8 +385,8 @@ export default function PropertyTable() {
                   Произошла ошибка: {error}
                 </td>
               </tr>
-            ) : Array.isArray(apartments) && apartments.length > 0 ? (
-              apartments.map((apartment: Apartment, index: number) => (
+            ) : Array.isArray(filteredApartments) && filteredApartments.length > 0 ? (
+              filteredApartments.map((apartment: Apartment, index: number) => (
                 <React.Fragment key={apartment.id}>
                   <tr
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
@@ -679,12 +719,12 @@ export default function PropertyTable() {
             </PaginationItem>
           )}
 
-          {Array.from({ length: Math.ceil(total / itemsPerPage) })
+          {Array.from({ length: Math.ceil(apartments.length / itemsPerPage) })
             .map((_, i) => i + 1)
             .filter((page) => {
               return (
                 page === 1 ||
-                page === Math.ceil(total / itemsPerPage) ||
+                page === Math.ceil(apartments.length / itemsPerPage) ||
                 Math.abs(page - currentPage) <= 2
               );
             })
@@ -705,7 +745,7 @@ export default function PropertyTable() {
                 </PaginationItem>
               </React.Fragment>
             ))}
-          {currentPage < Math.ceil(total / itemsPerPage) && (
+          {currentPage < Math.ceil(apartments.length / itemsPerPage) && (
             <PaginationItem>
               <PaginationNext
                 onClick={() => handlePageChange(currentPage + 1)}

@@ -18,6 +18,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 
 // Lazy-load heavy components
@@ -34,9 +38,18 @@ const CommercialTable = dynamic(() => import('@/components/tables/commercialTabl
   loading: () => <Spinner theme="light" />,
 });
 
+type PropertyType = {
+  main: string;
+  sub: 'rent' | 'sale';
+};
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<string>("apartments");
+  const [selectedType, setSelectedType] = useState<PropertyType>(() => {
+    const savedType = localStorage.getItem("selectedType");
+    return savedType ? JSON.parse(savedType) : { main: "apartments", sub: 'sale' };
+  });
+  
   const router = useRouter();
   const { token } = useAuthStore();
   const { toast } = useToast();
@@ -57,8 +70,8 @@ export default function Dashboard() {
         throw new Error("Failed to retrieve user data.");
       }
   
-      setUser({ ...userData.user, id: userData.user.id.toString() }); // Convert id to string
-      setAuthToken(userData.token); // Assuming `setAuthToken` is a utility function
+      setUser({ ...userData.user, id: userData.user.id.toString() });
+      setAuthToken(userData.token);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -70,24 +83,22 @@ export default function Dashboard() {
         description: errorMessage,
       });
   
-      router.replace("/login"); // Redirect to login if an error occurs
+      router.replace("/login");
     } finally {
-      setLoading(false); // Stop the loading indicator
+      setLoading(false);
     }
   }, [token, router, toast, setUser]); 
 
-  const handleTypeChange = (type: string) => {
-    setSelectedType(type);
-    localStorage.setItem("selectedType", type); 
+  const handleTypeChange = (main: string, sub: 'rent' | 'sale') => {
+    const newType = { main, sub };
+    setSelectedType(newType);
+    localStorage.setItem("selectedType", JSON.stringify(newType));
   };
 
   useEffect(() => {
-    const savedType = localStorage.getItem("selectedType") || "apartments";
-    setSelectedType(savedType);
     fetchUserData();
   }, [fetchUserData]);
 
-  // Prevent rendering if user isn't authenticated
   if (loading || !token) {
     return <Spinner theme="light" />;
   }
@@ -98,32 +109,64 @@ export default function Dashboard() {
         <h1 className="text-lg font-semibold">Выберите тип недвижимости</h1>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">Тип: {getLabel(selectedType)}</Button>
+            <Button variant="outline">
+              {getLabel(selectedType.main)} - {selectedType.sub === 'rent' ? 'Аренда' : 'Продажа'}
+            </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleTypeChange("apartments")}>
-              Квартиры
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange("lands")}>
-              Участки
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleTypeChange("commercial")}>
-              Коммерция
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Квартиры</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => handleTypeChange("apartments", "sale")}>
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleTypeChange("apartments", "rent")}>
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Участки</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => handleTypeChange("lands", "sale")}>
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleTypeChange("lands", "rent")}>
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Коммерция</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => handleTypeChange("commercial", "sale")}>
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleTypeChange("commercial", "rent")}>
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
       <div>
-        {selectedType === "apartments" && <ApartmentTable />}
-        {selectedType === "lands" && <LandTable />}
-        {selectedType === "commercial" && <CommercialTable />}
+        {selectedType.main === "apartments" && <ApartmentTable type={selectedType.sub} />}
+        {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
+        {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
       </div>
     </DashboardLayout>
   );
 }
 
-// Helper function to map type to label
 function getLabel(type: string): string {
   const labels: Record<string, string> = {
     apartments: "Квартиры",
@@ -132,3 +175,4 @@ function getLabel(type: string): string {
   };
   return labels[type] || "Неизвестно";
 }
+

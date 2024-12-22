@@ -66,7 +66,11 @@ const locationOptions = [
   { value: "closed_area", label: "Закрытая территория" },
 ];
 
-const LandTable: React.FC = () => {
+interface LandTableProps {
+  type: "rent" | "sale";
+}
+
+  const LandTable: React.FC<LandTableProps> = ({ type }) => {
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageLand")) || 1;
   });
