@@ -123,7 +123,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
 
   const router = useRouter();
 
-  const { apartments, total, error, filterApartments } = useApartmentStore();
+  const { apartments, error, filterApartments } = useApartmentStore();
   const [filteredApartments, setFilteredApartments] = useState<Apartment[]>([]);
 
   useEffect(() => {

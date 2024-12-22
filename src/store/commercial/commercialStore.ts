@@ -47,10 +47,10 @@ interface CommercialStore {
   searchError: string | null;
   searchLoading: boolean;
   filterError: string | null;
-  fetchCommercials: (page: number, limit: number) => Promise<void>;
+  // Removed fetchCommercials method
   fetchCommercialById: (id: number) => Promise<Commercial | null>;
   searchCommercial: (search: string) => Promise<void>;
-  filterCommercials: (filters: Record<string, string>) => Promise<void>;
+  filterCommercials: (filters: Record<string, string>, type: string) => Promise<void>;
 }
 
 export const useCommercialStore = create<CommercialStore>((set) => ({
@@ -61,29 +61,8 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
   searchError: null,
   searchLoading: false,
   filterError: null,
-  // Fetch a paginated list of commercials
-  fetchCommercials: async (page: number, limit: number) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await api.get(`/commercial/?limit=${limit}&page=${page}`);
-      set({
-        commercials: Array.isArray(response.data.data) ? response.data.data : [],
-        total: response.data.total_count || 0,
-        loading: false,
-      });
-    } catch (error) {
-      const apiError = error as {
-        message?: string;
-        response?: { data?: { detail?: string } };
-      };
-
-      set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
-        loading: false,
-      });
-    }
-  },
+  // ...existing code...
+  // Removed fetchCommercials method
   // Fetch a single commercial by ID
   fetchCommercialById: async (id: number) => {
     set({ loading: true, error: null });
@@ -130,15 +109,15 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
     }
   },
   // Filter commercials
-  filterCommercials: async (filters) => {
+  filterCommercials: async (filters, type) => {
     set({ loading: true, filterError: null });
     try {
-      const response = await api.get(`/additional/filter/?table=commercial&${filters}`, {
+      const response = await api.get(`/additional/filter/?table=commercial&action_type=${type}`, {
         params: filters,
       });
       set({
-        commercials: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        commercials: Array.isArray(response.data) ? response.data : [],
+        total: Array.isArray(response.data) ? response.data.length : 0,
         loading: false,
       });
     } catch (error) {
@@ -148,9 +127,9 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
       };
       set({
         filterError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
         loading: false,
-        commercials: [], // Reset to an empty array in case of error
+        commercials: [],
       });
     }
   }

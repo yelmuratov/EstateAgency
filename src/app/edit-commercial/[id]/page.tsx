@@ -116,7 +116,6 @@ export default function EditCommercialPropertyForm() {
     "Network Error: Unable to reach the server.":
       "Ошибка сети: Не удалось подключиться к серверу.",
     "Server Error: 500": "Ошибка сервера: 500",
-    // Add more translations as needed
   };
 
   const translateError = (message: string): string => {

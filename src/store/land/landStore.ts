@@ -10,7 +10,7 @@ interface Media {
   created_at: string;
 }
 
-interface Land {
+export interface Land {
   id: number;
   title: string;
   live_square_area: number;
@@ -142,7 +142,7 @@ export const useLandStore = create<LandStore>((set) => ({
   filterLands: async (filters) => {
     set({ loading: true, filterError: null });
     try {
-      const response = await api.get(`/additional/filter/?table=lands&${filters}`, {
+      const response = await api.get(`/additional/filter/?table=land&${filters}`, {
         params: filters,
       });
       set({

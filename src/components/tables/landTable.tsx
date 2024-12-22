@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLandStore } from "@/store/land/landStore";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { LandFilter } from "../land-filter";
 import {
@@ -26,6 +26,30 @@ interface Media {
   url: string;
   media_type: string;
 }
+
+interface LandData {
+  id: number;
+  crm_id: string;
+  title: string;
+  district: string;
+  price: number;
+  action_type: "rent" | "sale";
+  location: string;
+  house_condition: string;
+  current_status: "free" | "soon" | "busy";
+  status_date: string | null;
+  responsible: string;
+  second_responsible: string;
+  agent_commission: number;
+  agent_percent: number;
+  second_agent_percent: number;
+  parking_place: boolean;
+  square_area: number;
+  description: string | null;
+  comment: string | null;
+  media: Media[];
+}
+
 
 const statusConfig = {
   free: {
@@ -70,41 +94,79 @@ interface LandTableProps {
   type: "rent" | "sale";
 }
 
-  const LandTable: React.FC<LandTableProps> = ({ type }) => {
+const LandTable: React.FC<LandTableProps> = ({ type }) => {
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageLand")) || 1;
   });
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(5); 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
     url: string;
     type: string;
   } | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return localStorage.getItem("searchQueryLand") || "";
+  });
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filteredLands, setFilteredLands] = useState<LandData[]>([]);
 
   const router = useRouter();
-  const { lands, total, loading, error, fetchLands } = useLandStore();
+  const { lands, loading, error, filterLands } = useLandStore() as {
+    lands: LandData[];
+    loading: boolean;
+    error: string | null;
+    filterLands: (filter: { action_type: "rent" | "sale" }) => void;
+  };
 
+  // Persist currentPage to localStorage
   useEffect(() => {
     localStorage.setItem("currentPageLand", String(currentPage));
   }, [currentPage]);
 
+  // Persist searchQuery to localStorage
   useEffect(() => {
+    localStorage.setItem("searchQueryLand", searchQuery);
+  }, [searchQuery]);
+
+  // Handle initial load and search
+  useEffect(() => {
+    if (type === "rent") {
+      filterLands({ action_type: "rent" });
+    } else {
+      filterLands({ action_type: "sale" });
+    }
+
     const timer = setTimeout(() => {
       if (searchQuery.trim() !== "") {
         useLandStore.getState().searchLands(searchQuery);
-      } else {
-        fetchLands(currentPage, itemsPerPage);
       }
-    }, 300); // 300ms debounce to optimize input handling
+    }, 300); 
 
-    return () => clearTimeout(timer); // Clear the timer on cleanup
-  }, [searchQuery, currentPage, itemsPerPage, fetchLands]);
+    return () => clearTimeout(timer);
+  }, [searchQuery, type, filterLands]);
+
+  // Reset search and reapply type filter
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      if (type === "rent") {
+        filterLands({ action_type: "rent" });
+      } else {
+        filterLands({ action_type: "sale" });
+      }
+    }
+  }, [currentPage, itemsPerPage, type, filterLands, searchQuery]);
+
+  // Update filtered data when lands or page changes
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setFilteredLands(lands.slice(startIndex, endIndex));
+  }, [lands, currentPage, itemsPerPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openModal = (media: Media) => {
@@ -173,17 +235,16 @@ interface LandTableProps {
 
   return (
     <div className="space-y-4">
-      {/* Table View for Medium and Larger Screens */}
+      {/* Search and Filter section */}
       <div className="flex items-center justify-between">
         <div className="relative flex-grow sm:max-w-md w-full">
           <Input
             type="text"
             placeholder="Поиск"
             className="pl-10 pr-4 py-2 w-full"
-            value={searchQuery} // Bind searchQuery to input
-            onChange={(e) => setSearchQuery(e.target.value)} // Update state on change
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
         </div>
         <Button
@@ -194,6 +255,8 @@ interface LandTableProps {
           <Filter className="mr-2 h-4 w-4" /> Фильтр
         </Button>
       </div>
+
+      {/* Table View */}
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
@@ -236,24 +299,12 @@ interface LandTableProps {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {error ? (
               <tr>
-                <td
-                  colSpan={11}
-                  className="text-center py-4 text-red-500 dark:text-red-400"
-                >
+                <td colSpan={11} className="text-center py-4 text-red-500 dark:text-red-400">
                   Произошла ошибка: {error}
                 </td>
               </tr>
-            ) : lands.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={11}
-                  className="text-center text-sm text-gray-500 dark:text-gray-400"
-                >
-                  Нет доступных данных
-                </td>
-              </tr>
-            ) : (
-              lands.map((land, index) => (
+            ) : Array.isArray(filteredLands) && filteredLands.length > 0 ? (
+              filteredLands.map((land, index) => (
                 <React.Fragment key={land.id}>
                   <tr
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
@@ -462,6 +513,12 @@ interface LandTableProps {
                   )}
                 </React.Fragment>
               ))
+            ) : (
+              <tr>
+                <td colSpan={11} className="text-center text-sm text-gray-500 dark:text-gray-400">
+                  Нет доступных данных
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -469,7 +526,7 @@ interface LandTableProps {
 
       {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {lands.map((land) => (
+        {filteredLands.map((land) => (
           <Card
             key={land.id}
             className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -572,7 +629,7 @@ interface LandTableProps {
         ))}
       </div>
 
-      {/* Modal for Image Preview */}
+      {/* Modal */}
       {modalOpen && modalContent && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -621,12 +678,12 @@ interface LandTableProps {
             </PaginationItem>
           )}
 
-          {Array.from({ length: Math.ceil(total / itemsPerPage) })
+          {Array.from({ length: Math.ceil(lands.length / itemsPerPage) })
             .map((_, i) => i + 1)
             .filter((page) => {
               return (
                 page === 1 ||
-                page === Math.ceil(total / itemsPerPage) ||
+                page === Math.ceil(lands.length / itemsPerPage) ||
                 Math.abs(page - currentPage) <= 2
               );
             })
@@ -648,7 +705,7 @@ interface LandTableProps {
               </React.Fragment>
             ))}
 
-          {currentPage < Math.ceil(total / itemsPerPage) && (
+          {currentPage < Math.ceil(lands.length / itemsPerPage) && (
             <PaginationItem>
               <PaginationNext
                 onClick={() => handlePageChange(currentPage + 1)}
@@ -657,9 +714,11 @@ interface LandTableProps {
           )}
         </PaginationContent>
       </Pagination>
+
       <LandFilter open={filterOpen} onOpenChange={setFilterOpen} />
     </div>
   );
 };
 
 export default LandTable;
+

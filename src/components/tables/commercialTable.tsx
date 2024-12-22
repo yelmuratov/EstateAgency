@@ -90,20 +90,20 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     localStorage.setItem("currentPageCommercial", String(currentPage));
   }, [currentPage]);
 
-  const { commercials, total, loading, error, fetchCommercials } =
+  const { commercials, loading, error, filterCommercials } =
     useCommercialStore();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.trim() !== "") {
         useCommercialStore.getState().searchCommercial(searchQuery);
-      } else if (fetchCommercials) {
-        fetchCommercials(currentPage, itemsPerPage);
+      } else if (filterCommercials) {
+        filterCommercials({}, type);
       }
     }, 300); // Debounced input
 
     return () => clearTimeout(timer);
-  }, [searchQuery, fetchCommercials, currentPage, itemsPerPage]);
+  }, [searchQuery, filterCommercials, type]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -174,6 +174,11 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     return <div>Error: {error}</div>;
   }
 
+  const paginatedCommercials = commercials.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -242,8 +247,8 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
                   Произошла ошибка: {error}
                 </td>
               </tr>
-            ) : Array.isArray(commercials) && commercials.length > 0 ? (
-              commercials.map((commercial, index) => (
+            ) : Array.isArray(paginatedCommercials) && paginatedCommercials.length > 0 ? (
+              paginatedCommercials.map((commercial, index) => (
                 <React.Fragment key={commercial.id}>
                   <tr
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
@@ -454,7 +459,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
 
       {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {commercials.map((commercial) => (
+        {paginatedCommercials.map((commercial) => (
           <Card
             key={commercial.id}
             className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"
@@ -596,13 +601,13 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
             </PaginationItem>
           )}
 
-          {Array.from({ length: Math.ceil(total / itemsPerPage) })
+          {Array.from({ length: Math.ceil(commercials.length / itemsPerPage) })
             .map((_, i) => i + 1)
             .filter((page) => {
               // Only show the first, last, and neighboring pages
               return (
                 page === 1 ||
-                page === Math.ceil(total / itemsPerPage) ||
+                page === Math.ceil(commercials.length / itemsPerPage) ||
                 Math.abs(page - currentPage) <= 2
               );
             })
@@ -625,7 +630,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
               </React.Fragment>
             ))}
 
-          {currentPage < Math.ceil(total / itemsPerPage) && (
+          {currentPage < Math.ceil(commercials.length / itemsPerPage) && (
             <PaginationItem>
               <PaginationNext
                 onClick={() => handlePageChange(currentPage + 1)}
