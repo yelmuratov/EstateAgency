@@ -101,7 +101,6 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
   const [filters, setFilters] = useState<Record<string, string>>({
     table: "land",
     district: "",
-    action_type: "",
     price_min: "",
     price_max: "",
     area_min: "",
@@ -144,7 +143,6 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
     const emptyFilters = {
       table: "land",
       district: "",
-      action_type: "",
       price_min: "",
       price_max: "",
       area_min: "",
@@ -193,24 +191,6 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Action Type */}
-            <div>
-              <Label>Тип действия</Label>
-              <Select
-                onValueChange={(value) => handleChange("action_type", value)}
-                value={filters.action_type}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите тип действия" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sale">Продажа</SelectItem>
-                  <SelectItem value="rent">Аренда</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Price Range */}
             <div className="grid grid-cols-2 gap-4">
               <div>

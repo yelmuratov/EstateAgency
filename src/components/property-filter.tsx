@@ -72,7 +72,6 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
     floor_min: "",
     floor_max: "",
     responsible: "",
-    action_type: "",
     date_min: "",
     date_max: "",
     status_date_min: "",
@@ -266,23 +265,6 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
               <SelectContent>
                 <SelectItem value="true">Да</SelectItem>
                 <SelectItem value="false">Нет</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* house type rent or sale */}
-          <div>
-            <Label>Тип действия</Label>
-            <Select
-              onValueChange={(value) => handleChange("action_type", value)}
-              value={filters.action_type}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите тип недвижимости" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sale">Продажа</SelectItem>
-                <SelectItem value="rent">Аренда</SelectItem>
               </SelectContent>
             </Select>
           </div>

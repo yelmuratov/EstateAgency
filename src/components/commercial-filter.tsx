@@ -61,6 +61,7 @@ export function CommercialFilter({
     status_date_min: "",
     status_date_max: "",
     responsible: "",
+    house_condition: "", // Added house_condition
   });
 
   const handleChange = (name: string, value: string) => {
@@ -95,6 +96,7 @@ export function CommercialFilter({
       status_date_min: "",
       status_date_max: "",
       responsible: "",
+      house_condition: "", // Added house_condition
     };
     setFilters(emptyFilters);
     localStorage.removeItem("commercialFilters");
@@ -148,18 +150,18 @@ export function CommercialFilter({
           </div>
           {/* house condition */}
           <div>
-              <Label>Тип действия</Label>
+              <Label>Состояние дома</Label> {/* Updated label */}
               <Select
                 onValueChange={(value) => handleChange("house_condition", value)}
-                value={filters.action_type}
+                value={filters.house_condition} // Updated value
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Вверите состояние дома" />
+                  <SelectValue placeholder="Выберите состояние дома" /> {/* Updated placeholder */}
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="euro">Евро</SelectItem>
                   <SelectItem value="normal">Обычный</SelectItem>
-                  <SelectItem value="repair">Требует Требует ремонтаа</SelectItem>
+                  <SelectItem value="repair">Требует ремонта</SelectItem> {/* Fixed typo */}
                 </SelectContent>
               </Select>
             </div>
