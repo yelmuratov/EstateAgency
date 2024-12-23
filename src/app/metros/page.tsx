@@ -62,7 +62,7 @@ export default function MetrosTable() {
         title: "Metro Station Deleted",
         description: "Metro station has been successfully deleted",
       });
-    } catch (error) {
+    } catch{
       // Revert on error
       toast({
         title: "Error",

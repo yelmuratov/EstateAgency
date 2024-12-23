@@ -85,7 +85,7 @@ const usePropertyStore = create<StoreState>((set) => ({
         metros: state.metros.filter((metro) => metro.id !== metroId),
         loading: false,
       }));
-    } catch (error) {
+    } catch{
       // Revert on error
       set({ error: "Failed to delete metro station", loading: false });
     }
@@ -100,7 +100,7 @@ const usePropertyStore = create<StoreState>((set) => ({
         ),
         loading: false,
       }));
-    } catch (error) {
+    } catch{
       // Revert on error
       set({ error: "Failed to update metro station", loading: false });
     }
@@ -113,7 +113,7 @@ const usePropertyStore = create<StoreState>((set) => ({
         districts: state.districts.filter((district) => district.id !== districtId),
         loading: false,
       }));
-    } catch (error) {
+    } catch {
       // Revert on error
       set({ error: "Failed to delete district", loading: false });
     }
@@ -128,7 +128,7 @@ const usePropertyStore = create<StoreState>((set) => ({
         ),
         loading: false,
       }));
-    } catch (error) {
+    } catch{
       // Revert on error
       set({ error: "Failed to update district", loading: false });
     }

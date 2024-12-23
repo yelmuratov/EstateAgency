@@ -55,7 +55,7 @@ export default function DistrictsTable() {
     if(!isSuperUser){
         router.push('/404')
         }
-    }, [isSuperUser])
+    }, [isSuperUser,router])
 
   useEffect(() => {
     fetchDistricts()
@@ -71,7 +71,7 @@ export default function DistrictsTable() {
         description: "District deleted successfully",
       })
       router.refresh()
-    } catch (error) {
+    } catch{
       // Revert on error
       toast({
         title: "Error",
