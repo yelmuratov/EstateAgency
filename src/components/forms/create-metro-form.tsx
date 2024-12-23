@@ -76,6 +76,14 @@ export default function CreateMetroForm() {
           "Create Metro Station"
         )}
       </Button>
+      {/* back button */}
+      <Button
+        variant="outline"
+        onClick={() => router.push("/metro")}
+        className="w-full"
+      >
+        Back
+      </Button>
     </form>
   )
 }

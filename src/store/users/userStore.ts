@@ -24,6 +24,7 @@ interface UserState {
     fetchUsers: () => void;
     fetchUserById: (id: string) => void;
     updateUser: (id: string, data: User) => void;
+    deleteUser: (id: string) => void;
 }
 
 export const UserStore = create<UserState>((set) => ({
@@ -61,6 +62,16 @@ export const UserStore = create<UserState>((set) => ({
             set({loading: false});
         } catch (error) {
             set({loading: false, error: error instanceof Error ? error.message : "Failed to update user."});
+            throw error;
+        }
+    },
+    deleteUser: async (id: string) => {
+        try {
+            set({loading: true});
+            await api.delete(`/user/${id}`);
+            set({loading: false});
+        } catch (error) {
+            set({loading: false, error: error instanceof Error ? error.message : "Failed to delete user."});
             throw error;
         }
     }

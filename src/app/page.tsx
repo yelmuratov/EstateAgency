@@ -12,6 +12,7 @@ import useAuth from "@/hooks/useAuth";
 import { setAuthToken } from "@/lib/tokenHelper";
 import { UserStore } from "@/store/userStore";
 import { Button } from "@/components/ui/button";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ type PropertyType = {
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
+  const [isSuperUser, isSUperUserloading] = useIsSuperUser();
   const [selectedType, setSelectedType] = useState<PropertyType>(() => {
     if (typeof window !== 'undefined') {
       const savedType = localStorage.getItem("selectedType");
@@ -167,6 +169,29 @@ export default function Dashboard() {
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
+            {
+              isSuperUser && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/users")}
+                  >
+                    Пользователи
+                  </DropdownMenuItem>
+                  {/* districts */}
+                  <DropdownMenuItem
+                    onClick={() => router.push("/districts")}
+                  >
+                    Районы
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/metros")}
+                  >
+                    Метро
+                  </DropdownMenuItem>
+                </>
+
+              )
+            }
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

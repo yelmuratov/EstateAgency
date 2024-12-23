@@ -104,7 +104,9 @@ const Header: React.FC = () => {
               </Button>
             ) : (
               <h1 className="text-xl font-semibold text-primary">
-                Панель сотрудинка 
+                Панель {
+                  isSuperUser ? "Админ" : "сотрудинка"
+                } 
               </h1>
             )}
           </div>
@@ -142,23 +144,6 @@ const Header: React.FC = () => {
                     >
                       Добавить Участок
                     </DropdownMenuItem>
-                    {isSuperUser && (
-                      <>
-                      <DropdownMenuItem disabled>
-                        <span className="font-semibold">Суперпользователь</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleAddPropertySelect("/add-metro")}
-                      >
-                        Добавить Метро
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleAddPropertySelect("/users/new")}
-                      >
-                        Добавить Пользователя
-                      </DropdownMenuItem>
-                      </>
-                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
