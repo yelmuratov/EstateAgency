@@ -18,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api"; // Assuming you have an API helper
+import { useIsSuperUser } from '@/hooks/useIsSuperUser';
 
 const Header: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,7 @@ const Header: React.FC = () => {
   const { user, logoutUser, loading } = UserStore();
   const { clearToken, token } = useAuthStore();
   const isAddPropertyPage = pathname === "/add-property";
+  const [isSuperUser] = useIsSuperUser();
 
   // Fetch the object count
   useEffect(() => {
@@ -140,6 +142,23 @@ const Header: React.FC = () => {
                     >
                       Добавить Участок
                     </DropdownMenuItem>
+                    {isSuperUser && (
+                      <>
+                      <DropdownMenuItem disabled>
+                        <span className="font-semibold">Суперпользователь</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleAddPropertySelect("/add-metro")}
+                      >
+                        Добавить Метро
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleAddPropertySelect("/users/new")}
+                      >
+                        Добавить Пользователя
+                      </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

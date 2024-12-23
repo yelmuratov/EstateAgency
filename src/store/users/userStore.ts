@@ -17,16 +17,20 @@ interface User {
 // all users state
 interface UserState {
     users: User[];
+    user: User | null;
     loading: boolean;
     error: string | null;
     setUsers: (users: User[]) => void;
     fetchUsers: () => void;
+    fetchUserById: (id: string) => void;
+    updateUser: (id: string, data: User) => void;
 }
 
 export const UserStore = create<UserState>((set) => ({
     users: [],
     loading: false,
     error: null,
+    user: null,
 
     setUsers: (users) => set({users}),
 
@@ -40,4 +44,24 @@ export const UserStore = create<UserState>((set) => ({
             throw error;
         }
     },
+    fetchUserById: async (id: string) => {
+        try {
+            set({loading: true});
+            const response = await api.get(`/user/${id}`);
+            set({user: response.data, loading: false});
+        } catch (error) {
+            set({loading: false, error: error instanceof Error ? error.message : "Failed to fetch user."});
+            throw error;
+        }
+    },
+    updateUser: async (id: string, data: User) => {
+        try {
+            set({loading: true});
+            await api.put(`/user/${id}`, data);
+            set({loading: false});
+        } catch (error) {
+            set({loading: false, error: error instanceof Error ? error.message : "Failed to update user."});
+            throw error;
+        }
+    }
 }));

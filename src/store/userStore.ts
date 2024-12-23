@@ -23,10 +23,10 @@ interface UserState {
 
 export const UserStore = create<UserState>((set) => ({
   user: null,
-  loading: false,
+  loading: true, // Set loading to true initially
   error: null,
   
-  setUser: (user) => set({ user }),
+  setUser: (user) => set({ user, loading: false }), // Set loading to false when user is set
 
   logoutUser: async () => {
     try {
