@@ -46,7 +46,7 @@ type PropertyType = {
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [isSuperUser, isSUperUserloading] = useIsSuperUser();
+  const [isSuperUser] = useIsSuperUser();
   const [selectedType, setSelectedType] = useState<PropertyType>(() => {
     if (typeof window !== 'undefined') {
       const savedType = localStorage.getItem("selectedType");

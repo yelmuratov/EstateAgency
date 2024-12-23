@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Loader2 } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,14 +14,13 @@ interface DistrictFormData {
   name: string
 }
 
-interface EditDistrictFormProps {
-  districtId: string
-}
 
-export default function EditDistrictForm({ districtId }: EditDistrictFormProps) {
+export default function EditDistrictForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const params = useParams();
+  const districtId = params?.id as string
 
   const {
     register,

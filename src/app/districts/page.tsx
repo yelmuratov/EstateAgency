@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import usePropertyStore from "@/store/MetroDistrict/propertyStore"
 import {
   Table,
   TableBody,
@@ -31,45 +32,50 @@ import {
 import { Button } from "@/components/ui/button"
 import { Pencil, Trash2, Plus } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
-import CreateUserForm from "@/components/forms/create-user-form"
-import EditUserForm from "@/components/forms/edit-user-form"
-import { UserStore } from "@/store/users/userStore"
+import CreateDistrictForm from "@/components/forms/create-district-form"
+import EditDistrictForm from "@/components/forms/edit-district-form"
 import DashboardLayout from "@/components/layouts/DashboardLayout"
+import { useIsSuperUser } from "@/hooks/useIsSuperUser"
 
-interface User {
-  id: string
-  email: string
-  full_name: string
-  phone: string
-  is_superuser: boolean
+interface District {
+  id: number
+  name: string
 }
 
-
-export default function UsersTable() {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+export default function DistrictsTable() {
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const {users,fetchUsers,deleteUser} = UserStore()
+  const { districts,fetchDistricts,deleteDistrict } = usePropertyStore()
   const router = useRouter()
   const { toast } = useToast()
+  const isSuperUser = useIsSuperUser()
 
   useEffect(() => {
-    fetchUsers()
+    if(!isSuperUser){
+        router.push('/404')
+        }
+    }, [isSuperUser])
+
+  useEffect(() => {
+    fetchDistricts()
   }
-  ,[fetchUsers])
-  const handleDelete = async (userId: string) => {
+, [fetchDistricts])
+
+  const handleDelete = async (districtId: number) => {
+
     try {
-      
-      await deleteUser(userId)
+      await deleteDistrict(districtId)
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "District deleted successfully",
       })
       router.refresh()
-    } catch {
+    } catch (error) {
+      // Revert on error
       toast({
         title: "Error",
-        description: "Failed to delete user",
+        description: "Failed to delete district",
         variant: "destructive",
       })
     }
@@ -77,25 +83,21 @@ export default function UsersTable() {
 
   return (
     <DashboardLayout>
-        <div>
+            <div>
       <div className="flex justify-between items-center mb-4">
-        {/* back button */}
-        <Button onClick={() => router.push('/')}>
-          Back
-        </Button>
-        <h2 className="text-2xl font-bold">Users</h2>
+        <h2 className="text-2xl font-bold">Districts</h2>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add User
+              Add District
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
+              <DialogTitle>Create New District</DialogTitle>
             </DialogHeader>
-            <CreateUserForm />
+            <CreateDistrictForm />
           </DialogContent>
         </Dialog>
       </div>
@@ -104,40 +106,35 @@ export default function UsersTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Full Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Super User</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.full_name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.phone}</TableCell>
-                <TableCell>{user.is_superuser ? "Yes" : "No"}</TableCell>
+            {districts.map((district) => (
+              <TableRow key={district.id}>
+                <TableCell>{district.name}</TableCell>
                 <TableCell className="text-right">
-                  <Dialog open={isEditOpen && selectedUser?.id === user.id} 
+                  <Dialog open={isEditOpen && selectedDistrict?.id === district.id} 
                          onOpenChange={(open) => {
                            setIsEditOpen(open)
-                           if (!open) setSelectedUser(null)
+                           if (!open) setSelectedDistrict(null)
                          }}>
                     <DialogTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => setSelectedDistrict(district)}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
-                        <DialogTitle>Edit User</DialogTitle>
+                        <DialogTitle>Edit District</DialogTitle>
                       </DialogHeader>
-                      {selectedUser && (
-                        <EditUserForm />
+                      {selectedDistrict && (
+                        <EditDistrictForm  />
                       )}
                     </DialogContent>
                   </Dialog>
@@ -150,15 +147,15 @@ export default function UsersTable() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete User</AlertDialogTitle>
+                        <AlertDialogTitle>Delete District</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete this user? This action cannot be undone.
+                          Are you sure you want to delete this district? This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => user.id && handleDelete(user.id)}
+                          onClick={() => handleDelete(district.id)}
                           className="bg-red-600 hover:bg-red-700"
                         >
                           Delete

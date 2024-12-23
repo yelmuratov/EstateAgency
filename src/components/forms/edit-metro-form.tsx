@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Loader2 } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,13 +14,11 @@ interface MetroFormData {
   name: string
 }
 
-interface EditMetroFormProps {
-  metroId: string
-}
-
-export default function EditMetroForm({ metroId }: EditMetroFormProps) {
+export default function EditMetroForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const params = useParams();
+  const metroId = params?.id as string;
   const { toast } = useToast()
 
   const {

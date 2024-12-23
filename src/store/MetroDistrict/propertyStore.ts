@@ -22,6 +22,10 @@ interface StoreState {
   error: string | null;
   fetchMetros: () => Promise<void>;
   fetchDistricts: () => Promise<void>;
+  deleteMetro: (metroId: number) => Promise<void>;
+  deleteDistrict: (districtId: number) => Promise<void>;
+  updateMetro: (metroId: number, name: string) => Promise<void>;
+  upadteDistrict: (districtId: number, name: string) => Promise<void>;
 }
 
 const usePropertyStore = create<StoreState>((set) => ({
@@ -73,6 +77,62 @@ const usePropertyStore = create<StoreState>((set) => ({
       });
     }
   },  
+  deleteMetro: async (metroId: number) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/metro/${metroId}/`);
+      set((state) => ({
+        metros: state.metros.filter((metro) => metro.id !== metroId),
+        loading: false,
+      }));
+    } catch (error) {
+      // Revert on error
+      set({ error: "Failed to delete metro station", loading: false });
+    }
+  },
+  updateMetro: async (metroId: number, name: string) => {
+    set({ loading: true, error: null });
+    try {
+      await api.patch(`/metro/${metroId}/`, { name });
+      set((state) => ({
+        metros: state.metros.map((metro) =>
+          metro.id === metroId ? { ...metro, name } : metro
+        ),
+        loading: false,
+      }));
+    } catch (error) {
+      // Revert on error
+      set({ error: "Failed to update metro station", loading: false });
+    }
+  },
+  deleteDistrict: async (districtId: number) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/district/${districtId}/`);
+      set((state) => ({
+        districts: state.districts.filter((district) => district.id !== districtId),
+        loading: false,
+      }));
+    } catch (error) {
+      // Revert on error
+      set({ error: "Failed to delete district", loading: false });
+    }
+  },
+  upadteDistrict: async (districtId: number, name: string) => {
+    set({ loading: true, error: null });
+    try {
+      await api.patch(`/district/${districtId}/`, { name });
+      set((state) => ({
+        districts: state.districts.map((district) =>
+          district.id === districtId ? { ...district, name } : district
+        ),
+        loading: false,
+      }));
+    } catch (error) {
+      // Revert on error
+      set({ error: "Failed to update district", loading: false });
+    }
+  }
 }));
 
 export default usePropertyStore;
