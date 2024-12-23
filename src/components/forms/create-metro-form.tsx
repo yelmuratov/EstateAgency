@@ -31,15 +31,15 @@ export default function CreateMetroForm() {
       await api.post("/metro/", data)
 
       toast({
-        title: "Success",
-        description: "Metro station created successfully",
+        title: "Успех",
+        description: "Станция метро успешно создана",
       })
       router.refresh()
       router.push("/metro")
     } catch{
       toast({
-        title: "Error",
-        description: "Failed to create metro station",
+        title: "Ошибка",
+        description: "Не удалось создать станцию метро",
         variant: "destructive",
       })
     } finally {
@@ -50,14 +50,14 @@ export default function CreateMetroForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Metro Station Name</Label>
+        <Label htmlFor="name">Название станции метро</Label>
         <Input
           id="name"
           {...register("name", {
-            required: "Metro station name is required",
+            required: "Название станции метро обязательно",
             minLength: {
               value: 2,
-              message: "Name must be at least 2 characters",
+              message: "Название должно быть не менее 2 символов",
             },
           })}
         />
@@ -70,19 +70,11 @@ export default function CreateMetroForm() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating...
+            Создание...
           </>
         ) : (
-          "Create Metro Station"
+          "Создать станцию метро"
         )}
-      </Button>
-      {/* back button */}
-      <Button
-        variant="outline"
-        onClick={() => router.push("/metro")}
-        className="w-full"
-      >
-        Back
       </Button>
     </form>
   )

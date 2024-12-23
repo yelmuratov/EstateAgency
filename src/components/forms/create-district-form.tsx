@@ -31,15 +31,15 @@ export default function CreateDistrictForm() {
       await api.post("/district/", data);
 
       toast({
-        title: "Success",
-        description: "District created successfully",
+        title: "Успех",
+        description: "Район успешно создан",
       });
       router.refresh();
       router.push("/districts");
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to create district",
+        title: "Ошибка",
+        description: "Не удалось создать район",
         variant: "destructive",
       });
     } finally {
@@ -50,14 +50,14 @@ export default function CreateDistrictForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">District Name</Label>
+        <Label htmlFor="name">Название района</Label>
         <Input
           id="name"
           {...register("name", {
-            required: "District name is required",
+            required: "Название района обязательно",
             minLength: {
               value: 2,
-              message: "Name must be at least 2 characters",
+              message: "Название должно быть не менее 2 символов",
             },
           })}
         />
@@ -70,10 +70,10 @@ export default function CreateDistrictForm() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating...
+            Создание...
           </>
         ) : (
-          "Create District"
+          "Создать район"
         )}
       </Button>
     </form>

@@ -59,14 +59,14 @@ export default function MetrosTable() {
     try {
       await deleteMetro(metroId);
       toast({
-        title: "Metro Station Deleted",
-        description: "Metro station has been successfully deleted",
+        title: "Станция метро удалена",
+        description: "Станция метро успешно удалена",
       });
-    } catch{
+    } catch {
       // Revert on error
       toast({
-        title: "Error",
-        description: "Failed to delete metro station",
+        title: "Ошибка",
+        description: "Не удалось удалить станцию метро",
         variant: "destructive",
       });
     }
@@ -75,25 +75,19 @@ export default function MetrosTable() {
   return (
     <DashboardLayout>
       <div>
-        {/* back button */}
         <div className="flex justify-between items-center mb-4">
-          {/* back button */}
-          <Button 
-            onClick={() => router.push('/')}
-          >
-            Back
-          </Button>
-          <h2 className="text-2xl font-bold">Metro Stations</h2>
+          <Button onClick={() => router.push("/")}>Назад</Button>
+          <h2 className="text-2xl font-bold">Станции метро</h2>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Metro Station
+                Добавить станцию метро
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Create New Metro Station</DialogTitle>
+                <DialogTitle>Создать новую станцию метро</DialogTitle>
               </DialogHeader>
               <CreateMetroForm />
             </DialogContent>
@@ -104,8 +98,8 @@ export default function MetrosTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Название</TableHead>
+                <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,7 +125,7 @@ export default function MetrosTable() {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
-                          <DialogTitle>Edit Metro Station</DialogTitle>
+                          <DialogTitle>Редактировать станцию метро</DialogTitle>
                         </DialogHeader>
                         {selectedMetro && <EditMetroForm />}
                       </DialogContent>
@@ -145,21 +139,18 @@ export default function MetrosTable() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Delete Metro Station
-                          </AlertDialogTitle>
+                          <AlertDialogTitle>Удалить станцию метро</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete this metro station?
-                            This action cannot be undone.
+                            Вы уверены, что хотите удалить эту станцию метро? Это действие нельзя отменить.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Отмена</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(metro.id)}
                             className="bg-red-600 hover:bg-red-700"
                           >
-                            Delete
+                            Удалить
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

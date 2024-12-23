@@ -14,7 +14,6 @@ interface DistrictFormData {
   name: string
 }
 
-
 export default function EditDistrictForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -36,8 +35,8 @@ export default function EditDistrictForm() {
         reset(response.data)
       } catch{
         toast({
-          title: "Error",
-          description: "Failed to fetch district data",
+          title: "Ошибка",
+          description: "Не удалось получить данные района",
           variant: "destructive",
         })
       }
@@ -52,15 +51,15 @@ export default function EditDistrictForm() {
       await api.put(`/district/${districtId}`, data)
 
       toast({
-        title: "Success",
-        description: "District updated successfully",
+        title: "Успех",
+        description: "Район успешно обновлен",
       })
       router.refresh()
       router.push("/districts")
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update district",
+        title: "Ошибка",
+        description: "Не удалось обновить район",
         variant: "destructive",
       })
     } finally {
@@ -71,14 +70,14 @@ export default function EditDistrictForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">District Name</Label>
+        <Label htmlFor="name">Название района</Label>
         <Input
           id="name"
           {...register("name", {
-            required: "District name is required",
+            required: "Название района обязательно",
             minLength: {
               value: 2,
-              message: "Name must be at least 2 characters",
+              message: "Название должно быть не менее 2 символов",
             },
           })}
         />
@@ -91,13 +90,12 @@ export default function EditDistrictForm() {
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Updating...
+            Обновление...
           </>
         ) : (
-          "Update District"
+          "Обновить район"
         )}
       </Button>
     </form>
   )
 }
-

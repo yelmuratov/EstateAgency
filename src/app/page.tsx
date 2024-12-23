@@ -72,7 +72,7 @@ export default function Dashboard() {
       const userData = await getUser();
   
       if (!userData) {
-        throw new Error("Failed to retrieve user data.");
+        throw new Error("Не удалось получить данные пользователя.");
       }
   
       setUser({ ...userData.user, id: userData.user.id.toString() });
@@ -81,10 +81,10 @@ export default function Dashboard() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred while fetching user data.";
+          : "Произошла непредвиденная ошибка при получении данных пользователя.";
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Ошибка",
         description: errorMessage,
       });
   
@@ -177,8 +177,7 @@ export default function Dashboard() {
                   >
                     Пользователи
                   </DropdownMenuItem>
-                  {/* districts */}
-                  <DropdownMenuItem
+                  <DropdownMenuItem 
                     onClick={() => router.push("/districts")}
                   >
                     Районы
