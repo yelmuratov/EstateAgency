@@ -800,9 +800,11 @@ export default function EditLandForm() {
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
-                    <SelectItem key={user.id} value={user.full_name}>
+                    user.id && (
+                      <SelectItem key={user.id} value={user.id.toString()}>
                       {user.full_name}
                     </SelectItem>
+                    )
                   ))}
                 </SelectContent>
               </Select>

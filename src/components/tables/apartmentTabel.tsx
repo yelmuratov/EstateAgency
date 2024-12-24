@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { PropertyFilter } from "@/components/property-filter";
 
@@ -20,6 +20,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { ImageSlider } from "@/components/ui/image-slider";
 
 interface Media {
   media_type: string;
@@ -106,11 +107,8 @@ interface PropertyTableProps {
 
 export default function PropertyTable({ type }: PropertyTableProps) {
   const [itemsPerPage] = useState(5);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState<{
-    url: string;
-    type: string;
-  } | null>(null);
+  const [sliderOpen, setSliderOpen] = useState(false);
+  const [initialSlideIndex, setInitialSlideIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageApartment")) || 1;
   });
@@ -180,20 +178,9 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     setCurrentPage(page);
   };
 
-  const openModal = (media: Media) => {
-    if (media.url) {
-      const fullUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/${media.url}`;
-      setModalContent({
-        url: fullUrl,
-        type: media.media_type, // 'video' or 'image'
-      });
-      setModalOpen(true);
-    }
-  };
-
-  const closeModal = () => {
-    setModalContent(null);
-    setModalOpen(false);
+  const openModal = (media: Media[], index: number) => {
+    setInitialSlideIndex(index);
+    setSliderOpen(true);
   };
 
   const handleRowClick = (id: number) => {
@@ -213,7 +200,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     return (
       <div
         className="relative w-28 h-20 rounded-md overflow-hidden border border-gray-300 dark:border-gray-700 cursor-pointer"
-        onClick={() => openModal(firstMedia)}
+        onClick={() => openModal(media, 0)}
       >
         {firstMedia.media_type === "video" ? (
           <video
@@ -238,11 +225,11 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const renderMediaGallery = (media: Media[]) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-        {media.map((item) => (
+        {media.map((item, index) => (
           <div
             key={item.id}
             className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
-            onClick={() => openModal(item)}
+            onClick={() => openModal(media, index)}
           >
             {item.media_type === "video" ? (
               <video
@@ -265,46 +252,21 @@ export default function PropertyTable({ type }: PropertyTableProps) {
       </div>
     );
   };
-  const renderModalContent = () => {
-    if (!modalContent) return null;
 
+  const renderModalContent = () => {
+    const currentApartment = filteredApartments.find(apt => apt.id === expandedRow);
+    if (!currentApartment) return null;
+    
     return (
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-        onClick={closeModal}
-      >
-        <div
-          className="relative max-w-4xl max-h-[90vh] p-4"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={closeModal}
-            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
-            aria-label="Close preview"
-          >
-            ✕
-          </button>
-          {modalContent.type === "video" ? (
-            <video
-              src={modalContent.url}
-              className="max-w-full max-h-[80vh] rounded-lg"
-              controls
-              autoPlay
-              playsInline
-            />
-          ) : (
-            <Image
-              src={modalContent.url}
-              alt="Preview"
-              className="rounded-lg shadow-lg max-w-full max-h-[80vh] object-contain"
-              width={1200}
-              height={800}
-            />
-          )}
-        </div>
-      </div>
+      <ImageSlider
+        isOpen={sliderOpen}
+        onClose={() => setSliderOpen(false)}
+        media={currentApartment.media}
+        initialIndex={initialSlideIndex}
+      />
     );
   };
+
 
   if (error) {
     return (
@@ -711,7 +673,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
         ))}
       </div>
 
-      {modalOpen && renderModalContent()}
+      {sliderOpen && renderModalContent()}
 
       {/* Pagination */}
       <Pagination>
@@ -764,3 +726,4 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     </div>
   );
 }
+

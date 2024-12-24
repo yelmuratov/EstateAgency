@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -22,10 +22,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Upload, X } from "lucide-react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { format } from "date-fns";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { UserStore } from "@/store/users/userStore";
 import {
@@ -75,6 +75,7 @@ export default function LandPropertyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -94,12 +95,94 @@ export default function LandPropertyForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { districts, fetchDistricts } = usePropertyStore();
-  const {users, fetchUsers} = UserStore();
+  const { users, fetchUsers } = UserStore();
 
   useEffect(() => {
-    fetchDistricts();
-    fetchUsers();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchDistricts(), fetchUsers()]);
+      setIsLoading(false);
+    };
+    loadData();
   }, [fetchDistricts, fetchUsers]);
+
+  const memoizedDistricts = useMemo(
+    () =>
+      districts.map((district) => (
+        <SelectItem key={district.id} value={district.name}>
+          {district.name}
+        </SelectItem>
+      )),
+    [districts]
+  );
+
+  const memoizedUsers = useMemo(
+    () =>
+      users.map(
+        (user) =>
+          user.id && (
+            <SelectItem key={user.id} value={user.id.toString()}>
+              {user.full_name}
+            </SelectItem>
+          )
+      ),
+    [users]
+  );
+
+  const handleImageChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) return;
+
+      const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
+      const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
+
+      Array.from(files).forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (e.target?.result) {
+              newPreviewImages.push(e.target.result as string);
+              setPreviewImages([...newPreviewImages]); // Update state with appended previews
+            }
+          };
+          reader.readAsDataURL(file);
+        } else if (file.type.startsWith("video/")) {
+          const videoUrl = URL.createObjectURL(file);
+          newPreviewImages.push(videoUrl);
+          setPreviewImages([...newPreviewImages]); // Update state with appended previews
+        }
+
+        newMediaFiles.push(file); // Add the file to the preserved list
+      });
+
+      const dt = new DataTransfer();
+      newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
+      setMediaFiles(dt.files); // Update media files state
+    },
+    [previewImages, mediaFiles]
+  );
+
+  const removeImage = useCallback(
+    (index: number) => {
+      const newPreviewImages = [...previewImages];
+      newPreviewImages.splice(index, 1);
+      setPreviewImages(newPreviewImages);
+
+      if (fileInputRef.current && fileInputRef.current.files) {
+        const dt = new DataTransfer();
+        const { files } = fileInputRef.current;
+        for (let i = 0; i < files.length; i++) {
+          if (i !== index) {
+            dt.items.add(files[i]);
+          }
+        }
+        fileInputRef.current.files = dt.files;
+        setMediaFiles(dt.files);
+      }
+    },
+    [previewImages, fileInputRef, setMediaFiles]
+  );
 
   const onSubmit = async (data: LandFormData) => {
     try {
@@ -113,7 +196,12 @@ export default function LandPropertyForm() {
 
       const params = new URLSearchParams();
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "" && !Number.isNaN(value)) {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== "" &&
+          !Number.isNaN(value)
+        ) {
           params.append(key, value.toString());
         }
       });
@@ -221,54 +309,13 @@ export default function LandPropertyForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
-    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
-
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newPreviewImages.push(e.target.result as string);
-            setPreviewImages([...newPreviewImages]); // Update state with appended previews
-          }
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type.startsWith("video/")) {
-        const videoUrl = URL.createObjectURL(file);
-        newPreviewImages.push(videoUrl);
-        setPreviewImages([...newPreviewImages]); // Update state with appended previews
-      }
-
-      newMediaFiles.push(file); // Add the file to the preserved list
-    });
-
-    const dt = new DataTransfer();
-    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
-    setMediaFiles(dt.files); // Update media files state
-  };
-
-  const removeImage = (index: number) => {
-    const newPreviewImages = [...previewImages];
-    newPreviewImages.splice(index, 1);
-    setPreviewImages(newPreviewImages);
-
-    if (fileInputRef.current && fileInputRef.current.files) {
-      const dt = new DataTransfer();
-      const { files } = fileInputRef.current;
-      for (let i = 0; i < files.length; i++) {
-        if (i !== index) {
-          dt.items.add(files[i]);
-        }
-      }
-      fileInputRef.current.files = dt.files;
-      setMediaFiles(dt.files);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <form
@@ -286,13 +333,7 @@ export default function LandPropertyForm() {
               <SelectTrigger>
                 <SelectValue placeholder="Выберите район" />
               </SelectTrigger>
-              <SelectContent>
-                {districts.map((district) => (
-                  <SelectItem key={district.id} value={district.name}>
-                    {district.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{memoizedDistricts}</SelectContent>
             </Select>
           )}
         />
@@ -666,7 +707,7 @@ export default function LandPropertyForm() {
       </div>
 
       <div>
-        <Label htmlFor="agent_percent">Процент аген��а</Label>
+        <Label htmlFor="agent_percent">Процент агента</Label>
         <Input
           id="agent_percent"
           type="number"
@@ -694,15 +735,7 @@ export default function LandPropertyForm() {
               <SelectTrigger>
                 <SelectValue placeholder="Выберите Второй ответственный" />
               </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  user.id && (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.full_name}
-                    </SelectItem>
-                  )
-                ))}
-              </SelectContent>
+              <SelectContent>{memoizedUsers}</SelectContent>
             </Select>
           )}
         />
@@ -734,18 +767,18 @@ export default function LandPropertyForm() {
           control={control}
           defaultValue={false}
           render={({ field }) => (
-        <Select
-          onValueChange={(value) => field.onChange(value === "true")}
-          defaultValue={field.value ? "true" : "false"}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите сделку" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="true">Да</SelectItem>
-            <SelectItem value="false">Нет</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select
+              onValueChange={(value) => field.onChange(value === "true")}
+              defaultValue={field.value ? "true" : "false"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите сделку" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
       </div>
@@ -783,7 +816,9 @@ export default function LandPropertyForm() {
               validFiles.forEach((file) => dt.items.add(file));
               if (fileInputRef.current) {
                 fileInputRef.current.files = dt.files;
-                handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
+                handleImageChange({
+                  target: { files: dt.files },
+                } as React.ChangeEvent<HTMLInputElement>);
               }
             }
           }}
@@ -824,37 +859,7 @@ export default function LandPropertyForm() {
               ","
             )}
             ref={fileInputRef}
-            onChange={(e) => {
-              const files = e.target.files;
-              if (files) {
-                const validFiles: File[] = [];
-                const errors: string[] = [];
-
-                Array.from(files).forEach((file) => {
-                  const { isValid, error } = validateFile(file);
-                  if (isValid) {
-                    validFiles.push(file);
-                  } else if (error) {
-                    errors.push(error);
-                  }
-                });
-
-                if (errors.length > 0) {
-                  toast({
-                    title: "Ошибка загрузки",
-                    description: errors.join("\n"),
-                    variant: "destructive",
-                  });
-                }
-
-                if (validFiles.length > 0) {
-                  const dt = new DataTransfer();
-                  validFiles.forEach((file) => dt.items.add(file));
-                  e.target.files = dt.files;
-                  handleImageChange(e);
-                }
-              }
-            }}
+            onChange={handleImageChange}
           />
         </div>
         {previewImages.length > 0 && (
@@ -906,4 +911,3 @@ export default function LandPropertyForm() {
     </form>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { AxiosError } from "axios";
 import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
@@ -71,6 +71,7 @@ export default function ApartmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -86,19 +87,92 @@ export default function ApartmentForm() {
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
   const { users, fetchUsers } = UserStore();
 
+  const memoizedDistricts = useMemo(() => districts.map((district) => (
+    <SelectItem key={district.id} value={district.name}>
+      {district.name}
+    </SelectItem>
+  )), [districts]);
+
+  const memoizedMetros = useMemo(() => metros.map((metro) => (
+    <SelectItem key={metro.id} value={metro.name}>
+      {metro.name}
+    </SelectItem>
+  )), [metros]);
+
+  const memoizedUsers = useMemo(() => users.map((user) => (
+    user.id &&(
+    <SelectItem key={user.id} value={user.id.toString()}>
+      {user.full_name}
+    </SelectItem>
+    )
+  )), [users]);
+
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
+    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            newPreviewImages.push(e.target.result as string);
+            setPreviewImages([...newPreviewImages]); // Update state with appended previews
+          }
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type.startsWith("video/")) {
+        const videoUrl = URL.createObjectURL(file);
+        newPreviewImages.push(videoUrl);
+        setPreviewImages([...newPreviewImages]); // Update state with appended previews
+      }
+
+      newMediaFiles.push(file); // Add the file to the preserved list
+    });
+
+    const dt = new DataTransfer();
+    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
+    setMediaFiles(dt.files); // Update media files state
+  }, [previewImages, mediaFiles]);
+
+
+  const removeImage = useCallback((index: number) => {
+    const newPreviewImages = [...previewImages];
+    newPreviewImages.splice(index, 1);
+    setPreviewImages(newPreviewImages);
+
+    if (fileInputRef.current && fileInputRef.current.files) {
+      const dt = new DataTransfer();
+      const { files } = fileInputRef.current;
+      for (let i = 0; i < files.length; i++) {
+        if (i !== index) {
+          dt.items.add(files[i]);
+        }
+      }
+      fileInputRef.current.files = dt.files;
+      setMediaFiles(dt.files);
+    }
+  }, [previewImages, fileInputRef, setMediaFiles]);
+
   useEffect(() => {
-    fetchMetros();
-    fetchDistricts();
-    fetchUsers();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchMetros(), fetchDistricts(), fetchUsers()]);
+      setIsLoading(false);
+    };
+    loadData();
+
     return () => {
-      // Cleanup video URLs when component unmounts
       previewImages.forEach((preview) => {
         if (preview.startsWith("blob:")) {
           URL.revokeObjectURL(preview);
         }
       });
     };
-  }, [previewImages, fetchMetros, fetchDistricts, fetchUsers]);
+  }, [fetchDistricts, fetchMetros, fetchUsers, previewImages]);
 
   const onSubmit = async (data: ApartmentFormData) => {
     try {
@@ -234,55 +308,13 @@ export default function ApartmentForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-  
-    const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
-    const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
-  
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newPreviewImages.push(e.target.result as string);
-            setPreviewImages([...newPreviewImages]); // Update state with appended previews
-          }
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type.startsWith("video/")) {
-        const videoUrl = URL.createObjectURL(file);
-        newPreviewImages.push(videoUrl);
-        setPreviewImages([...newPreviewImages]); // Update state with appended previews
-      }
-  
-      newMediaFiles.push(file); // Add the file to the preserved list
-    });
-  
-    const dt = new DataTransfer();
-    newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
-    setMediaFiles(dt.files); // Update media files state
-  };
-  
-
-  const removeImage = (index: number) => {
-    const newPreviewImages = [...previewImages];
-    newPreviewImages.splice(index, 1);
-    setPreviewImages(newPreviewImages);
-
-    if (fileInputRef.current && fileInputRef.current.files) {
-      const dt = new DataTransfer();
-      const { files } = fileInputRef.current;
-      for (let i = 0; i < files.length; i++) {
-        if (i !== index) {
-          dt.items.add(files[i]);
-        }
-      }
-      fileInputRef.current.files = dt.files;
-      setMediaFiles(dt.files); 
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <form
@@ -301,11 +333,7 @@ export default function ApartmentForm() {
                 <SelectValue placeholder="Выберите район" />
               </SelectTrigger>
               <SelectContent>
-                {districts.map((district) => (
-                  <SelectItem key={district.id} value={district.name}>
-                    {district.name}
-                  </SelectItem>
-                ))}
+                {memoizedDistricts}
               </SelectContent>
             </Select>
           )}
@@ -321,18 +349,14 @@ export default function ApartmentForm() {
           name="metro_st"
           control={control}
           render={({ field }) => (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите метро" />
-          </SelectTrigger>
-          <SelectContent>
-            {metros.map((metro) => (
-          <SelectItem key={metro.id} value={metro.name}>
-            {metro.name}
-          </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите метро" />
+              </SelectTrigger>
+              <SelectContent>
+                {memoizedMetros}
+              </SelectContent>
+            </Select>
           )}
         />
         {errors.metro_st && (
@@ -660,15 +684,15 @@ export default function ApartmentForm() {
           id="phone_number"
           defaultValue="+998"
           {...register("phone_number", {
-        required: "Это поле обязательно",
-        minLength: { value: 3, message: "Минимум 3 символа" },
-        maxLength: { value: 13, message: "Максимум 13 символов" },
+            required: "Это поле обязательно",
+            minLength: { value: 3, message: "Минимум 3 символа" },
+            maxLength: { value: 13, message: "Максимум 13 символов" },
           })}
           placeholder="Введите номер телефона собственника"
         />
         {errors.phone_number && (
           <p className="text-red-500 text-sm mt-1">
-        {errors.phone_number.message}
+            {errors.phone_number.message}
           </p>
         )}
       </div>
@@ -678,15 +702,15 @@ export default function ApartmentForm() {
           id="agent_percent"
           type="number"
           {...register("agent_percent", {
-        required: "Это поле обязательно",
-        valueAsNumber: true,
-        max: { value: 100, message: "Процент агента не может быть больше 100" },
+            required: "Это поле обязательно",
+            valueAsNumber: true,
+            max: { value: 100, message: "Процент агента не может быть больше 100" },
           })}
           placeholder="Введите процент агента"
         />
         {errors.agent_percent && (
           <p className="text-red-500 text-sm mt-1">
-        {errors.agent_percent.message}
+            {errors.agent_percent.message}
           </p>
         )}
       </div>
@@ -754,13 +778,7 @@ export default function ApartmentForm() {
                 <SelectValue placeholder="Выберите Второй ответственный" />
               </SelectTrigger>
               <SelectContent>
-                {users.map((user) => (
-                  user.id !== null && (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.full_name}
-                    </SelectItem>
-                  )
-                ))}
+                {memoizedUsers}
               </SelectContent>
             </Select>
           )}
@@ -793,18 +811,18 @@ export default function ApartmentForm() {
           control={control}
           defaultValue={false}
           render={({ field }) => (
-        <Select
-          onValueChange={(value) => field.onChange(value === "true")}
-          defaultValue={field.value ? "true" : "false"}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Выберите сделку" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="true">Да</SelectItem>
-            <SelectItem value="false">Нет</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select
+              onValueChange={(value) => field.onChange(value === "true")}
+              defaultValue={field.value ? "true" : "false"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите сделку" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Да</SelectItem>
+                <SelectItem value="false">Нет</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         />
       </div>
@@ -858,10 +876,10 @@ export default function ApartmentForm() {
             <Upload className="mx-auto h-12 w-12 text-gray-400" />
             <div className="flex text-sm text-gray-600">
               <label
-          htmlFor="images"
-          className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary dark:text-primary-light hover:text-primary/80 dark:hover:text-primary-light/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                htmlFor="images"
+                className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary dark:text-primary-light hover:text-primary/80 dark:hover:text-primary-light/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
               >
-          <span>Загрузить файлы</span>
+                <span>Загрузить файлы</span>
               </label>
               <p className="pl-1">или перетащите сюда</p>
             </div>
@@ -879,37 +897,7 @@ export default function ApartmentForm() {
           multiple
           accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
           ref={fileInputRef}
-          onChange={(e) => {
-            const files = e.target.files;
-            if (files) {
-              const validFiles: File[] = [];
-              const errors: string[] = [];
-
-              Array.from(files).forEach((file) => {
-                const { isValid, error } = validateFile(file);
-                if (isValid) {
-                  validFiles.push(file);
-                } else if (error) {
-                  errors.push(error);
-                }
-              });
-
-              if (errors.length > 0) {
-                toast({
-                  title: "Ошибка загрузки",
-                  description: errors.join("\n"),
-                  variant: "destructive",
-                });
-              }
-
-              if (validFiles.length > 0) {
-                const dt = new DataTransfer();
-                validFiles.forEach((file) => dt.items.add(file));
-                e.target.files = dt.files;
-                handleImageChange(e);
-              }
-            }
-          }}
+          onChange={handleImageChange}
         />
       </div>
       {previewImages.length > 0 && (

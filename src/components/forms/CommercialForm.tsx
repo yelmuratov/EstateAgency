@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,7 @@ export default function CommercialPropertyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [mediaFiles, setMediaFiles] = useState<FileList | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -95,8 +96,12 @@ export default function CommercialPropertyForm() {
   const { users, fetchUsers } = UserStore();
 
   useEffect(() => {
-    fetchDistricts();
-    fetchUsers();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchDistricts(), fetchUsers()]);
+      setIsLoading(false);
+    };
+    loadData();
     return () => {
       // Cleanup video URLs when component unmounts
       previewImages.forEach((preview) => {
@@ -239,13 +244,27 @@ export default function CommercialPropertyForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const memoizedDistricts = useMemo(() => districts.map((district) => (
+    <SelectItem key={district.id} value={district.name}>
+      {district.name}
+    </SelectItem>
+  )), [districts]);
+
+  const memoizedUsers = useMemo(() => users.map((user) => (
+    user.id && (
+      <SelectItem key={user.id} value={user.id.toString()}>
+        {user.full_name}
+       </SelectItem>
+    )
+  )), [users]);
+
+  const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-  
+
     const newPreviewImages: string[] = [...previewImages]; // Preserve existing previews
     const newMediaFiles = mediaFiles ? Array.from(mediaFiles) : []; // Preserve existing media files
-  
+
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
@@ -261,16 +280,16 @@ export default function CommercialPropertyForm() {
         newPreviewImages.push(videoUrl);
         setPreviewImages([...newPreviewImages]); // Update state with appended previews
       }
-  
+
       newMediaFiles.push(file); // Add the file to the preserved list
     });
-  
+
     const dt = new DataTransfer();
     newMediaFiles.forEach((file) => dt.items.add(file)); // Create new FileList
     setMediaFiles(dt.files); // Update media files state
-  };
+  }, [previewImages, mediaFiles]);
 
-  const removeImage = (index: number) => {
+  const removeImage = useCallback((index: number) => {
     const newPreviewImages = [...previewImages];
     newPreviewImages.splice(index, 1);
     setPreviewImages(newPreviewImages);
@@ -284,9 +303,17 @@ export default function CommercialPropertyForm() {
         }
       }
       fileInputRef.current.files = dt.files;
-      setMediaFiles(dt.files); 
+      setMediaFiles(dt.files);
     }
-  };
+  }, [previewImages, fileInputRef, setMediaFiles]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <form
@@ -305,11 +332,7 @@ export default function CommercialPropertyForm() {
                 <SelectValue placeholder="Выберите район" />
               </SelectTrigger>
               <SelectContent>
-                {districts.map((district) => (
-                  <SelectItem key={district.id} value={district.name}>
-                    {district.name}
-                  </SelectItem>
-                ))}
+                {memoizedDistricts}
               </SelectContent>
             </Select>
           )}
@@ -704,13 +727,7 @@ export default function CommercialPropertyForm() {
                 <SelectValue placeholder="Выберите Второй ответственный" />
               </SelectTrigger>
               <SelectContent>
-                {users.map((user) => (
-                  user.id !== null && (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.full_name}
-                    </SelectItem>
-                  )
-                ))}
+                {memoizedUsers}
               </SelectContent>
             </Select>
           )}
@@ -769,7 +786,7 @@ export default function CommercialPropertyForm() {
             const droppedFiles = Array.from(e.dataTransfer.files);
             const validFiles: File[] = [];
             const errors: string[] = [];
-  
+
             droppedFiles.forEach((file) => {
               const { isValid, error } = validateFile(file);
               if (isValid) {
@@ -778,7 +795,7 @@ export default function CommercialPropertyForm() {
                 errors.push(error);
               }
             });
-  
+
             if (errors.length > 0) {
               toast({
                 title: "Ошибка загрузки",
@@ -786,7 +803,7 @@ export default function CommercialPropertyForm() {
                 variant: "destructive",
               });
             }
-  
+
             if (validFiles.length > 0) {
               const dt = new DataTransfer();
               validFiles.forEach((file) => dt.items.add(file));
@@ -831,37 +848,7 @@ export default function CommercialPropertyForm() {
             multiple
             accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(",")}
             ref={fileInputRef}
-            onChange={(e) => {
-              const files = e.target.files;
-              if (files) {
-                const validFiles: File[] = [];
-                const errors: string[] = [];
-  
-                Array.from(files).forEach((file) => {
-                  const { isValid, error } = validateFile(file);
-                  if (isValid) {
-                    validFiles.push(file);
-                  } else if (error) {
-                    errors.push(error);
-                  }
-                });
-  
-                if (errors.length > 0) {
-                  toast({
-                    title: "Ошибка загрузки",
-                    description: errors.join("\n"),
-                    variant: "destructive",
-                  });
-                }
-  
-                if (validFiles.length > 0) {
-                  const dt = new DataTransfer();
-                  validFiles.forEach((file) => dt.items.add(file));
-                  e.target.files = dt.files;
-                  handleImageChange(e);
-                }
-              }
-            }}
+            onChange={handleImageChange}
           />
         </div>
         {previewImages.length > 0 && (

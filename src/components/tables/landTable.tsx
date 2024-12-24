@@ -20,6 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
+import { ImageSlider } from "@/components/ui/image-slider";
 
 interface Media {
   id: number;
@@ -100,17 +101,14 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     return Number(localStorage.getItem("currentPageLand")) || 1;
   });
   const [itemsPerPage] = useState(5); 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState<{
-    url: string;
-    type: string;
-  } | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState(() => {
     return localStorage.getItem("searchQueryLand") || "";
   });
   const [filterOpen, setFilterOpen] = useState(false);
   const [filteredLands, setFilteredLands] = useState<LandData[]>([]);
+  const [sliderOpen, setSliderOpen] = useState(false);
+  const [initialSlideIndex, setInitialSlideIndex] = useState(0);
 
   const router = useRouter();
   const { lands, loading, error, filterLands } = useLandStore() as {
@@ -165,25 +163,9 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const openModal = (media: Media) => {
-    try {
-      const validUrl = new URL(
-        media.url,
-        process.env.NEXT_PUBLIC_API_BASE_URL
-      ).toString();
-      setModalContent({
-        url: validUrl,
-        type: media.media_type,
-      });
-      setModalOpen(true);
-    } catch (error) {
-      console.log("Invalid URL:", error);
-    }
-  };
-
-  const closeModal = () => {
-    setModalContent(null);
-    setModalOpen(false);
+  const openModal = (media: Media[], index: number) => {
+    setInitialSlideIndex(index);
+    setSliderOpen(true);
   };
 
   const handleRowClick = (id: number) => {
@@ -194,11 +176,11 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
         {media &&
-          media.map((item) => (
+          media.map((item, index) => (
             <div
               key={item.id}
               className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
-              onClick={() => openModal(item)}
+              onClick={() => openModal(media, index)}
             >
               {item.media_type === "video" ? (
                 <video
@@ -218,6 +200,20 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
             </div>
           ))}
       </div>
+    );
+  };
+
+  const renderModalContent = () => {
+    const currentLand = filteredLands.find(land => land.id === expandedRow);
+    if (!currentLand) return null;
+
+    return (
+      <ImageSlider
+        isOpen={sliderOpen}
+        onClose={() => setSliderOpen(false)}
+        media={currentLand.media}
+        initialIndex={initialSlideIndex}
+      />
     );
   };
 
@@ -316,7 +312,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (land.media && land.media[0]) {
-                            openModal(land.media[0]);
+                            openModal(land.media, 0);
                           }
                         }}
                       >
@@ -493,11 +489,11 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                             {land.media &&
-                              land.media.map((image: Media) => (
+                              land.media.map((image: Media, index) => (
                                 <div
                                   key={image.id}
                                   className="relative h-48 w-full border rounded-md overflow-hidden cursor-pointer"
-                                  onClick={() => openModal(image)}
+                                  onClick={() => openModal(land.media, index)}
                                 >
                                   {image.media_type === "video" ? (
                                     <video
@@ -641,42 +637,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
       </div>
 
       {/* Modal */}
-      {modalOpen && modalContent && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-          onClick={closeModal}
-        >
-          <div
-            className="relative max-w-4xl max-h-[90vh] p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-white bg-black bg-opacity-60 rounded-full p-2 hover:bg-opacity-80 focus:outline-none z-50"
-              aria-label="Close preview"
-            >
-              ✕
-            </button>
-            {modalContent.type === "video" ? (
-              <video
-                src={modalContent.url}
-                className="max-w-full max-h-[80vh] rounded-lg"
-                controls
-                autoPlay
-                playsInline
-              />
-            ) : (
-              <Image
-                src={modalContent.url}
-                alt="Preview"
-                className="rounded-lg shadow-lg max-w-full max-h-[80vh] object-contain"
-                width={1200}
-                height={800}
-              />
-            )}
-          </div>
-        </div>
-      )}
+      {sliderOpen && renderModalContent()}
 
       {/* Pagination */}
       <Pagination>
