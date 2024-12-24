@@ -8,40 +8,71 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import api from "@/lib/api";
+import axios from "axios";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 
 interface DistrictFormData {
   name: string;
 }
 
-export default function CreateDistrictForm() {
+export default function CreateDistrictForm({
+  setIsCreateOpen,
+}: {
+  setIsCreateOpen: (isOpen: boolean) => void;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { createDistrict } = usePropertyStore();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setError,
   } = useForm<DistrictFormData>();
 
   const onSubmit = async (data: DistrictFormData) => {
     try {
       setIsLoading(true);
-      await api.post("/district/", data);
+      await createDistrict(data.name);
 
       toast({
         title: "Успех",
         description: "Район успешно создан",
       });
+
+      setIsCreateOpen(false); // Close the modal only if successful
       router.refresh();
       router.push("/districts");
-    } catch {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось создать район",
-        variant: "destructive",
-      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response && error.response.data) {
+        const apiErrors = error.response.data.errors || error.response.data;
+        if (apiErrors.detail) {
+          setError("name", {
+            type: "manual",
+            message:
+              apiErrors.detail === "District already exists"
+                ? "Район уже существует"
+                : apiErrors.detail,
+          });
+        } else {
+          for (const key in apiErrors) {
+            if (apiErrors.hasOwnProperty(key)) {
+              setError(key as keyof DistrictFormData, {
+                type: "manual",
+                message: apiErrors[key].join(", "),
+              });
+            }
+          }
+        }
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать район",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

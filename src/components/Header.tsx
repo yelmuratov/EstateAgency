@@ -40,8 +40,7 @@ const Header: React.FC = () => {
           },
         });
         setObjectCount(response.data.total);
-      } catch (error) {
-        console.error("Failed to fetch object count:", error);
+      } catch {
         toast({
           title: "Error",
           description: "Failed to load object count.",

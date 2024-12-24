@@ -37,6 +37,15 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useRouter } from "next/navigation";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 import Spinner from "@/components/local-components/spinner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface Metro {
   name: string;
@@ -44,6 +53,7 @@ interface Metro {
   created_at: string;
   updated_at: string;
 }
+
 
 export default function MetrosTable() {
   const [selectedMetro, setSelectedMetro] = useState<Metro | null>(null);
@@ -53,6 +63,9 @@ export default function MetrosTable() {
   const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
   const router = useRouter();
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [metrosPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     fetchMetros();
@@ -63,6 +76,73 @@ export default function MetrosTable() {
       router.push('/');
     }
   }, [isSuperUser, isSuperUserLoading, router]);
+
+  useEffect(() => {
+    setTotalPages(Math.ceil(metros.length / metrosPerPage));
+  }, [metros, metrosPerPage]);
+
+  const indexOfLastMetro = currentPage * metrosPerPage;
+  const indexOfFirstMetro = indexOfLastMetro - metrosPerPage;
+  const currentMetros = metros.slice(indexOfFirstMetro, indexOfLastMetro);
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    router.push(`?page=${pageNumber}`);
+  };
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+    const ellipsis = <PaginationItem key="ellipsis"><PaginationEllipsis /></PaginationItem>;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink onClick={() => paginate(i)} isActive={currentPage === i}>
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink onClick={() => paginate(1)} isActive={currentPage === 1}>
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      if (currentPage > 3) {
+        items.push(ellipsis);
+      }
+
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(currentPage + 1, totalPages - 1); i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink onClick={() => paginate(i)} isActive={currentPage === i}>
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(ellipsis);
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink onClick={() => paginate(totalPages)} isActive={currentPage === totalPages}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
 
   if (isSuperUserLoading) {
     return <Spinner theme="dark" />;
@@ -106,7 +186,7 @@ export default function MetrosTable() {
               <DialogHeader>
                 <DialogTitle>Создать новую станцию метро</DialogTitle>
               </DialogHeader>
-              <CreateMetroForm />
+              <CreateMetroForm setIsCreateOpen={setIsCreateOpen} onMetroCreated={fetchMetros} />
             </DialogContent>
           </Dialog>
         </div>
@@ -120,7 +200,7 @@ export default function MetrosTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {metros.map((metro) => (
+              {currentMetros.map((metro) => (
                 <TableRow key={metro.id}>
                   <TableCell>{metro.name}</TableCell>
                   <TableCell className="text-right">
@@ -144,7 +224,9 @@ export default function MetrosTable() {
                         <DialogHeader>
                           <DialogTitle>Редактировать станцию метро</DialogTitle>
                         </DialogHeader>
-                        {selectedMetro && <EditMetroForm />}
+                        {selectedMetro && (
+                          <EditMetroForm metro={{ ...selectedMetro, id: selectedMetro.id.toString() }} setIsEditOpen={setIsEditOpen} />
+                        )}
                       </DialogContent>
                     </Dialog>
 
@@ -177,6 +259,27 @@ export default function MetrosTable() {
               ))}
             </TableBody>
           </Table>
+          <div className="flex justify-center mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  {currentPage > 1 && (
+                    <PaginationPrevious 
+                      onClick={() => paginate(currentPage - 1)}
+                    />
+                  )}
+                </PaginationItem>
+                {renderPaginationItems()}
+                <PaginationItem>
+                  {currentPage < totalPages && (
+                    <PaginationNext 
+                      onClick={() => paginate(currentPage + 1)}
+                    />
+                  )}
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
       </div>
     </DashboardLayout>

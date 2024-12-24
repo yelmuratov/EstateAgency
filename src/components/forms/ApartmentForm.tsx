@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from 'lucide-react';
 import { Calendar } from "@/components/ui/calendar";
 import { UserStore } from "@/store/users/userStore";
 import {
@@ -29,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import {
   validateFile,
@@ -39,7 +39,7 @@ import {
 
 interface ApartmentFormData {
   district: string;
-  metro_st: string;
+  metro_st?: string;
   title: string;
   category: "apartment";
   action_type: "rent" | "sale";
@@ -113,10 +113,15 @@ export default function ApartmentForm() {
       const params = new URLSearchParams();
       (Object.keys(data) as (keyof ApartmentFormData)[]).forEach((key) => {
         const value = data[key];
-        if (value !== undefined && value !== null && value !== "") {
+        if (value !== undefined && value !== null && value !== "" && key !== "second_agent_percent") {
           params.append(key, value.toString());
         }
       });
+
+      // Conditionally append second_agent_percent if it is defined and valid
+      if (data.second_agent_percent !== undefined && !isNaN(data.second_agent_percent)) {
+        params.append("second_agent_percent", data.second_agent_percent.toString());
+      }
 
       console.log("Query parameters:", params.toString());
       if (mediaFiles && mediaFiles.length > 0) {
@@ -315,20 +320,19 @@ export default function ApartmentForm() {
         <Controller
           name="metro_st"
           control={control}
-          rules={{ required: "Это поле обязательно" }}
           render={({ field }) => (
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите метро" />
-              </SelectTrigger>
-              <SelectContent>
-                {metros.map((metro) => (
-                  <SelectItem key={metro.id} value={metro.name}>
-                    {metro.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <SelectTrigger>
+            <SelectValue placeholder="Выберите метро" />
+          </SelectTrigger>
+          <SelectContent>
+            {metros.map((metro) => (
+          <SelectItem key={metro.id} value={metro.name}>
+            {metro.name}
+          </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
           )}
         />
         {errors.metro_st && (
@@ -751,9 +755,11 @@ export default function ApartmentForm() {
               </SelectTrigger>
               <SelectContent>
                 {users.map((user) => (
-                  <SelectItem key={user.id} value={user.full_name}>
-                    {user.full_name}
-                  </SelectItem>
+                  user.id !== null && (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.full_name}
+                    </SelectItem>
+                  )
                 ))}
               </SelectContent>
             </Select>
@@ -954,3 +960,4 @@ export default function ApartmentForm() {
     </form>
   );
 }
+

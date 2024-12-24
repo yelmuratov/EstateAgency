@@ -105,7 +105,6 @@ interface PropertyTableProps {
 
 
 export default function PropertyTable({ type }: PropertyTableProps) {
-  console.log("PropertyTable", type);
   const [itemsPerPage] = useState(5);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{

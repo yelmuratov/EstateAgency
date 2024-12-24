@@ -2,23 +2,37 @@
 
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Loader2 } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import api from "@/lib/api"
+import { AxiosError } from "axios";
 
-interface MetroFormData {
-  name: string
+function isAxiosError(error: unknown): error is AxiosError {
+  return (error as AxiosError).isAxiosError !== undefined;
 }
 
-export default function EditMetroForm() {
+interface ErrorResponse {
+  detail: string;
+}
+
+interface MetroFormData {
+  id: string;
+  name: string;
+}
+
+interface EditMetroFormProps {
+  metro: MetroFormData;
+  setIsEditOpen: (isOpen: boolean) => void;
+}
+
+export default function EditMetroForm({ metro, setIsEditOpen }: EditMetroFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter()
-  const params = useParams();
-  const metroId = params?.id as string;
   const { toast } = useToast()
 
   const {
@@ -26,42 +40,47 @@ export default function EditMetroForm() {
     handleSubmit,
     reset,
     formState: { errors },
+    setError,
   } = useForm<MetroFormData>()
 
   useEffect(() => {
-    const fetchMetro = async () => {
-      try {
-        const response = await api.get(`/metro/${metroId}`)
-        reset(response.data)
-      } catch{
-        toast({
-          title: "Error",
-          description: "Failed to fetch metro station data",
-          variant: "destructive",
-        })
-      }
-    }
-
-    fetchMetro()
-  }, [metroId, reset, toast])
+    reset(metro);
+  }, [metro, reset])
 
   const onSubmit = async (data: MetroFormData) => {
     try {
       setIsLoading(true)
-      await api.put(`/metro/${metroId}`, data)
+      setServerError(null); // Reset server error
+      await api.put(`/metro/${metro.id}`, data)
 
       toast({
         title: "Успех",
         description: "Станция метро успешно обновлена",
       })
+      setIsEditOpen(false);
       router.refresh()
-      router.push("/metro")
-    } catch{
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обновить станцию метро",
-        variant: "destructive",
-      })
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response && error.response.data) {
+        const responseData = error.response.data as ErrorResponse; // Assert the type here
+        const errorMessage = responseData.detail;
+
+        if (errorMessage.includes("Metro already exists")) {
+          setServerError("Станция метро уже существует");
+        } else {
+          setServerError(errorMessage);
+        }
+      } else if (isAxiosError(error) && error.response && error.response.status === 500) {
+        setError("name", {
+          type: "manual",
+          message: "Произошла ошибка на сервере. Пожалуйста, попробуйте снова.",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить станцию метро",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false)
     }
@@ -96,6 +115,9 @@ export default function EditMetroForm() {
           "Обновить станцию метро"
         )}
       </Button>
+      {serverError && (
+        <p className="text-sm text-red-500 mt-2">{serverError}</p>
+      )}
     </form>
   )
 }

@@ -9,13 +9,28 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import api from "@/lib/api"
+import { AxiosError } from "axios";
+
+function isAxiosError(error: unknown): error is AxiosError {
+  return (error as AxiosError).isAxiosError !== undefined;
+}
+
+interface ErrorResponse {
+  detail: string;
+}
 
 interface MetroFormData {
   name: string
 }
 
-export default function CreateMetroForm() {
+interface CreateMetroFormProps {
+  setIsCreateOpen: (isOpen: boolean) => void;
+  onMetroCreated: () => void;
+}
+
+export default function CreateMetroForm({ setIsCreateOpen, onMetroCreated }: CreateMetroFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter()
   const { toast } = useToast()
 
@@ -28,20 +43,33 @@ export default function CreateMetroForm() {
   const onSubmit = async (data: MetroFormData) => {
     try {
       setIsLoading(true)
+      setServerError(null); // Reset server error
       await api.post("/metro/", data)
 
       toast({
         title: "Успех",
         description: "Станция метро успешно создана",
       })
+      setIsCreateOpen(false);
+      onMetroCreated();
       router.refresh()
-      router.push("/metro")
-    } catch{
-      toast({
-        title: "Ошибка",
-        description: "Не удалось создать станцию метро",
-        variant: "destructive",
-      })
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response && error.response.data) {
+        const responseData = error.response.data as ErrorResponse; // Assert the type here
+        const errorMessage = responseData.detail;
+
+        if (errorMessage.includes("Metro already exists")) {
+          setServerError("Станция метро уже существует");
+        } else {
+          setServerError(errorMessage);
+        }
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать станцию метро",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false)
     }
@@ -76,6 +104,9 @@ export default function CreateMetroForm() {
           "Создать станцию метро"
         )}
       </Button>
+      {serverError && (
+        <p className="text-sm text-red-500 mt-2">{serverError}</p>
+      )}
     </form>
   )
 }

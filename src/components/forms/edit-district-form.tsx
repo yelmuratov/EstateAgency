@@ -1,71 +1,89 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { useParams, useRouter } from "next/navigation"
-import { Loader2 } from 'lucide-react'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import api from "@/lib/api"
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 interface DistrictFormData {
-  name: string
+  name: string;
 }
 
-export default function EditDistrictForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
-  const params = useParams();
-  const districtId = params?.id as string
+interface EditDistrictFormProps {
+  district: { id: number; name: string };
+  onEdit: (districtId: number, name: string) => Promise<void>;
+}
+
+export default function EditDistrictForm({ district, onEdit }: EditDistrictFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
-  } = useForm<DistrictFormData>()
+    setError,
+    reset,
+  } = useForm<DistrictFormData>({
+    defaultValues: { name: district.name },
+  });
 
   useEffect(() => {
-    const fetchDistrict = async () => {
-      try {
-        const response = await api.get(`/district/${districtId}`)
-        reset(response.data)
-      } catch{
-        toast({
-          title: "Ошибка",
-          description: "Не удалось получить данные района",
-          variant: "destructive",
-        })
-      }
-    }
-
-    fetchDistrict()
-  }, [districtId, reset, toast])
+    reset(district);
+  }, [district, reset]);
 
   const onSubmit = async (data: DistrictFormData) => {
     try {
-      setIsLoading(true)
-      await api.put(`/district/${districtId}`, data)
-
+      setIsLoading(true);
+      setServerError(null); // Reset server error
+      await onEdit(district.id, data.name);
       toast({
         title: "Успех",
         description: "Район успешно обновлен",
-      })
-      router.refresh()
-      router.push("/districts")
-    } catch {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось обновить район",
-        variant: "destructive",
-      })
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response && error.response.data) {
+        const apiErrors = error.response.data.errors || error.response.data;
+        if (apiErrors.detail) {
+          setError("name", {
+            type: "manual",
+            message:
+              apiErrors.detail === "District already exists"
+                ? "Район уже существует"
+                : apiErrors.detail,
+          });
+        } else {
+          for (const key in apiErrors) {
+            if (apiErrors.hasOwnProperty(key)) {
+              setError(key as keyof DistrictFormData, {
+                type: "manual",
+                message: apiErrors[key].join(", "),
+              });
+            }
+          }
+        }
+      } else if (axios.isAxiosError(error) && error.response && error.response.status === 500) {
+        setError("name", {
+          type: "manual",
+          message: "Произошла ошибка на сервере. Пожалуйста, попробуйте снова.",
+        });
+      } else {
+        setServerError("Не удалось обновить район");
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить район",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -96,6 +114,9 @@ export default function EditDistrictForm() {
           "Обновить район"
         )}
       </Button>
+      {serverError && (
+        <p className="text-sm text-red-500 mt-2">{serverError}</p>
+      )}
     </form>
-  )
+  );
 }

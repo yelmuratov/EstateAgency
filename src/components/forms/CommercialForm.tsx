@@ -25,7 +25,7 @@ import {
   ACCEPTED_VIDEO_TYPES,
 } from "@/utils/file-validation";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from 'lucide-react';
 import { Calendar } from "@/components/ui/calendar";
 import { UserStore } from "@/store/users/userStore";
 import {
@@ -705,9 +705,11 @@ export default function CommercialPropertyForm() {
               </SelectTrigger>
               <SelectContent>
                 {users.map((user) => (
-                  <SelectItem key={user.id} value={user.full_name}>
-                    {user.full_name}
-                  </SelectItem>
+                  user.id !== null && (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.full_name}
+                    </SelectItem>
+                  )
                 ))}
               </SelectContent>
             </Select>

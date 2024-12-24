@@ -26,6 +26,8 @@ interface StoreState {
   deleteDistrict: (districtId: number) => Promise<void>;
   updateMetro: (metroId: number, name: string) => Promise<void>;
   upadteDistrict: (districtId: number, name: string) => Promise<void>;
+  createMetro: (name: string) => Promise<void>;
+  createDistrict: (name: string) => Promise<void>;
 }
 
 const usePropertyStore = create<StoreState>((set) => ({
@@ -85,9 +87,9 @@ const usePropertyStore = create<StoreState>((set) => ({
         metros: state.metros.filter((metro) => metro.id !== metroId),
         loading: false,
       }));
-    } catch{
-      // Revert on error
-      set({ error: "Failed to delete metro station", loading: false });
+    } catch (error) {
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to delete metro station" });
+      throw error;
     }
   },
   updateMetro: async (metroId: number, name: string) => {
@@ -100,9 +102,9 @@ const usePropertyStore = create<StoreState>((set) => ({
         ),
         loading: false,
       }));
-    } catch{
-      // Revert on error
-      set({ error: "Failed to update metro station", loading: false });
+    } catch (error) {
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to update metro station" });
+      throw error;
     }
   },
   deleteDistrict: async (districtId: number) => {
@@ -113,24 +115,72 @@ const usePropertyStore = create<StoreState>((set) => ({
         districts: state.districts.filter((district) => district.id !== districtId),
         loading: false,
       }));
-    } catch {
-      // Revert on error
-      set({ error: "Failed to delete district", loading: false });
+    } catch (error) {
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to delete district" });
+      throw error;
     }
   },
   upadteDistrict: async (districtId: number, name: string) => {
     set({ loading: true, error: null });
     try {
-      await api.patch(`/district/${districtId}/`, { name });
+      await api.put(`/district/${districtId}/`, { name });
       set((state) => ({
         districts: state.districts.map((district) =>
           district.id === districtId ? { ...district, name } : district
         ),
         loading: false,
       }));
-    } catch{
-      // Revert on error
-      set({ error: "Failed to update district", loading: false });
+    } catch (error) {
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to update district" });
+      throw error;
+    }
+  },
+  createMetro: async (name: string) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post<Metro>("/metro/", { name });
+      set((state) => ({
+        metros: [...state.metros, response.data],
+        loading: false,
+      }));
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+      set({
+        error: apiError.response?.data?.detail || apiError.message || "Failed to create metro",
+        loading: false,
+      });
+      throw error;
+    }
+  },
+  createDistrict: async (name: string) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post<District>("/district/", { name });
+      set((state) => ({
+        districts: [...state.districts, response.data],
+        loading: false,
+      }));
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: {
+          data?: {
+            detail?: string;
+          };
+        };
+      };
+      set({
+        error: apiError.response?.data?.detail || apiError.message || "Failed to create district",
+        loading: false,
+      });
+      throw error;
     }
   }
 }));

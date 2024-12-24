@@ -22,10 +22,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X } from 'lucide-react';
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from 'lucide-react';
 import { Calendar } from "@/components/ui/calendar";
 import { UserStore } from "@/store/users/userStore";
 import {
@@ -666,7 +666,7 @@ export default function LandPropertyForm() {
       </div>
 
       <div>
-        <Label htmlFor="agent_percent">Процент агента</Label>
+        <Label htmlFor="agent_percent">Процент аген��а</Label>
         <Input
           id="agent_percent"
           type="number"
@@ -696,9 +696,11 @@ export default function LandPropertyForm() {
               </SelectTrigger>
               <SelectContent>
                 {users.map((user) => (
-                  <SelectItem key={user.id} value={user.full_name}>
-                    {user.full_name}
-                  </SelectItem>
+                  user.id && (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.full_name}
+                    </SelectItem>
+                  )
                 ))}
               </SelectContent>
             </Select>
@@ -904,3 +906,4 @@ export default function LandPropertyForm() {
     </form>
   );
 }
+

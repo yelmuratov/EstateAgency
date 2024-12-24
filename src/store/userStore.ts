@@ -17,6 +17,7 @@ interface UserState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  users: User[] | null;
   setUser: (user: User) => void;
   logoutUser: () => void;
 }
@@ -25,6 +26,7 @@ export const UserStore = create<UserState>((set) => ({
   user: null,
   loading: true, // Set loading to true initially
   error: null,
+  users: null,
   
   setUser: (user) => set({ user, loading: false }), // Set loading to false when user is set
 
@@ -36,6 +38,15 @@ export const UserStore = create<UserState>((set) => ({
     } catch (error) {
       set({ loading: false, error: error instanceof Error ? error.message : "Logout failed." });
       throw error; // Re-throw for handling in the calling function
+    }
+  },
+  fetchUsers: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get<User[]>("/users/");
+      set({ users: response.data, loading: false });
+    } catch (error) {
+      set({ loading: false, error: error instanceof Error ? error.message : "Failed to fetch users" });
     }
   },
 }));

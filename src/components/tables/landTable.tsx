@@ -177,7 +177,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
       });
       setModalOpen(true);
     } catch (error) {
-      console.error("Invalid URL:", error);
+      console.log("Invalid URL:", error);
     }
   };
 

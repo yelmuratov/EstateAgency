@@ -37,6 +37,15 @@ import EditDistrictForm from "@/components/forms/edit-district-form";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 import Spinner from "@/components/local-components/spinner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface District {
   id: number;
@@ -44,15 +53,20 @@ interface District {
 }
 
 export default function DistrictsTable() {
-  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(
-    null
-  );
+  const [selectedDistrict, setSelectedDistrict] = useState<District | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const { districts, fetchDistricts, deleteDistrict } = usePropertyStore();
+  const { districts, fetchDistricts, deleteDistrict, upadteDistrict } = usePropertyStore();
   const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
   const router = useRouter();
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [districtsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+
+  useEffect(() => {
+    fetchDistricts();
+  }, [fetchDistricts]);
 
   useEffect(() => {
     if (!isSuperUserLoading && !isSuperUser) {
@@ -61,8 +75,8 @@ export default function DistrictsTable() {
   }, [isSuperUser, isSuperUserLoading, router]);
 
   useEffect(() => {
-    fetchDistricts();
-  }, [fetchDistricts]);
+    setTotalPages(Math.ceil(districts.length / districtsPerPage));
+  }, [districts, districtsPerPage]);
 
   if (isSuperUserLoading) {
     return <Spinner theme="dark" />;
@@ -81,13 +95,91 @@ export default function DistrictsTable() {
       });
       router.refresh();
     } catch {
-      // Revert on error
       toast({
         title: "Ошибка",
         description: "Не удалось удалить район",
         variant: "destructive",
       });
     }
+  };
+
+  const handleEdit = async (districtId: number, name: string) => {
+    try {
+      await upadteDistrict(districtId, name);
+      toast({
+        title: "Успех",
+        description: "Район успешно обновлен",
+      });
+      setIsEditOpen(false);
+      setSelectedDistrict(null);
+      router.refresh();
+    } catch {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить район",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const indexOfLastDistrict = currentPage * districtsPerPage;
+  const indexOfFirstDistrict = indexOfLastDistrict - districtsPerPage;
+  const currentDistricts = districts.slice(indexOfFirstDistrict, indexOfLastDistrict);
+
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+    const ellipsis = <PaginationItem key="ellipsis"><PaginationEllipsis /></PaginationItem>;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink onClick={() => paginate(i)} isActive={currentPage === i}>
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink onClick={() => paginate(1)} isActive={currentPage === 1}>
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      if (currentPage > 3) {
+        items.push(ellipsis);
+      }
+
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(currentPage + 1, totalPages - 1); i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink onClick={() => paginate(i)} isActive={currentPage === i}>
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(ellipsis);
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink onClick={() => paginate(totalPages)} isActive={currentPage === totalPages}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
   };
 
   return (
@@ -107,7 +199,7 @@ export default function DistrictsTable() {
               <DialogHeader>
                 <DialogTitle>Создать новый район</DialogTitle>
               </DialogHeader>
-              <CreateDistrictForm />
+              <CreateDistrictForm setIsCreateOpen={setIsCreateOpen} />
             </DialogContent>
           </Dialog>
         </div>
@@ -121,7 +213,7 @@ export default function DistrictsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {districts.map((district) => (
+              {currentDistricts.map((district) => (
                 <TableRow key={district.id}>
                   <TableCell>{district.name}</TableCell>
                   <TableCell className="text-right">
@@ -145,7 +237,12 @@ export default function DistrictsTable() {
                         <DialogHeader>
                           <DialogTitle>Редактировать район</DialogTitle>
                         </DialogHeader>
-                        {selectedDistrict && <EditDistrictForm />}
+                        {selectedDistrict && (
+                          <EditDistrictForm
+                            district={selectedDistrict}
+                            onEdit={handleEdit}
+                          />
+                        )}
                       </DialogContent>
                     </Dialog>
 
@@ -179,8 +276,30 @@ export default function DistrictsTable() {
               ))}
             </TableBody>
           </Table>
+          <div className="flex justify-center mt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  {currentPage > 1 && (
+                    <PaginationPrevious 
+                      onClick={() => paginate(currentPage - 1)}
+                    />
+                  )}
+                </PaginationItem>
+                {renderPaginationItems()}
+                <PaginationItem>
+                  {currentPage < totalPages && (
+                    <PaginationNext 
+                      onClick={() => paginate(currentPage + 1)}
+                    />
+                  )}
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
+

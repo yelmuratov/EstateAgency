@@ -42,10 +42,13 @@ interface AuthResponse {
   token: string;
 }
 
-export const getUser = async (): Promise<AuthResponse | null> => {
+interface ExtendedAuthResponse extends AuthResponse {
+  key: number;
+}
+export const getUser = async (): Promise<ExtendedAuthResponse | null> => {
   try {
     const response = await api.get<AuthResponse>('/auth/me');
-    return response.data;
+    return { ...response.data, key: response.data.user.id };
   } catch (err) {
     const apiError = err as {
       response?: {
@@ -62,7 +65,7 @@ export const getUser = async (): Promise<AuthResponse | null> => {
       clearToken(); // Clear the token on unauthorized response
     }
 
-    console.error("Error fetching user:", apiError.message);
+    console.log("Error fetching user:", apiError.message);
     return null; // Return null in case of an error
   }
 };
