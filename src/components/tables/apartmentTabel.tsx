@@ -118,11 +118,12 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   });
   const [filterOpen, setFilterOpen] = useState(false);
   const [previewUrls] = useState<{ [key: string]: string }>({});
+  const [filteredApartments, setFilteredApartments] = useState<Apartment[]>([]);
+  const [searchResults, setSearchResults] = useState<Apartment[]>([]);
 
   const router = useRouter();
 
   const { apartments, error, filterApartments } = useApartmentStore();
-  const [filteredApartments, setFilteredApartments] = useState<Apartment[]>([]);
 
   useEffect(() => {
     localStorage.setItem("currentPageApartment", String(currentPage));
@@ -138,25 +139,23 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     } else {
       filterApartments({ action_type: "sale" });
     }
+  }, [type, filterApartments]);
 
+  useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.trim() !== "") {
-        useApartmentStore.getState().searchApartments(searchQuery);
+        const filtered = filteredApartments.filter(apartment =>
+          apartment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          apartment.crm_id.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setSearchResults(filtered);
+      } else {
+        setSearchResults(filteredApartments);
       }
     }, 300); // Debounced
 
     return () => clearTimeout(timer);
-  }, [searchQuery, type, filterApartments]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      if (type === "rent") {
-        filterApartments({ action_type: "rent" });
-      } else {
-        filterApartments({ action_type: "sale" });
-      }
-    }
-  }, [currentPage, itemsPerPage, type, filterApartments, searchQuery]);
+  }, [searchQuery, filteredApartments]);
 
   useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -254,7 +253,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   };
 
   const renderModalContent = () => {
-    const currentApartment = filteredApartments.find(apt => apt.id === expandedRow);
+    const currentApartment = searchResults.find(apt => apt.id === expandedRow);
     if (!currentApartment) return null;
     
     return (
@@ -347,8 +346,8 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                   Произошла ошибка: {error}
                 </td>
               </tr>
-            ) : Array.isArray(filteredApartments) && filteredApartments.length > 0 ? (
-              filteredApartments.map((apartment: Apartment, index: number) => (
+            ) : Array.isArray(searchResults) && searchResults.length > 0 ? (
+              searchResults.map((apartment: Apartment, index: number) => (
                 <React.Fragment key={apartment.id}>
                   <tr
                     className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
@@ -564,7 +563,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
 
       {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
-        {apartments.map((apartment: Apartment) => (
+        {searchResults.map((apartment: Apartment) => (
           <Card
             key={apartment.id}
             className="p-4 border dark:border-gray-700 bg-white dark:bg-gray-800"

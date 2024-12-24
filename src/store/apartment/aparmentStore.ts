@@ -54,6 +54,7 @@ interface ApartmentStore {
   searchError: string | null;
   searchLoading: boolean;
   filterError: string | null;
+  isSearching: boolean; // Add this flag
   fetchApartments: (page: number, limit: number) => Promise<void>;
   fetchApartmentById: (id: number) => Promise<Apartment | null>;
   hydrateApartments: (apartments: Apartment[], total: number) => void; // SSR Hydration
@@ -69,8 +70,12 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   searchError: null,
   searchLoading: false,
   filterError: null,
+  isSearching: false, // Initialize the flag
 
   fetchApartments: async (page: number, limit: number) => {
+    const { isSearching } = get();
+    if (isSearching) return; // Skip fetching if searching
+
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/apartment/?limit=${limit}&page=${page}`);
@@ -93,7 +98,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
     }
   },
   searchApartments: async (query: string) => {
-    set({ searchLoading: true, error: null });
+    set({ searchLoading: true, error: null, isSearching: true });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=apartment`);
       console.log(Array.isArray(response.data) ? response.data : []);
@@ -101,6 +106,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         apartments: Array.isArray(response.data) ? response.data : [], // Use `data` key
         total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
         searchLoading: false,
+        isSearching: false,
       });
     } catch (error) {
       const apiError = error as {
@@ -112,6 +118,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         searchError:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         searchLoading: false,
+        isSearching: false,
         apartments: [], // Reset to an empty array in case of error
       });
     }
