@@ -482,14 +482,6 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                             </div>
                             <div>
                               <div className="font-medium text-gray-500 dark:text-gray-400">
-                                Комнаты
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {apartment.rooms}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
                                 Ванная
                               </div>
                               <div className="text-gray-900 dark:text-gray-100">

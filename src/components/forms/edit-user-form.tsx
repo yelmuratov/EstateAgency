@@ -1,77 +1,126 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { useParams, useRouter } from "next/navigation"
-import { Loader2 } from 'lucide-react'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
-import { UserStore } from "@/store/users/userStore"
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { UserStore } from "@/store/users/userStore";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 
-interface UserFormData {
-    id: string | null;
-    full_name: string;
-    disabled: boolean;
-    created_at: string;
-    updated_at: string;
-    phone: string;
-    email: string;
-    hashed_password: string;
-    is_superuser: boolean;
+interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  is_superuser: boolean;
+  disabled: boolean;
+  created_at: string;
+  updated_at: string;
+  hashed_password: string;
 }
 
-export default function EditUserForm() {
-  const params = useParams();
-  const userId = params?.id as string;
-  const [isLoading, setIsLoading] = useState(false)
+interface EditUserFormProps {
+  user: User;
+  setIsEditOpen: (isOpen: boolean) => void;
+}
+
+interface ApiError {
+  response?: {
+    status: number;
+    data: {
+      detail: string;
+    };
+  };
+}
+
+export default function EditUserForm({
+  user,
+  setIsEditOpen,
+}: EditUserFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const {fetchUserById,updateUser} = UserStore();
+  const { updateUser } = UserStore();
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setError,
     formState: { errors },
-  } = useForm<UserFormData>()
+  } = useForm<User>();
 
   useEffect(() => {
-    try{
-        fetchUserById(userId)
-    }catch{
-      toast({
-        title: "Error",
-        description: "Failed to fetch user data",
-        variant: "destructive",
-      })
+    if (user) {
+      reset(user);
     }
-  }, [userId, reset, toast,fetchUserById])
+  }, [user, reset]);
 
-  const onSubmit = async (data: UserFormData) => {
+  const onSubmit = async (data: User) => {
     try {
-      setIsLoading(true)
-      await updateUser(userId,data)
+      setIsLoading(true);
+
+      // Create an object with only the changed fields
+      const changedFields = Object.keys(data).reduce((acc, key) => {
+        const k = key as keyof User;
+        if (data[k] !== user[k]) {
+          // Only include fields that we actually want to update
+          if (["full_name", "email", "phone", "is_superuser"].includes(k)) {
+            acc[k] = data[k] as string | boolean;
+          }
+        }
+        return acc;
+      }, {} as Record<string, string | boolean>);
+
+      // If no fields changed, show a message and return
+      if (Object.keys(changedFields).length === 0) {
+        toast({
+          title: "Без изменений",
+          description: "Поля не были изменены",
+        });
+        setIsEditOpen(false);
+        return;
+      }
+
+      // Only send changed fields to the API
+      await updateUser(user.id, changedFields);
 
       toast({
-        title: "Success",
-        description: "User updated successfully",
-        })
-        router.refresh()
-        router.push("/users")
-    } catch{
+        title: "Успех",
+        description: "Пользователь успешно обновлен",
+      });
+      router.refresh();
+      setIsEditOpen(false);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.response?.status === 400) {
+        if (apiError.response.data.detail === "Already exists user with this phone") {
+          setError("phone", {
+            type: "manual",
+            message: "Пользователь с таким номером телефона уже существует",
+          });
+        } else if (apiError.response.data.detail === "Already exists user with this email") {
+          setError("email", {
+            type: "manual",
+            message: "Пользователь с таким адресом электронной почты уже существует",
+          });
+        }
+      } else {
         toast({
-            title: "Error",
-            description: "Failed to update user",
-            variant: "destructive",
-        })
-        }
-        finally {
-            setIsLoading(false)
-        }
-  }
+          title: "Ошибка",
+          description: "Не удалось обновить пользователя",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -80,10 +129,10 @@ export default function EditUserForm() {
         <Input
           id="full_name"
           {...register("full_name", {
-            required: "Full name is required",
+            required: "Полное имя обязательно",
             minLength: {
               value: 2,
-              message: "Full name must be at least 2 characters",
+              message: "Полное имя должно быть не менее 2 символов",
             },
           })}
         />
@@ -98,10 +147,10 @@ export default function EditUserForm() {
           id="email"
           type="email"
           {...register("email", {
-            required: "Email is required",
+            required: "Email обязателен",
             pattern: {
               value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: "Invalid email address",
+              message: "Неверный адрес электронной почты",
             },
           })}
         />
@@ -115,10 +164,10 @@ export default function EditUserForm() {
         <Input
           id="phone"
           {...register("phone", {
-            required: "Phone number is required",
+            required: "Номер телефона обязателен",
             pattern: {
               value: /^\+?[1-9]\d{1,14}$/,
-              message: "Invalid phone number",
+              message: "Неверный номер телефона",
             },
           })}
         />
@@ -127,12 +176,21 @@ export default function EditUserForm() {
         )}
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="is_superuser"
-          {...register("is_superuser")}
-        />
-        <Label htmlFor="is_superuser">Super User</Label>
+      <div className="space-y-2">
+        <Label htmlFor="is_superuser">Суперпользователь</Label>
+        <Select
+          defaultValue={user.is_superuser ? "true" : "false"} // Set initial value from db
+          onValueChange={(value) => {
+        const isSuperuser = value === "true";
+        reset({ ...watch(), is_superuser: isSuperuser });
+          }}
+        >
+          <SelectTrigger id="is_superuser" />
+          <SelectContent>
+        <SelectItem value="true">Да</SelectItem>
+        <SelectItem value="false">Нет</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
@@ -146,6 +204,5 @@ export default function EditUserForm() {
         )}
       </Button>
     </form>
-  )
+  );
 }
-

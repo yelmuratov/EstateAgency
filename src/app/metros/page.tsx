@@ -35,6 +35,8 @@ import EditMetroForm from "@/components/forms/edit-metro-form";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useRouter } from "next/navigation";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import Spinner from "@/components/local-components/spinner";
 
 interface Metro {
   name: string;
@@ -48,12 +50,27 @@ export default function MetrosTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { fetchMetros, metros, deleteMetro } = usePropertyStore();
+  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchMetros();
   }, [fetchMetros]);
+
+  useEffect(() => {
+    if (!isSuperUserLoading && !isSuperUser) {
+      router.push('/');
+    }
+  }, [isSuperUser, isSuperUserLoading, router]);
+
+  if (isSuperUserLoading) {
+    return <Spinner theme="dark" />;
+  }
+
+  if (!isSuperUser) {
+    return null;
+  }
 
   const handleDelete = async (metroId: number) => {
     try {

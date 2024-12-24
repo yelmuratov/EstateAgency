@@ -3,7 +3,7 @@ import { getUser } from '@/services/authService';
 
 export const useIsSuperUser = (): [boolean | null, boolean] => {
   const [isSuperUser, setIsSuperUser] = useState<boolean | null>(null);
-  const [isSUperUserloading, setIsSuperUserLoading] = useState<boolean>(true);
+  const [isSuperUserLoading, setIsSuperUserLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const checkSuperUser = async () => {
@@ -15,6 +15,6 @@ export const useIsSuperUser = (): [boolean | null, boolean] => {
     checkSuperUser();
   }, []);
 
-  return [isSuperUser, isSUperUserloading];
+  return [isSuperUser, isSuperUserLoading];
 };
 

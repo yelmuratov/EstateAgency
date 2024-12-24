@@ -36,6 +36,7 @@ import CreateDistrictForm from "@/components/forms/create-district-form";
 import EditDistrictForm from "@/components/forms/edit-district-form";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import Spinner from "@/components/local-components/spinner";
 
 interface District {
   id: number;
@@ -49,19 +50,27 @@ export default function DistrictsTable() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { districts, fetchDistricts, deleteDistrict } = usePropertyStore();
+  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
   const router = useRouter();
   const { toast } = useToast();
-  const isSuperUser = useIsSuperUser();
 
   useEffect(() => {
-    if (!isSuperUser) {
-      router.push("/404");
+    if (!isSuperUserLoading && !isSuperUser) {
+      router.push("/");
     }
-  }, [isSuperUser, router]);
+  }, [isSuperUser, isSuperUserLoading, router]);
 
   useEffect(() => {
     fetchDistricts();
   }, [fetchDistricts]);
+
+  if (isSuperUserLoading) {
+    return <Spinner theme="dark" />;
+  }
+
+  if (!isSuperUser) {
+    return null;
+  }
 
   const handleDelete = async (districtId: number) => {
     try {

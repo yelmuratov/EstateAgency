@@ -14,16 +14,24 @@ interface User {
     is_superuser: boolean;
 }
 
-// all users state
+interface IUserCreate {
+    full_name: string;
+    phone: string;
+    email: string;
+    password?: string;
+    is_superuser: boolean;
+}
+
 interface UserState {
     users: User[];
     user: User | null;
     loading: boolean;
     error: string | null;
+    createUser: (data: IUserCreate) => void;
     setUsers: (users: User[]) => void;
     fetchUsers: () => void;
     fetchUserById: (id: string) => void;
-    updateUser: (id: string, data: User) => void;
+    updateUser: (id: string, data: Partial<User>) => void;
     deleteUser: (id: string) => void;
 }
 
@@ -55,11 +63,14 @@ export const UserStore = create<UserState>((set) => ({
             throw error;
         }
     },
-    updateUser: async (id: string, data: User) => {
+    updateUser: async (id: string, data: Partial<User>) => {
         try {
             set({loading: true});
             await api.put(`/user/${id}`, data);
-            set({loading: false});
+            set((state) => ({
+                users: state.users.map(user => user.id === id ? { ...user, ...data } : user),
+                loading: false
+            }));
         } catch (error) {
             set({loading: false, error: error instanceof Error ? error.message : "Failed to update user."});
             throw error;
@@ -69,10 +80,29 @@ export const UserStore = create<UserState>((set) => ({
         try {
             set({loading: true});
             await api.delete(`/user/${id}`);
-            set({loading: false});
+            set((state) => ({
+                users: state.users.filter(user => user.id !== id),
+                loading: false
+            }));
         } catch (error) {
             set({loading: false, error: error instanceof Error ? error.message : "Failed to delete user."});
             throw error;
         }
-    }
+    },
+    createUser: async (data: IUserCreate) => {
+        try {
+            set({loading: true});
+            // Map password to hashed_password
+            const payload = { ...data, hashed_password: data.password };
+            delete payload.password;
+            const response = await api.post('/user', payload);
+            set((state) => ({
+                users: [...state.users, response.data],
+                loading: false
+            }));
+        } catch (error) {
+            set({loading: false, error: error instanceof Error ? error.message : "Failed to create user."});
+            throw error;
+        }
+    },    
 }));

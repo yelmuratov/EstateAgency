@@ -25,7 +25,7 @@ const Header: React.FC = () => {
   const [objectCount, setObjectCount] = useState<number | null>(null);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logoutUser, loading } = UserStore();
+  const { user, logoutUser } = UserStore();
   const { clearToken, token } = useAuthStore();
   const isAddPropertyPage = pathname === "/add-property";
   const [isSuperUser] = useIsSuperUser();
@@ -85,10 +85,6 @@ const Header: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  if (loading) {
-    return <Spinner theme="dark" />;
-  }
 
   return (
     <header className="bg-background border-b border-border">

@@ -7,56 +7,92 @@ import { Loader2 } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import api from "@/lib/api"
+import { UserStore } from "@/store/users/userStore"
+import { AxiosError } from "axios";
+
+function isAxiosError(error: unknown): error is AxiosError {
+  return (error as AxiosError).isAxiosError !== undefined;
+}
 
 interface UserFormData {
   phone: string
   email: string
   full_name: string
   password: string
-  is_superuser: boolean
+  password_confirmation: string
 }
 
-export default function CreateUserForm() {
+interface CreateUserFormProps {
+  setIsCreateOpen: (isOpen: boolean) => void;
+}
+
+interface ErrorResponse {
+  detail: string; // Adjust this based on the actual shape of the error response
+}
+
+
+export default function CreateUserForm({ setIsCreateOpen }: CreateUserFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null);
   const router = useRouter()
   const { toast } = useToast()
+  const { createUser } = UserStore();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<UserFormData>()
+  } = useForm<UserFormData>({
+    defaultValues: {
+      phone: "+998",
+    },
+  })
 
   const onSubmit = async (data: UserFormData) => {
-    try {
-      setIsLoading(true)
-      await api.post("/users/", {
-        phone: data.phone,
-        email: data.email,
-        full_name: data.full_name,
-        hashed_password: data.password,
-        is_superuser: data.is_superuser,
-      })
-
-      toast({
-        title: "Успех",
-        description: "Пользователь успешно создан",
-      })
-      router.refresh()
-      router.push("/users")
-    } catch{
-      toast({
-        title: "Ошибка",
-        description: "Не удалось создать пользователя",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+    if (data.password !== data.password_confirmation) {
+      setServerError("Пароли не совпадают");
+      return;
     }
-  }
+    try {
+        setIsLoading(true);
+        setServerError(null); // Reset server error
+        const payload = { ...data, is_superuser: false };
+        await createUser(payload);
+
+        toast({
+            title: "Успех",
+            description: "Пользователь успешно создан",
+        });
+        setIsCreateOpen(false);
+        router.refresh();
+        router.push("/users");
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response && error.response.data) {
+        const responseData = error.response.data as ErrorResponse; // Assert the type here
+        const errorMessage = responseData.detail;
+    
+        if (errorMessage.includes("User phone or email already exists")) {
+          setServerError("Телефон или электронная почта уже существуют");
+        } else if (errorMessage.includes("Phone number is too long or too short")) {
+          setServerError("Номер телефона слишком длинный или слишком короткий");
+        } else {
+          setServerError(errorMessage);
+        }
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать пользователя",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }    
+  
+  
+};
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -106,6 +142,7 @@ export default function CreateUserForm() {
               message: "Неверный номер телефона",
             },
           })}
+          defaultValue="+998"
         />
         {errors.phone && (
           <p className="text-sm text-red-500">{errors.phone.message}</p>
@@ -130,12 +167,22 @@ export default function CreateUserForm() {
         )}
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="is_superuser"
-          {...register("is_superuser")}
+      <div className="space-y-2">
+        <Label htmlFor="password_confirmation">Подтверждение пароля</Label>
+        <Input
+          id="password_confirmation"
+          type="password"
+          {...register("password_confirmation", {
+            required: "Подтверждение пароля обязательно",
+            minLength: {
+              value: 8,
+              message: "Пароль должен быть не менее 8 символов",
+            },
+          })}
         />
-        <Label htmlFor="is_superuser">Суперпользователь</Label>
+        {errors.password_confirmation && (
+          <p className="text-sm text-red-500">{errors.password_confirmation.message}</p>
+        )}
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
@@ -148,6 +195,9 @@ export default function CreateUserForm() {
           "Создать пользователя"
         )}
       </Button>
+      {serverError && (
+        <p className="text-sm text-red-500 mt-2">{serverError}</p>
+      )}
     </form>
   )
 }
