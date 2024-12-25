@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Route } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -28,9 +29,10 @@ import {
 import { sendResetCode, verifyResetCode, resetPassword } from '../actions/forgot-password'
 
 export default function ForgotPasswordPage() {
-  const { step, email, code, setStep, setEmail, setCode } = useForgotPasswordStore()
+  const { step, email, resetPassword, verifyCode, setCode,sendEmail } = useForgotPasswordStore()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const router = useRouter();
 
   const emailForm = useForm<EmailSchema>({
     resolver: zodResolver(emailSchema),
@@ -45,51 +47,31 @@ export default function ForgotPasswordPage() {
   })
 
   const onSubmitEmail = async (data: EmailSchema) => {
-    setError(null)
-    try {
-      const result = await sendResetCode(data)
-      if (result.success) {
-        setEmail(data.email)
-        setStep('code')
-        setSuccess('Reset code sent to your email')
-      } else {
-        setError(result.error ?? 'An unexpected error occurred')
-      }
-    } catch (error) {
+    try{
+      await sendEmail(data.email)
+    }catch(error){
+      console.error('onSubmitEmail error:', error);
       setError('An unexpected error occurred')
     }
   }
 
   const onSubmitCode = async (data: CodeSchema) => {
-    setError(null)
-    try {
-      const result = await verifyResetCode(email, data)
-      if (result.success) {
-        setCode(data.code)
-        setStep('password')
-        setSuccess('Code verified successfully')
-      } else {
-        setError(result.error ?? 'An unexpected error occurred')
-      }
-    } catch (error) {
+    try{
+      await verifyCode(data.code)
+    }catch(error){
+      console.error('onSubmitCode error:', error);
       setError('An unexpected error occurred')
     }
   }
 
   const onSubmitPassword = async (data: PasswordSchema) => {
-    setError(null)
-    try {
-      const result = await resetPassword(email, code, data)
-      if (result.success) {
-        setSuccess('Password reset successfully')
-        // Redirect to login page after a short delay
-        setTimeout(() => {
-          window.location.href = '/login'
-        }, 2000)
-      } else {
-        setError(result.error ?? 'An unexpected error occurred')
-      }
-    } catch (error) {
+    try{
+      await resetPassword(data);
+      setError(null);
+      setSuccess('Password reset successfully');
+      router.push('/login');
+    }catch{
+      console.error('onSubmitPassword error:', error);
       setError('An unexpected error occurred')
     }
   }
