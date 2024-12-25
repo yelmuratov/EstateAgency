@@ -20,7 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
-import { ImageSlider } from "@/components/ui/improved-image-slider";
+import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
 
 interface Media {
   id: number;
@@ -208,7 +208,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     if (!currentLand) return null;
 
     return (
-      <ImageSlider
+      <ImprovedImageSlider
         isOpen={sliderOpen}
         onClose={() => setSliderOpen(false)}
         media={currentLand.media}

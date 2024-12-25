@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/pagination";
 import Spinner from "@/components/local-components/spinner";
 import { CommercialFilter } from "../commercial-filter";
-import { ImageSlider } from "@/components/ui/improved-image-slider";
+import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
 
 const statusConfig = {
   free: {
@@ -177,7 +177,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     if (!currentCommercial) return null;
 
     return (
-      <ImageSlider
+      <ImprovedImageSlider
         isOpen={sliderOpen}
         onClose={() => setSliderOpen(false)}
         media={currentCommercial.media || []}
