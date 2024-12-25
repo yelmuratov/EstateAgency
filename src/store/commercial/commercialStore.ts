@@ -52,6 +52,7 @@ interface CommercialStore {
   fetchCommercialById: (id: number) => Promise<Commercial | null>;
   searchCommercial: (search: string) => Promise<void>;
   filterCommercials: (filters: Record<string, string>, type: string) => Promise<void>;
+  deleteCommercial: (id: number) => Promise<void>;
 }
 
 export const useCommercialStore = create<CommercialStore>((set) => ({
@@ -133,5 +134,25 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         commercials: [],
       });
     }
-  }
+  },
+  deleteCommercial: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/commercial/${id}`);
+      set((state) => ({
+        commercials: state.commercials.filter((commercial) => commercial.id !== id),
+        loading: false,
+      }));
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to delete commercial",
+        loading: false,
+      });
+    }
+  },
 }));

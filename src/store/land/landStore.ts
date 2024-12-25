@@ -53,6 +53,7 @@ interface LandStore {
   searchLoading: boolean;
   filterLands: (filters: Record<string, string>) => Promise<void>;
   filterError: string | null;
+  deleteLand: (id: number) => Promise<void>;
 }
 
 export const useLandStore = create<LandStore>((set) => ({
@@ -163,5 +164,25 @@ export const useLandStore = create<LandStore>((set) => ({
         lands: [], // Reset to an empty array in case of error
       });
     }
-  }
+  },
+  deleteLand: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/land/${id}`);
+      set((state) => ({
+        lands: state.lands.filter((land) => land.id !== id),
+        loading: false,
+      }));
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to delete land",
+        loading: false,
+      });
+    }
+  },
 }));

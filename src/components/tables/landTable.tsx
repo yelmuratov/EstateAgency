@@ -21,6 +21,19 @@ import {
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
 import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Media {
   id: number;
@@ -109,6 +122,10 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
   const [filteredLands, setFilteredLands] = useState<LandData[]>([]);
   const [sliderOpen, setSliderOpen] = useState(false);
   const [initialSlideIndex, setInitialSlideIndex] = useState(0);
+  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
+  const { deleteLand } = useLandStore();
+  const { toast } = useToast();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const router = useRouter();
   const { lands, loading, error, filterLands } = useLandStore() as {
@@ -172,6 +189,24 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+    try {
+      await deleteLand(deleteId);
+      toast({
+        title: "Участок удален",
+        description: "Участок успешно удален",
+      });
+      setDeleteId(null);
+    } catch {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить участок",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderMediaGallery = (media: Media[]) => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
@@ -223,6 +258,10 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
 
   if (error) {
     return <div>Error: {error}</div>;
+  }
+
+  if (isSuperUserLoading) {
+    return <Spinner theme="dark" />;
   }
 
   return (
@@ -400,6 +439,36 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
                       >
                         Редактировать
                       </Button>
+                      {isSuperUser && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteId(land.id);
+                              }}
+                              variant="destructive"
+                              className="ml-2"
+                            >
+                              Удалить
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить участок</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Вы уверены, что хотите удалить этот участок? Это действие нельзя отменить.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                Удалить
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </td>
                   </tr>
                   {expandedRow === land.id && (

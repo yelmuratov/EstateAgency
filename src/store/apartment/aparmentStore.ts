@@ -62,6 +62,7 @@ interface ApartmentStore {
   hydrateApartments: (apartments: Apartment[], total: number) => void; // SSR Hydration
   searchApartments: (query: string) => Promise<void>;
   filterApartments: (filters: Record<string, string>) => Promise<void>;
+  deleteApartment: (id: number) => Promise<void>;
 }
 
 export const useApartmentStore = create<ApartmentStore>((set, get) => ({
@@ -182,5 +183,27 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         filteredApartments: [], // Reset to an empty array in case of error
       });
     }
-  }
+  },
+  deleteApartment: async (id: number) => {
+    set({ loading: true, error: null });
+    try {
+      await api.delete(`/apartment/${id}`);
+      set((state) => ({
+        apartments: state.apartments.filter((apartment) => apartment.id !== id),
+        filteredApartments: state.filteredApartments.filter((apartment) => apartment.id !== id),
+        searchedApartments: state.searchedApartments.filter((apartment) => apartment.id !== id),
+        loading: false,
+      }));
+    } catch (error) {
+      const apiError = error as {
+        message?: string;
+        response?: { data?: { detail?: string } };
+      };
+      set({
+        error:
+          apiError.response?.data?.detail || apiError.message || "Failed to delete apartment",
+        loading: false,
+      });
+    }
+  },
 }));

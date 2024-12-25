@@ -7,9 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter, Trash2 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { PropertyFilter } from "@/components/property-filter";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import {
   Pagination,
@@ -121,8 +134,9 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const [localFilteredApartments, setLocalFilteredApartments] = useState<Apartment[]>([]);
 
   const router = useRouter();
+  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
 
-  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments } = useApartmentStore();
+  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment } = useApartmentStore();
 
   useEffect(() => {
     localStorage.setItem("currentPageApartment", String(currentPage));
@@ -151,8 +165,18 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   useEffect(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const source = searchedApartments.length > 0 ? searchedApartments : filteredApartments.length > 0 ? filteredApartments : apartments;
+    const source = searchedApartments.length > 0 
+      ? searchedApartments 
+      : filteredApartments.length > 0 
+      ? filteredApartments 
+      : apartments;
+    
     setLocalFilteredApartments(source.slice(startIndex, endIndex));
+    // Reset current page if we switch to a different data source and current page is out of bounds
+    const maxPage = Math.ceil(source.length / itemsPerPage);
+    if (currentPage > maxPage) {
+      setCurrentPage(1);
+    }
   }, [apartments, filteredApartments, searchedApartments, currentPage, itemsPerPage]);
 
   useEffect(() => {
@@ -258,12 +282,29 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     );
   };
 
+  const handleDelete = async (apartmentId: number) => {
+    try {
+      await deleteApartment(apartmentId);
+      toast({
+        title: "Квартира удалена",
+        description: "Квартира успешно удалена",
+      });
+    } catch {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить квартиру",
+        variant: "destructive",
+      });
+    }
+  };
 
-  if (error) {
-    return (
-      <div className="text-center text-red-500 dark:text-red-400">{error}</div>
-    );
-  }
+  const totalItems = searchedApartments.length > 0 
+    ? searchedApartments.length 
+    : filteredApartments.length > 0 
+    ? filteredApartments.length 
+    : apartments.length;
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   return (
     <div className="space-y-4">
@@ -400,15 +441,45 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                       {apartment.square_area} м²
                     </td>
                     <td className="p-2">
-                      <Button
+                        <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           router.push(`/edit-apartment/${apartment.id}`);
                         }}
                         variant="default"
-                      >
+                        >
                         Редактировать
-                      </Button>
+                        </Button>
+                        {isSuperUser && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                          <Button
+                            onClick={(e) => e.stopPropagation()}
+                            variant="destructive"
+                            className="ml-2"
+                          >
+                            Удалить
+                          </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить квартиру</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Вы уверены, что хотите удалить эту квартиру? Это действие нельзя отменить.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(apartment.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Удалить
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </td>
                   </tr>
                   {expandedRow === apartment.id && (
@@ -677,12 +748,12 @@ export default function PropertyTable({ type }: PropertyTableProps) {
             </PaginationItem>
           )}
 
-          {Array.from({ length: Math.ceil(apartments.length / itemsPerPage) })
+          {Array.from({ length: totalPages })
             .map((_, i) => i + 1)
             .filter((page) => {
               return (
                 page === 1 ||
-                page === Math.ceil(apartments.length / itemsPerPage) ||
+                page === totalPages ||
                 Math.abs(page - currentPage) <= 2
               );
             })
@@ -703,7 +774,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                 </PaginationItem>
               </React.Fragment>
             ))}
-          {currentPage < Math.ceil(apartments.length / itemsPerPage) && (
+          {currentPage < totalPages && (
             <PaginationItem>
               <PaginationNext
                 onClick={() => handlePageChange(currentPage + 1)}

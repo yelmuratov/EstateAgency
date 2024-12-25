@@ -99,6 +99,17 @@ export default function LoginForm() {
               {errors.password?.message && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex justify-end">
+              <Button
+                variant="link"
+                className="px-0 font-normal text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                onClick={() => router.push('/forgot-password')}
+              >
+                Forgot password?
+              </Button>
+            </div>
+
             {/* Error Message */}
             {error && (
               <div className="bg-red-50 dark:bg-red-900 text-red-600 dark:text-red-200 px-4 py-2 rounded-md flex items-center gap-2">
@@ -123,3 +134,4 @@ export default function LoginForm() {
     </div>
   );
 }
+

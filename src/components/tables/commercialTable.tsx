@@ -21,6 +21,19 @@ import {
 import Spinner from "@/components/local-components/spinner";
 import { CommercialFilter } from "../commercial-filter";
 import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const statusConfig = {
   free: {
@@ -82,7 +95,11 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sliderOpen, setSliderOpen] = useState(false);
   const [initialSlideIndex, setInitialSlideIndex] = useState(0);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const router = useRouter();
+  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
+  const { deleteCommercial } = useCommercialStore();
+  const { toast } = useToast();
 
   useEffect(() => {
     localStorage.setItem("currentPageCommercial", String(currentPage));
@@ -167,6 +184,10 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     return <div>Error: {error}</div>;
   }
 
+  if (isSuperUserLoading) {
+    return <Spinner theme="dark" />;
+  }
+
   const paginatedCommercials = commercials.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -184,6 +205,24 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
         initialIndex={initialSlideIndex}
       />
     );
+  };
+
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+    try {
+      await deleteCommercial(deleteId);
+      toast({
+        title: "Коммерческая недвижимость удалена",
+        description: "Коммерческая недвижимость успешно удалена",
+      });
+      setDeleteId(null);
+    } catch {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить коммерческую недвижимость",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -326,6 +365,36 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
                       >
                         Редактировать
                       </Button>
+                      {isSuperUser && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteId(commercial.id);
+                              }}
+                              variant="destructive"
+                              className="ml-2"
+                            >
+                              Удалить
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить коммерческую недвижимость</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Вы уверены, что хотите удалить эту коммерческую недвижимость? Это действие нельзя отменить.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                Удалить
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </td>
                   </tr>
                   {expandedRow === commercial.id && (
