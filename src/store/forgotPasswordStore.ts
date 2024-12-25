@@ -1,14 +1,6 @@
 import { create } from 'zustand'
 import api from '@/lib/api'
 import { AxiosError } from 'axios'
-import {
-  emailSchema,
-  codeSchema,
-  passwordSchema,
-  type EmailSchema,
-  type CodeSchema,
-  type PasswordSchema,
-} from '@/lib/forgot-password'
 
 type ForgotPasswordStep = 'email' | 'code' | 'password'
 
@@ -22,7 +14,8 @@ interface ForgotPasswordStore {
   reset: () => void,
   sendEmail: (email:string) => void,
   verifyCode: (code:string) => void,
-  resetPassword: (password:PasswordSchema) => void,
+  resetPassword: (password:string) => void,
+  resendCode: () => void;
 }
 
 export const useForgotPasswordStore = create<ForgotPasswordStore>((set) => ({
@@ -68,11 +61,29 @@ export const useForgotPasswordStore = create<ForgotPasswordStore>((set) => ({
       }
     }
   },
-  resetPassword: async (password: PasswordSchema) => {
+  resetPassword: async (password: string) => {
     try {
       const email = useForgotPasswordStore.getState().email;
-      await api.post(`/auth/forgot_password/?email=${email}&password=${password}`);
+      await api.post(`/auth/forgot_password/?email=${email}&new_password=${password}`);
       set({ step: 'email', email: '', code: '' });
+      return null;
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response) {
+        const apiError = error.response.data as { detail?: string };
+        if (apiError.detail) {
+          return apiError.detail; // Return the error detail
+        } else {
+          return 'An unexpected error occurred. Please try again.';
+        }
+      } else {
+        return 'An unknown error occurred. Please try again.';
+      }
+    }
+  },
+  resendCode: async () => {
+    try {
+      const email = useForgotPasswordStore.getState().email;
+      await api.post(`/auth/forgot_password/?email=${email}`);
       return null;
     } catch (error: unknown) {
       if (error instanceof AxiosError && error.response) {

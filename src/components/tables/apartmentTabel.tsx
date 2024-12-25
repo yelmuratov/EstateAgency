@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Search, Filter, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { PropertyFilter } from "@/components/property-filter";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
@@ -134,7 +134,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const [localFilteredApartments, setLocalFilteredApartments] = useState<Apartment[]>([]);
 
   const router = useRouter();
-  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
+  const [isSuperUser] = useIsSuperUser();
 
   const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment } = useApartmentStore();
 

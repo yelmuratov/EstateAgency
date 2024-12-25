@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Route } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -26,13 +25,11 @@ import {
   type CodeSchema,
   type PasswordSchema,
 } from '@/lib/forgot-password'
-import { sendResetCode, verifyResetCode, resetPassword } from '../actions/forgot-password'
 
 export default function ForgotPasswordPage() {
-  const { step, email, resetPassword, verifyCode, setCode,sendEmail } = useForgotPasswordStore()
+  const { step, resetPassword, verifyCode, sendEmail, resendCode: resendCodeFromStore } = useForgotPasswordStore()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const router = useRouter();
 
   const emailForm = useForm<EmailSchema>({
     resolver: zodResolver(emailSchema),
@@ -47,58 +44,56 @@ export default function ForgotPasswordPage() {
   })
 
   const onSubmitEmail = async (data: EmailSchema) => {
-    try{
+    try {
       await sendEmail(data.email)
-    }catch(error){
+    } catch (error) {
       console.error('onSubmitEmail error:', error);
-      setError('An unexpected error occurred')
+      setError('Произошла непредвиденная ошибка')
     }
   }
 
   const onSubmitCode = async (data: CodeSchema) => {
-    try{
+    try {
       await verifyCode(data.code)
-    }catch(error){
+    } catch (error) {
       console.error('onSubmitCode error:', error);
-      setError('An unexpected error occurred')
+      setError('Произошла непредвиденная ошибка')
     }
   }
 
   const onSubmitPassword = async (data: PasswordSchema) => {
-    try{
-      await resetPassword(data);
+    try {
+      const response = await resetPassword(data?.confirmPassword);
+      console.log(response);
       setError(null);
-      setSuccess('Password reset successfully');
-      router.push('/login');
-    }catch{
+      setSuccess('Пароль успешно сброшен');
+    } catch {
       console.error('onSubmitPassword error:', error);
-      setError('An unexpected error occurred')
+      setError('Произошла непредвиденная ошибка')
     }
   }
 
-  const resendCode = async () => {
+  const handleResendCode = async () => {
     setError(null)
     try {
-      const result = await sendResetCode({ email })
-      if (result.success) {
-        setSuccess('Reset code resent to your email')
-      } else {
-        setError(result.error ?? 'An unexpected error occurred')
-      }
+      await resendCodeFromStore();
+      setSuccess('Код сброса отправлен повторно');
+      setError(null);
     } catch (error) {
-      setError('An unexpected error occurred')
+      console.error('handleResendCode error:', error);
+      setError('Произошла непредвиденная ошибка')
     }
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-8">
+    <div className="flex items-center justify-center min-h-screen p-4 sm:p-8">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Reset Password</CardTitle>
+          <CardTitle>Сброс пароля</CardTitle>
           <CardDescription>
-            {step === 'email' && "Enter your email to receive a reset code"}
-            {step === 'code' && "Enter the code sent to your email"}
-            {step === 'password' && "Create a new password"}
+            {step === 'email' && "Введите вашу почту для получения кода сброса"}
+            {step === 'code' && "Введите код, отправленный на вашу почту"}
+            {step === 'password' && "Создайте новый пароль"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,7 +103,7 @@ export default function ForgotPasswordPage() {
             </Alert>
           )}
           {success && (
-            <Alert className="mb-4">
+            <Alert variant="default" className="mb-4">
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
@@ -116,12 +111,12 @@ export default function ForgotPasswordPage() {
           {step === 'email' && (
             <form onSubmit={emailForm.handleSubmit(onSubmitEmail)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Почта</Label>
                 <Input
                   id="email"
                   type="email"
                   {...emailForm.register('email')}
-                  placeholder="Enter your email"
+                  placeholder="Введите вашу почту"
                 />
                 {emailForm.formState.errors.email && (
                   <p className="text-sm text-red-500">
@@ -137,7 +132,7 @@ export default function ForgotPasswordPage() {
                 {emailForm.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Send Reset Code
+                Отправить код сброса
               </Button>
             </form>
           )}
@@ -145,11 +140,11 @@ export default function ForgotPasswordPage() {
           {step === 'code' && (
             <form onSubmit={codeForm.handleSubmit(onSubmitCode)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="code">Reset Code</Label>
+                <Label htmlFor="code">Код сброса</Label>
                 <Input
                   id="code"
                   {...codeForm.register('code')}
-                  placeholder="Enter 6-digit code"
+                  placeholder="Введите 6-значный код"
                 />
                 {codeForm.formState.errors.code && (
                   <p className="text-sm text-red-500">
@@ -165,15 +160,15 @@ export default function ForgotPasswordPage() {
                 {codeForm.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Verify Code
+                Проверить код
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={resendCode}
+                onClick={handleResendCode}
               >
-                Resend Code
+                Отправить код повторно
               </Button>
             </form>
           )}
@@ -181,12 +176,12 @@ export default function ForgotPasswordPage() {
           {step === 'password' && (
             <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
+                <Label htmlFor="password">Новый пароль</Label>
                 <Input
                   id="password"
                   type="password"
                   {...passwordForm.register('password')}
-                  placeholder="Enter new password"
+                  placeholder="Введите новый пароль"
                 />
                 {passwordForm.formState.errors.password && (
                   <p className="text-sm text-red-500">
@@ -195,12 +190,12 @@ export default function ForgotPasswordPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   {...passwordForm.register('confirmPassword')}
-                  placeholder="Confirm new password"
+                  placeholder="Подтвердите новый пароль"
                 />
                 {passwordForm.formState.errors.confirmPassword && (
                   <p className="text-sm text-red-500">
@@ -216,18 +211,17 @@ export default function ForgotPasswordPage() {
                 {passwordForm.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Reset Password
+                Сбросить пароль
               </Button>
             </form>
           )}
         </CardContent>
         <CardFooter className="flex justify-center">
           <Button variant="link" onClick={() => window.location.href = '/login'}>
-            Back to Login
+            Назад к входу
           </Button>
         </CardFooter>
       </Card>
     </div>
   )
 }
-
