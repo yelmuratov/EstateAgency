@@ -83,13 +83,12 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
   };
 
   const handleSubmit = () => {
-    // Filter out empty fields
     const changedFilters = Object.fromEntries(
       Object.entries(filters).filter(([, value]) => value.trim() !== "")
     );
 
-    filterApartments(changedFilters); // Send only changed filters
-    onOpenChange(false); // Close modal
+    filterApartments(changedFilters);
+    onOpenChange(false);
   };
 
   const clearFilters = () => {

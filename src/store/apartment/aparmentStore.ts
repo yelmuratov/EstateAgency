@@ -48,6 +48,8 @@ interface Apartment {
 
 interface ApartmentStore {
   apartments: Apartment[];
+  filteredApartments: Apartment[]; // Add this state
+  searchedApartments: Apartment[]; // Add this state
   total: number;
   loading: boolean;
   error: string | null;
@@ -64,6 +66,8 @@ interface ApartmentStore {
 
 export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   apartments: [],
+  filteredApartments: [], // Initialize the state
+  searchedApartments: [], // Initialize the state
   total: 0,
   loading: false,
   error: null,
@@ -98,13 +102,15 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
     }
   },
   searchApartments: async (query: string) => {
-    set({ searchLoading: true, error: null, isSearching: true });
+    if (query.trim() === "") {
+      set({ searchedApartments: [] });
+      return;
+    }
+    set({ searchLoading: true, searchError: null, isSearching: true });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=apartment`);
-      console.log(Array.isArray(response.data) ? response.data : []);
       set({
-        apartments: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        searchedApartments: Array.isArray(response.data) ? response.data : [],
         searchLoading: false,
         isSearching: false,
       });
@@ -113,17 +119,14 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         message?: string;
         response?: { data?: { detail?: string } };
       };
-      console.log(apiError);
       set({
-        searchError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+        searchError: apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         searchLoading: false,
         isSearching: false,
-        apartments: [], // Reset to an empty array in case of error
+        searchedApartments: [], // Reset to an empty array in case of error
       });
     }
-  }
-  ,
+  },
   fetchApartmentById: async (id: number) => {
     const { apartments } = get();
 
@@ -164,8 +167,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         params: filters,
       });
       set({
-        apartments: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        filteredApartments: Array.isArray(response.data) ? response.data : [],
         loading: false,
       });
     } catch (error) {
@@ -177,7 +179,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         filterError:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         loading: false,
-        apartments: [], // Reset to an empty array in case of error
+        filteredApartments: [], // Reset to an empty array in case of error
       });
     }
   }
