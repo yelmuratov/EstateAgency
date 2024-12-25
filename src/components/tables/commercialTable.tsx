@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/pagination";
 import Spinner from "@/components/local-components/spinner";
 import { CommercialFilter } from "../commercial-filter";
-import { ImageSlider } from "@/components/ui/image-slider";
+import { ImageSlider } from "@/components/ui/improved-image-slider";
 
 const statusConfig = {
   free: {

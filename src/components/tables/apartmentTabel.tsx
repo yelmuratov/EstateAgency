@@ -20,7 +20,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { ImageSlider } from "@/components/ui/image-slider";
+import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
 
 interface Media {
   media_type: string;
@@ -249,7 +249,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     if (!currentApartment) return null;
     
     return (
-      <ImageSlider
+      <ImprovedImageSlider
         isOpen={sliderOpen}
         onClose={() => setSliderOpen(false)}
         media={currentApartment.media}

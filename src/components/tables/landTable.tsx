@@ -20,7 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import Spinner from "../local-components/spinner";
-import { ImageSlider } from "@/components/ui/image-slider";
+import { ImageSlider } from "@/components/ui/improved-image-slider";
 
 interface Media {
   id: number;
