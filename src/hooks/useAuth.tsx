@@ -22,21 +22,21 @@ const useAuth = () => {
         return;
       }
       try {
-        const userData = await getUser(); // Fetch user data
+        const userData = await getUser(); // Получить данные пользователя
         if (userData && userData.user) {
-          setUser({ ...userData.user, id: userData.user.id.toString() }); // Save user data in the store
+          setUser({ ...userData.user, id: userData.user.id.toString() }); // Сохранить данные пользователя в хранилище
         }
         if (userData) {
-          setAuthToken(userData.token); // Set token for API requests
+          setAuthToken(userData.token); // Установить токен для API запросов
         }
         if (userData) {
-          setToken(userData.token); // Update token in the store if refreshed
+          setToken(userData.token); // Обновить токен в хранилище, если он был обновлен
         }
       } catch (error) {
         toast({
           variant: "destructive",
-          title: "Error!",
-          description: error instanceof Error ? error.message : "An unexpected error occurred.",
+          title: "Ошибка!",
+          description: error instanceof Error ? error.message : "Произошла непредвиденная ошибка.",
         });
         router.push("/login");
       } finally {

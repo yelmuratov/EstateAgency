@@ -68,7 +68,6 @@ interface LandFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
-  deal: boolean;
 }
 
 export default function LandPropertyForm() {
@@ -252,55 +251,55 @@ export default function LandPropertyForm() {
 
       if (isTimeout) {
         toast({
-          title: "Timeout Error",
+          title: "Ошибка тайм-аута",
           description:
-            "The request took too long to complete. Please try again.",
+        "Запрос занял слишком много времени. Пожалуйста, попробуйте снова.",
           variant: "destructive",
           action: (
-            <button
-              onClick={() => handleSubmit(onSubmit)()} // Retry submission
-              className="text-sm font-medium text-blue-500 hover:underline"
-            >
-              Retry
-            </button>
+        <button
+          onClick={() => handleSubmit(onSubmit)()} // Повторить отправку
+          className="text-sm font-medium text-blue-500 hover:underline"
+        >
+          Повторить
+        </button>
           ),
         });
       } else if (!apiError.response) {
         toast({
-          title: "Network Error",
+          title: "Ошибка сети",
           description:
-            "Unable to reach the server. Check your connection and try again.",
+        "Не удается подключиться к серверу. Проверьте соединение и попробуйте снова.",
           variant: "destructive",
         });
       } else if (statusCode === 400 || statusCode === 422) {
         if (typeof errorDetail === "string") {
           toast({
-            title: "Validation Error",
-            description: errorDetail,
-            variant: "destructive",
+        title: "Ошибка валидации",
+        description: errorDetail,
+        variant: "destructive",
           });
         } else if (Array.isArray(errorDetail)) {
           const formattedErrors = errorDetail
-            .map((err) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
-            .join("\n");
+        .map((err) => `- ${err.loc.join(" -> ")}: ${err.msg}`)
+        .join("\n");
 
           toast({
-            title: "Validation Error",
-            description: `The following issues were found:\n${formattedErrors}`,
-            variant: "destructive",
+        title: "Ошибка валидации",
+        description: `Обнаружены следующие проблемы:\n${formattedErrors}`,
+        variant: "destructive",
           });
         } else {
           toast({
-            title: "Validation Error",
-            description: "Invalid data submitted.",
-            variant: "destructive",
+        title: "Ошибка валидации",
+        description: "Отправлены некорректные данные.",
+        variant: "destructive",
           });
         }
       } else {
         toast({
-          title: "Error",
+          title: "Ошибка",
           description:
-            apiError.response?.data?.msg || "An unknown error occurred.",
+        apiError.response?.data?.msg || "Произошла неизвестная ошибка.",
           variant: "destructive",
         });
       }
@@ -758,29 +757,6 @@ export default function LandPropertyForm() {
             {errors.second_agent_percent.message}
           </p>
         )}
-      </div>
-
-      <div>
-        <Label htmlFor="deal">Сделка</Label>
-        <Controller
-          name="deal"
-          control={control}
-          defaultValue={false}
-          render={({ field }) => (
-            <Select
-              onValueChange={(value) => field.onChange(value === "true")}
-              defaultValue={field.value ? "true" : "false"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите сделку" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Да</SelectItem>
-                <SelectItem value="false">Нет</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
       </div>
 
       <div>

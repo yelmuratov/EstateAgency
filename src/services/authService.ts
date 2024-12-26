@@ -62,7 +62,7 @@ export const getUser = async (): Promise<ExtendedAuthResponse | null> => {
 
     if (apiError.response?.status === 401) {
       const { clearToken } = useAuthStore.getState();
-      clearToken(); // Clear the token on unauthorized response
+      clearToken(); 
     }
 
     console.log("Error fetching user:", apiError.message);

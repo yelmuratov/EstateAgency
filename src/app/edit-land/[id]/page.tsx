@@ -71,7 +71,6 @@ interface LandFormData {
   id?: number;
   status_date?: string;
   second_agent_percent: number;
-  deal: boolean;
 }
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif"];
@@ -165,7 +164,6 @@ export default function EditLandForm() {
               id: landData.id || 0,
               status_date: landData.status_date || "",
               second_agent_percent: landData.second_agent_percent || 0,
-              deal: landData.deal || false,
             };
 
             setInitialData(mappedData);
@@ -862,25 +860,6 @@ export default function EditLandForm() {
               {errors.comment.message}
             </p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="deal">Сделка</Label>
-          <Controller
-            name="deal"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={(value) => field.onChange(value === "true")} value={String(field.value)}> {/* Updated deal field Controller */}
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Да</SelectItem>
-                  <SelectItem value="false">Нет</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
         </div>
 
         <div>

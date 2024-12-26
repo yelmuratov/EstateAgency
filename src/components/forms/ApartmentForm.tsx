@@ -64,7 +64,6 @@ interface ApartmentFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
-  deal: boolean;
 }
 
 export default function ApartmentForm() {
@@ -804,32 +803,9 @@ export default function ApartmentForm() {
         )}
       </div>
 
-      <div>
-        <Label htmlFor="deal">Сделка</Label>
-        <Controller
-          name="deal"
-          control={control}
-          defaultValue={false}
-          render={({ field }) => (
-            <Select
-              onValueChange={(value) => field.onChange(value === "true")}
-              defaultValue={field.value ? "true" : "false"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите сделку" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Да</SelectItem>
-                <SelectItem value="false">Нет</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-
       <div
         className="mt-1 relative"
-        onClick={() => fileInputRef.current?.click()} // Trigger file input on click
+        onClick={() => fileInputRef.current?.click()} 
         onDrop={(e) => {
           e.preventDefault();
           const droppedFiles = Array.from(e.dataTransfer.files);

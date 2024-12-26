@@ -89,7 +89,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
   const [currentPage, setCurrentPage] = useState(() => {
     return Number(localStorage.getItem("currentPageCommercial")) || 1;
   });
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(15);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -434,17 +434,6 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
                               <div className="text-gray-900 dark:text-gray-100">
                                 {commercial.agent_commission}$ (
                                 {commercial.agent_percent}%)
-                              </div>
-                            </div>
-                            {/* deal */}
-                            <div>
-                              <div className="font-medium text-gray-500 dark:text-gray-400">
-                              Сделка
-                              </div>
-                              <div className="text-gray-900 dark:text-gray-100">
-                              <Badge className={commercial.deal ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                                {commercial.deal ? "Да" : "Нет"}
-                              </Badge>
                               </div>
                             </div>
                             {/* second responsible and agent person */}

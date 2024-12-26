@@ -87,7 +87,6 @@ export default function Dashboard() {
         title: "Ошибка",
         description: errorMessage,
       });
-  
       router.replace("/login");
     } finally {
       setLoading(false);
@@ -187,8 +186,18 @@ export default function Dashboard() {
                   >
                     Метро
                   </DropdownMenuItem>
+                  {/* change log */}
+                  <DropdownMenuItem
+                    onClick={() => router.push("/change-log")}
+                  >
+                    Лог изменений
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/info")}
+                  >
+                    Информация о входах
+                  </DropdownMenuItem>
                 </>
-
               )
             }
           </DropdownMenuContent>

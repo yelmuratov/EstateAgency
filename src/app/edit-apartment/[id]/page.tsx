@@ -67,7 +67,6 @@ interface ApartmentFormData {
   status_date?: string;
   second_responsible: string;
   second_agent_percent?: number;
-  deal: boolean; // Updated deal field type
 }
 
 export default function EditApartmentForm() {
@@ -136,7 +135,6 @@ export default function EditApartmentForm() {
                 | "free"
                 | "soon"
                 | "busy",
-              deal: Boolean(apartmentData.deal),
             });
             if (apartmentData.media) {
               setPreviewImages(
@@ -149,13 +147,13 @@ export default function EditApartmentForm() {
             }
           }
         } catch (error) {
-          toast({
-            title: "Error",
-            description: `Failed to load apartment data: ${
+            toast({
+            title: "Ошибка",
+            description: `Не удалось загрузить данные квартиры: ${
               (error as Error).message
             }`,
             variant: "destructive",
-          });
+            });
         } finally {
           setLoading(false); // Stop loading when data fetching is complete
         }
@@ -214,20 +212,19 @@ export default function EditApartmentForm() {
               status_date: apartmentData.status_date || "",
               second_responsible: apartmentData.second_responsible || "",
               second_agent_percent: apartmentData.second_agent_percent || 0,
-              deal: Boolean(apartmentData.deal), // Updated deal field mapping
             };
 
             setInitialData(mappedData); // Set initial data for comparison
             reset(mappedData); // Populate the form with initial values
           }
         } catch (error) {
-          toast({
-            title: "Error",
-            description: `Failed to load apartment data: ${
+            toast({
+            title: "Ошибка",
+            description: `Не удалось загрузить данные квартиры: ${
               (error as Error).message
             }`,
             variant: "destructive",
-          });
+            });
         }
       }
     };
@@ -314,23 +311,23 @@ export default function EditApartmentForm() {
             queryParams.append("media", id.toString())
           );
 
-          await api.delete(
+            await api.delete(
             `/additional/delete_media/?${queryParams.toString()}`
-          );
-          toast({
-            title: "Success",
-            description: "Deleted images successfully.",
+            );
+            toast({
+            title: "Успех",
+            description: "Изображения успешно удалены.",
             variant: "default",
-          });
-        } catch (deleteError) {
-          toast({
-            title: "Error",
-            description: `Failed to delete images: ${
+            });
+          } catch (deleteError) {
+            toast({
+            title: "Ошибка",
+            description: `Не удалось удалить изображения: ${
               (deleteError as Error).message
             }`,
             variant: "destructive",
-          });
-          return;
+            });
+            return;
         }
       }
 
@@ -367,8 +364,8 @@ export default function EditApartmentForm() {
         }
 
         toast({
-          title: "Success",
-          description: "Apartment updated successfully.",
+          title: "Успех",
+          description: "Квартира успешно обновлена.",
           variant: "default",
         });
         router.push("/");
@@ -440,8 +437,8 @@ export default function EditApartmentForm() {
     setPreviewImages((prev) => prev.filter((image) => image.id !== imageId));
 
     toast({
-      title: "Image removed",
-      description: "Image marked for deletion.",
+      title: "Изображение удалено",
+      description: "Изображение отмечено для удаления.",
       variant: "default",
     });
   };
@@ -957,25 +954,6 @@ export default function EditApartmentForm() {
             <SelectItem value="yes">Да</SelectItem>
             <SelectItem value="no">Нет</SelectItem>
           </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="deal">Сделка</Label>
-          <Controller
-            name="deal"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={(value) => field.onChange(value === "true")} value={String(field.value)}> {/* Updated deal field Controller */}
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Да</SelectItem>
-                  <SelectItem value="false">Нет</SelectItem>
-                </SelectContent>
               </Select>
             )}
           />

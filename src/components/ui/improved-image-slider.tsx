@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight} from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -41,14 +41,6 @@ export function ImprovedImageSlider({ isOpen, onClose, media, initialIndex }: Im
       <DialogTitle className="sr-only">Image Slider</DialogTitle>
       <div className="relative flex-1 bg-black">
         {/* Close button */}
-        <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-2 top-2 z-50 text-white hover:bg-white/20"
-        onClick={onClose}
-        >
-        <X className="h-6 w-6" />
-        </Button>
 
         {/* Navigation buttons */}
         <Button

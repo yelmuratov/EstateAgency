@@ -50,6 +50,36 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  if(pathname.startsWith('/metros')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/districts')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/users')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/info')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/change-log')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
   // Allow requests to proceed
   return NextResponse.next();
 }
@@ -64,5 +94,10 @@ export const config = {
     '/edit-apartment/:path*', // Matches /edit-apartment and any subpaths
     '/edit-land/:path*', // Matches /edit-land and any subpaths
     '/edit-commercial/:path*', // Matches /edit-commercial and any subpaths
+    '/metros/:path*', // Matches /metros and any subpaths
+    '/districts/:path*', // Matches /districts and any subpaths
+    '/users/:path*', // Matches /users and any subpaths
+    '/info/:path*', // Matches /info and any subpaths
+    '/change-log/:path*', // Matches /change-log and any subpaths
   ],
 };

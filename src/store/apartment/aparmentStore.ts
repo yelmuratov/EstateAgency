@@ -43,7 +43,6 @@ interface Apartment {
   second_responsible: string;
   second_agent_percent: number;
   status_date: string;
-  deal:boolean;
 }
 
 interface ApartmentStore {

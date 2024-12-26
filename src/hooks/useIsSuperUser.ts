@@ -8,7 +8,7 @@ export const useIsSuperUser = (): [boolean | null, boolean] => {
   useEffect(() => {
     const checkSuperUser = async () => {
       const user = await getUser();
-      setIsSuperUser(user?.user?.is_superuser || false);
+      setIsSuperUser(user ? user.user.is_superuser : null);
       setIsSuperUserLoading(false);
     };
     checkSuperUser();

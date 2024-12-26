@@ -37,7 +37,6 @@ interface Commercial {
   parking_place?: boolean; // Optional field
   media?: Media[];
   status_date?: string;
-  deal:boolean;
 }
 
 interface CommercialStore {

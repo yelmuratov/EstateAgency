@@ -69,7 +69,6 @@ interface CommercialFormData {
   status_date: string;
   second_responsible: string;
   second_agent_percent?: number;
-  deal?: boolean;
 }
 
 export default function EditCommercialPropertyForm() {
@@ -145,7 +144,6 @@ export default function EditCommercialPropertyForm() {
               status_date: commercialData.status_date || "",
               second_responsible: commercialData.second_responsible || "",
               second_agent_percent: commercialData.second_agent_percent || 0,
-              deal: Boolean(commercialData.deal),
             });
             if (commercialData.media) {
               setPreviewImages(
@@ -158,8 +156,8 @@ export default function EditCommercialPropertyForm() {
           }
         } catch (error) {
           toast({
-            title: "Error",
-            description: `Failed to load commercial property data: ${error}`,
+            title: "Ошибка",
+            description: `Не удалось загрузить данные коммерческой недвижимости: ${error}`,
             variant: "destructive",
           });
         } finally {
@@ -193,16 +191,16 @@ export default function EditCommercialPropertyForm() {
               square_area: commercialData.square_area || 0,
               floor_number: commercialData.floor_number || 0,
               location:
-                commercialData.location as CommercialFormData["location"],
+          commercialData.location as CommercialFormData["location"],
               furnished: commercialData.furnished || false,
               house_condition: commercialData.house_condition as
-                | "euro"
-                | "normal"
-                | "repair",
+          | "euro"
+          | "normal"
+          | "repair",
               current_status: commercialData.current_status as
-                | "free"
-                | "soon"
-                | "busy",
+          | "free"
+          | "soon"
+          | "busy",
               parking_place: commercialData.parking_place || false,
               agent_percent: commercialData.agent_percent || 0,
               crm_id: commercialData.crm_id || "",
@@ -218,8 +216,8 @@ export default function EditCommercialPropertyForm() {
           }
         } catch (error) {
           toast({
-            title: "Error",
-            description: `Failed to load commercial property data: ${error}`,
+            title: "Ошибка",
+            description: `Не удалось загрузить данные коммерческой недвижимости: ${error}`,
             variant: "destructive",
           });
         }
@@ -266,8 +264,8 @@ export default function EditCommercialPropertyForm() {
 
       if (!hasTextChanges && !hasFileChanges) {
         toast({
-          title: "No changes detected",
-          description: "No changes were made to the commercial property data.",
+          title: "Изменения не обнаружены",
+          description: "Данные коммерческой недвижимости не были изменены.",
           variant: "default",
         });
         return;
@@ -281,22 +279,22 @@ export default function EditCommercialPropertyForm() {
           const deleteParams = new URLSearchParams();
           deleteParams.append("table", "commercial");
           uniqueDeletedIds.forEach((id) =>
-            deleteParams.append("media", id.toString())
+        deleteParams.append("media", id.toString())
           );
 
           await api.delete(
-            `/additional/delete_media/?${deleteParams.toString()}`
+        `/additional/delete_media/?${deleteParams.toString()}`
           );
           toast({
-            title: "Success",
-            description: "Deleted images successfully.",
-            variant: "default",
+        title: "Успех",
+        description: "Изображения успешно удалены.",
+        variant: "default",
           });
         } catch (deleteError) {
           toast({
-            title: "Error",
-            description: `Failed to delete images: ${deleteError}`,
-            variant: "destructive",
+        title: "Ошибка",
+        description: `Не удалось удалить изображения: ${deleteError}`,
+        variant: "destructive",
           });
           return;
         }
@@ -325,10 +323,9 @@ export default function EditCommercialPropertyForm() {
         if (hasTextChanges && !hasFileChanges) {
           await api.put(url, queryParams);
         }
-
         toast({
-          title: "Success",
-          description: "Commercial property updated successfully.",
+          title: "Успех",
+          description: "Коммерческая недвижимость успешно обновлена.",
           variant: "default",
         });
         router.push("/");
@@ -438,10 +435,9 @@ export default function EditCommercialPropertyForm() {
   const removeImage = (imageId: number) => {
     setDeletedImageIds((prev) => [...prev, imageId]); // Mark file as deleted
     setPreviewImages((prev) => prev.filter((media) => media.id !== imageId)); // Remove preview
-
     toast({
-      title: "File Removed",
-      description: "File marked for deletion.",
+      title: "Файл удален",
+      description: "Файл помечен для удаления.",
       variant: "default",
     });
   };
@@ -872,25 +868,6 @@ export default function EditCommercialPropertyForm() {
               {errors.comment.message}
             </p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="deal">Сделка</Label>
-          <Controller
-            name="deal"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={(value) => field.onChange(value === "true")} value={String(field.value)}> {/* Updated deal field Controller */}
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Да</SelectItem>
-                  <SelectItem value="false">Нет</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
         </div>
 
         <div>
