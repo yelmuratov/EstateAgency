@@ -46,3 +46,21 @@ export interface LoginInfo {
   user_id: number;
 }
 
+export type ClientStatus = 'hot' | 'cold';
+export type DealStatus = 'initial' | 'negotiation' | 'decision' | 'contract' | 'deal';
+export type PropertyType = 'rent' | 'sale';
+
+export interface PropertyFormData {
+  realtorName: string;  
+  clientName: string;
+  date: string;
+  districts: string[]; // Changed from district to districts array
+  budget: number;
+  clientStatus: ClientStatus;
+  comments?: string;
+  dealStatus?: DealStatus;
+  type: PropertyType;
+}
+
+
+

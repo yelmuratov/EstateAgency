@@ -158,14 +158,27 @@ export default function Dashboard() {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Коммерция</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleTypeChange("commercial", "sale")}>
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleTypeChange("commercial", "rent")}>
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleTypeChange("commercial", "sale")}>
+                Продажа
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleTypeChange("commercial", "rent")}>
+                Аренда
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Показы</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleTypeChange("views", "sale")}>
+                Продажа
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleTypeChange("views", "rent")}>
+                Аренда
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
             {

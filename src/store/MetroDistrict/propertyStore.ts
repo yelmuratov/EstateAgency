@@ -8,7 +8,7 @@ interface Metro {
   updated_at: string;
 }
 
-interface District {
+export interface District {
   name: string;
   id: number;
   created_at: string;
@@ -28,6 +28,7 @@ interface StoreState {
   upadteDistrict: (districtId: number, name: string) => Promise<void>;
   createMetro: (name: string) => Promise<void>;
   createDistrict: (name: string) => Promise<void>;
+  returnDistricts: () => Promise<District[]>;
 }
 
 const usePropertyStore = create<StoreState>((set) => ({
@@ -41,7 +42,6 @@ const usePropertyStore = create<StoreState>((set) => ({
       const response = await api.get<Metro[]>("/metro/");
       set({ metros: response.data, loading: false });
     } catch (error) {
-      // Define the type for the error object
       const apiError = error as {
         message?: string;
         response?: {
@@ -180,6 +180,14 @@ const usePropertyStore = create<StoreState>((set) => ({
         error: apiError.response?.data?.detail || apiError.message || "Failed to create district",
         loading: false,
       });
+      throw error;
+    }
+  },
+  returnDistricts: async () => {
+    try {
+      const response = await api.get<District[]>("/district/");
+      return response.data;
+    } catch (error) {
       throw error;
     }
   }
