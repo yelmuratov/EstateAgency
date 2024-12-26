@@ -55,9 +55,9 @@ const columns: ColumnDef<PropertyFormData>[] = [
     header: 'Статус клиента',
     cell: ({ row }) => (
       <div className={`font-medium ${
-        row.original.clientStatus === 'hot' ? 'text-red-500' : 'text-blue-500'
+        row.original.client_status === 'hot' ? 'text-red-500' : 'text-blue-500'
       }`}>
-        {row.original.clientStatus === 'hot' ? 'Горячий' : 'Холодный'}
+        {row.original.client_status === 'hot' ? 'Горячий' : 'Холодный'}
       </div>
     ),
   },
@@ -65,7 +65,7 @@ const columns: ColumnDef<PropertyFormData>[] = [
     accessorKey: 'dealStatus',
     header: 'Статус сделки',
     cell: ({ row }) => {
-      if (row.original.type !== 'sale') return null
+      if (row.original.action_type !== 'sale') return null
       
       const statusMap = {
         initial: 'ПЕРВИЧНЫЙ КОНТАКТ',
@@ -75,7 +75,7 @@ const columns: ColumnDef<PropertyFormData>[] = [
         deal: 'СДЕЛКА',
       }
       
-      return statusMap[row.original.dealStatus as keyof typeof statusMap] || '-'
+      return statusMap[row.original.deal_status as keyof typeof statusMap] || '-'
     },
   },
   {
@@ -83,9 +83,9 @@ const columns: ColumnDef<PropertyFormData>[] = [
     header: 'Район(ы)',
     cell: ({ row }) => (
       <div className="max-w-[200px] truncate">
-        {Array.isArray(row.original.districts) 
-          ? row.original.districts.join(', ')
-          : row.original.districts}
+        {Array.isArray(row.original.district) 
+          ? row.original.district.join(', ')
+          : row.original.district}
       </div>
     ),
   },
@@ -103,7 +103,7 @@ const columns: ColumnDef<PropertyFormData>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Действия</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(row.original.clientName)}
+              onClick={() => navigator.clipboard.writeText(row.original.client_name)}
             >
               Копировать имя клиента
             </DropdownMenuItem>

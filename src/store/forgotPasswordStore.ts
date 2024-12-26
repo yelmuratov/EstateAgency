@@ -34,12 +34,12 @@ export const useForgotPasswordStore = create<ForgotPasswordStore>((set) => ({
       if (error instanceof AxiosError && error.response) {
         const apiError = error.response.data as { detail?: string };
         if (apiError.detail) {
-          return apiError.detail; // Return the error detail
+          throw new Error(apiError.detail); // Throw the error detail
         } else {
-          return 'An unexpected error occurred. Please try again.';
+          throw new Error('An unexpected error occurred. Please try again.');
         }
       } else {
-        return 'An unknown error occurred. Please try again.';
+        throw new Error('An unknown error occurred. Please try again.');
       }
     }
   },

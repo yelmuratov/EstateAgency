@@ -38,6 +38,10 @@ const CommercialTable = dynamic(() => import('@/components/tables/commercialTabl
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
+const ClientTable = dynamic(() => import('@/app/clients/page'), {
+  ssr: false,
+  loading: () => <Spinner theme="light" />,
+});
 
 type PropertyType = {
   main: string;
@@ -64,7 +68,7 @@ export default function Dashboard() {
 
   const fetchUserData = useCallback(async () => {
     if (!token) {
-      router.replace("/login");
+      router.push("/login");
       return;
     }
   
@@ -87,7 +91,7 @@ export default function Dashboard() {
         title: "Ошибка",
         description: errorMessage,
       });
-      router.replace("/login");
+      router.push("/login");
     } finally {
       setLoading(false);
     }
@@ -169,13 +173,15 @@ export default function Dashboard() {
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Показы</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger>
+                Клиенты
+              </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
               <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleTypeChange("views", "sale")}>
+                <DropdownMenuItem onClick={() => handleTypeChange("clients", "sale")}>
                 Продажа
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleTypeChange("views", "rent")}>
+                <DropdownMenuItem onClick={() => handleTypeChange("clients", "rent")}>
                 Аренда
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
@@ -220,6 +226,7 @@ export default function Dashboard() {
         {selectedType.main === "apartments" && <ApartmentTable type={selectedType.sub} />}
         {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
         {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
+        {selectedType.main === "clients" && <ClientTable />}
       </div>
     </DashboardLayout>
   );

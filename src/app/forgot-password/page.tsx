@@ -25,11 +25,13 @@ import {
   type CodeSchema,
   type PasswordSchema,
 } from '@/lib/forgot-password'
+import { useToast } from '@/hooks/use-toast'
 
 export default function ForgotPasswordPage() {
   const { step, resetPassword, verifyCode, sendEmail, resendCode: resendCodeFromStore } = useForgotPasswordStore()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const emailForm = useForm<EmailSchema>({
     resolver: zodResolver(emailSchema),
@@ -47,8 +49,12 @@ export default function ForgotPasswordPage() {
     try {
       await sendEmail(data.email)
     } catch (error) {
-      console.error('onSubmitEmail error:', error);
-      setError('Произошла непредвиденная ошибка')
+      setError(error instanceof Error ? error.message : 'Unknown error')
+      toast({
+        title: "Ошибка",
+        description: (error instanceof Error ? error.message : 'Unknown error'),
+        variant: "destructive",
+      })
     }
   }
 
@@ -56,8 +62,7 @@ export default function ForgotPasswordPage() {
     try {
       await verifyCode(data.code)
     } catch (error) {
-      console.error('onSubmitCode error:', error);
-      setError('Произошла непредвиденная ошибка')
+      setError(error instanceof Error ? error.message : 'Unknown error')
     }
   }
 

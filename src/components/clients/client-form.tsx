@@ -1,17 +1,18 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { format } from 'date-fns'
-import { CalendarIcon } from 'lucide-react'
-import * as z from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { MultiSelect } from '@/components/ui/multi-select'
-import { useRouter } from 'next/navigation'
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { useRouter } from "next/navigation";
+import { useClientStore } from "@/store/clients/useClientStore";
 import {
   Form,
   FormControl,
@@ -19,84 +20,98 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { PropertyFormData, PropertyType } from '@/types/property'
-
-const DISTRICTS = [
-  "Алмазарский",
-  "Бектемирский",
-  "Мирабадский",
-  "Мирзо-Улугбекский",
-  "Сергелийский",
-  "Чиланзарский",
-  "Шайхантахурский",
-  "Юнусабадский",
-  "Яккасарайский",
-  "Янгихаётский",
-]
+} from "@/components/ui/select";
+import { PropertyFormData, PropertyType } from "@/types/property";
+import usePropertyStore from "@/store/MetroDistrict/propertyStore";
+import { District } from "@/store/MetroDistrict/propertyStore";
+import Spinner from "../local-components/spinner";
 
 const formSchema = z.object({
-  realtorName: z.string().min(2, 'Минимум 2 символа'),
-  clientName: z.string().min(2, 'Минимум 2 символа'),
-  date: z.string().min(1, 'Выберите дату'),
-  districts: z.array(z.string()).min(1, 'Выберите хотя бы один район'),
-  budget: z.number().min(1, 'Введите бюджет'),
-  clientStatus: z.enum(['hot', 'cold'], {
-    required_error: 'Выберите статус клиента',
+  responsible: z.string().min(2, "Минимум 2 символа"),
+  client_name: z.string().min(2, "Минимум 2 символа"),
+  date: z.string().min(1, "Выберите дату"),
+  district: z.array(z.string()).nonempty("Выберите хотя бы один район"),
+  budget: z.number().min(1, "Введите бюджет"),
+  client_status: z.enum(["hot", "cold"], {
+    required_error: "Выберите статус клиента",
   }),
-  comments: z.string(),
-  type: z.enum(['rent', 'sale']),
-  dealStatus: z.enum(['initial', 'negotiation', 'decision', 'contract', 'deal']).optional(),
-})
+  comment: z.string(),
+  action_type: z.enum(["rent", "sale"]),
+  deal_status: z
+    .enum(["initial", "negotiation", "decision", "contract", "deal"])
+    .optional(),
+});
 
 interface PropertyFormProps {
-  type: PropertyType
-  onSubmit: (data: PropertyFormData) => void
+  type: PropertyType;
 }
 
-export function ViewForm({ type, onSubmit }: PropertyFormProps) {
-  const [date, setDate] = useState<Date>();
+export function ViewForm({ type }: PropertyFormProps) {
   const router = useRouter();
+  const { postClient } = useClientStore();
+  const [districts, setDistricts] = useState<District[]>([]);
+  const { returnDistricts, loading, error } = usePropertyStore();
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      const response = await returnDistricts();
+      setDistricts(response);
+    };
+
+    fetchDistricts();
+  }, [returnDistricts]);
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      realtorName: '',
-      clientName: '',
-      date: '',
-      districts: [],
+      responsible: "",
+      client_name: "",
+      date: "",
+      district: [],
       budget: 0,
-      clientStatus: 'cold',
-      comments: '',
-      type,
+      client_status: "cold",
+      comment: "",
+      action_type: type,
     },
-  })
+  });
 
-  const handleSubmit = (data: PropertyFormData) => {
-    onSubmit(data)
-    form.reset()
-  }
+  if (loading) return <Spinner theme="dark" />;
+
+  if (error) return <div>Failed to fetch districts: {error}</div>;
+
+  const handleSubmit = async (data: PropertyFormData) => {
+    try {
+      data.date = format(new Date(data.date), "yyyy-MM-dd");
+      if (typeof data.district === "string") {
+        data.district = [data.district];
+      }
+      await postClient(data);
+      router.push("/");
+    } catch (error) {
+      console.error("Failed to submit form:", error);
+    }
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="realtorName"
+          name="responsible"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Имя риэлтора</FormLabel>
@@ -110,7 +125,7 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
 
         <FormField
           control={form.control}
-          name="clientName"
+          name="client_name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Имя клиента</FormLabel>
@@ -134,12 +149,12 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
                     <Button
                       variant="outline"
                       className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !field.value && 'text-muted-foreground'
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
                       )}
                     >
                       {field.value ? (
-                        format(new Date(field.value), 'dd.MM.yyyy')
+                        format(new Date(field.value), "dd.MM.yyyy")
                       ) : (
                         <span>Выберите дату</span>
                       )}
@@ -150,82 +165,80 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={date}
-                    onSelect={(date) => {
-                      setDate(date)
-                      field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
-                    }}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date('1900-01-01')
-                    }
+                    selected={field.value ? new Date(field.value) : undefined}
+                    onSelect={(date) => field.onChange(date?.toISOString())}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
               <FormMessage />
             </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="districts"
-            render={({ field }) => (
-            <FormItem>
-              <FormControl>
-              {type === 'rent' ? (
-                <MultiSelect
-                />
-              ) : (
-                <Select 
-                onValueChange={(value) => field.onChange([value])} 
-                value={field.value?.[0] || ''} // Add fallback empty string
-                >
-                <FormControl>
-                  <SelectTrigger className="bg-gray-100 text-black">
-                  <SelectValue placeholder="Выберите район" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {DISTRICTS.map((district) => (
-                  <SelectItem key={district} value={district} className="bg-gray-100 text-black">
-                    {district}
-                  </SelectItem>
-                  ))}
-                </SelectContent>
-                </Select>
-              )}
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-            )}
-          />
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Бюджет</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Введите бюджет"
-                      {...field} 
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          )}
+        />
 
         <FormField
           control={form.control}
-          name="clientStatus"
+          name="district"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Район</FormLabel>
+              <FormControl>
+                {type === "rent" ? (
+                  <MultiSelect value={field.value} onChange={field.onChange} />
+                ) : (
+                  <Select
+                    onValueChange={(value) => field.onChange([value])}
+                    value={field.value?.[0] || ""} // Add fallback empty string
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите район" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {districts.map((district) => (
+                        <SelectItem key={district.id} value={district.name}>
+                          {district.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="budget"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Бюджет</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Введите бюджет"
+                  {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="client_status"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Статус клиента</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value ?? undefined}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Выберите статус" />
@@ -243,15 +256,15 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
 
         <FormField
           control={form.control}
-          name="comments"
+          name="comment"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Комментарий</FormLabel>
               <FormControl>
-                <Textarea 
+                <Textarea
                   placeholder="Введите комментарий"
                   className="min-h-[100px]"
-                  {...field} 
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
@@ -259,14 +272,17 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
           )}
         />
 
-        {type === 'sale' && (
+        {type === "sale" && (
           <FormField
             control={form.control}
-            name="dealStatus"
+            name="deal_status"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Статус сделки</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? undefined}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите статус сделки" />
@@ -276,7 +292,9 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
                     <SelectItem value="initial">ПЕРВИЧНЫЙ КОНТАКТ</SelectItem>
                     <SelectItem value="negotiation">ПЕРЕГОВОРЫ</SelectItem>
                     <SelectItem value="decision">ПРИНИМАЮТ РЕШЕНИЕ</SelectItem>
-                    <SelectItem value="contract">СОГЛАСОВАНИЕ ДОГОВОРА</SelectItem>
+                    <SelectItem value="contract">
+                      СОГЛАСОВАНИЕ ДОГОВОРА
+                    </SelectItem>
                     <SelectItem value="deal">СДЕЛКА</SelectItem>
                   </SelectContent>
                 </Select>
@@ -286,23 +304,18 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
           />
         )}
 
-        <Button 
-          type="submit" 
-          className="w-full"
-        >
+        <Button type="submit" className="w-full">
           Сохранить
         </Button>
-        {/* back button */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => router.push('/')}
-        >
-          Назад
-        </Button>
       </form>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full mt-4"
+        onClick={() => router.push("/")}
+      >
+        Назад
+      </Button>
     </Form>
-  )
+  );
 }
-

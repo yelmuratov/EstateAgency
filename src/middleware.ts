@@ -80,6 +80,12 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  if(pathname.startsWith('/add-client')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
   // Allow requests to proceed
   return NextResponse.next();
 }

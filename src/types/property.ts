@@ -51,15 +51,18 @@ export type DealStatus = 'initial' | 'negotiation' | 'decision' | 'contract' | '
 export type PropertyType = 'rent' | 'sale';
 
 export interface PropertyFormData {
-  realtorName: string;  
-  clientName: string;
+  client_name: string;
+  id: number;
+  action_type: string;
+  district: string[];
+  client_status: string;
+  created_at: string;
+  responsible: string;
   date: string;
-  districts: string[]; // Changed from district to districts array
   budget: number;
-  clientStatus: ClientStatus;
-  comments?: string;
-  dealStatus?: DealStatus;
-  type: PropertyType;
+  comment: string;
+  deal_status: string | null;
+  updated_at: string;
 }
 
 

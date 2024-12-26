@@ -29,7 +29,6 @@ api.interceptors.response.use(
       if (status === 401) {
         clearAuthToken(); // Centralized function to remove token from cookies/local storage
         console.warn('Session expired. Redirecting to login.');
-        window.location.href = '/login'; // Or use your routing solution
       } else if (status === 403) {
         return Promise.reject(new Error('You do not have permission to perform this action.'));
       } else {
