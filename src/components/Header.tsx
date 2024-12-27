@@ -144,6 +144,12 @@ const Header: React.FC = () => {
                     >
                       Добавить Клиента                    
                     </DropdownMenuItem>
+                    {/* Dovabnit pokaz */}
+                    <DropdownMenuItem
+                      onClick={() => handleAddPropertySelect("/add-view")}
+                    >
+                      Добавить Показ
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

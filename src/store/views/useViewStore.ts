@@ -19,7 +19,7 @@ export interface ViewFormData {
     updated_at?: string;
 }
 
-interface ViewStore {
+export interface ViewStore {
     views: ViewFormData[];
     error: string;
     loading: boolean;

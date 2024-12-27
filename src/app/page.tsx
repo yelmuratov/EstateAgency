@@ -42,7 +42,7 @@ const ClientTableWrapper = dynamic(() => import('@/components/clients/client-tab
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
-const ViewTable = dynamic(() => import('@/components/views/view-table'), {
+const ViewTable = dynamic(() => import('@/components/views/view-table').then(mod => mod.ViewsTable), {
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
@@ -246,7 +246,7 @@ export default function Dashboard() {
         {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
         {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
         {selectedType.main === "clients" && <ClientTableWrapper type={selectedType.sub} />}
-        {selectedType.main === "views" && <ViewTable type={selectedType.sub} />}
+        {selectedType.main === "views" && <ViewTable data={[]} type={selectedType.sub} />}
       </div>
     </DashboardLayout>
   );

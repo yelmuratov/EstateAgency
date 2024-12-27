@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { CalendarIcon } from 'lucide-react';
@@ -10,8 +10,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useRouter } from "next/navigation";
-import { useViewStore } from "@/store/views/useViewStore";
+import { useViewStore, ViewFormData } from "@/store/views/useViewStore";
 import { UserStore, User } from "@/store/users/userStore";
 import {
   Form,
@@ -27,52 +28,65 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ViewFormData } from "@/store/views/useViewStore";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { District } from "@/store/MetroDistrict/propertyStore";
+import Spinner from "../local-components/spinner";
+import usePropertyStore  from "@/store/MetroDistrict/propertyStore";
 
 const formSchema = z.object({
-  action_type: z.enum(["SALE", "RENT"]),
+  action_type: z.enum(["sale", "rent"]),
   responsible: z.string().min(2, "Минимум 2 символа"),
   date: z.string().min(1, "Выберите дату"),
-  time: z.string().min(1, "Выберите время"),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Введите время в формате HH:mm"),
   district: z.string().min(2, "Минимум 2 символа"),
   price: z.number().min(1, "Введите цену"),
-  commission: z.number().min(1, "Введите комиссию"),
   agent_percent: z.number().min(1, "Введите процент агента"),
   status_deal: z.boolean(),
   crm_id: z.string().min(1, "Введите CRM ID"),
   client_number: z.string().min(1, "Введите номер клиента"),
-  owner_number: z.string().min(1, "Введите номер владельца"),
+  owner_number: z.string().optional(),
 });
 
-export function ViewForm() {
+interface ViewFormProps {
+  type: "rent" | "sale";
+}
+
+export function ViewForm({ type }: ViewFormProps) {
   const router = useRouter();
   const { postView } = useViewStore();
   const { getUsers } = UserStore();
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
+  const { fetchDistricts, districts } = usePropertyStore();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const fetchedUsers = await getUsers();
-      setUsers(fetchedUsers);
+    const fetchData = async () => {
+      const response  = await getUsers();
+      setUsers(response);
+      await fetchDistricts();
     };
 
-    fetchUsers();
-  }, [getUsers]);
+    fetchData();
+  }, [getUsers, fetchDistricts]);
 
   const form = useForm<ViewFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      action_type: "SALE",
+      action_type: type === "rent" ? "rent" : "sale",
       responsible: "",
       date: "",
       time: "",
       district: "",
-      price: 0,
-      commission: 0,
-      agent_percent: 0,
+      price: undefined,
+      agent_percent: undefined,
       status_deal: false,
       crm_id: "",
       client_number: "",
@@ -83,30 +97,20 @@ export function ViewForm() {
   const handleSubmit = async (data: ViewFormData) => {
     try {
       data.date = format(new Date(data.date), "yyyy-MM-dd");
+      data.time = data.time; // Ensure time is in "HH:mm" format
       await postView(data);
+      toast({
+        title: "Просмотр добавлен",
+        description: "Новый просмотр успешно добавлен",
+        variant: "default",
+      });
       router.push("/");
     } catch (error) {
-      const err = error as { detail?: { msg: string; ctx?: { expected: string } }[] } | { detail: string; status: number };
-      if ('status' in err && err.status === 400 && typeof err.detail === 'string') {
-        toast({
-          title: "Ошибка при создании просмотра",
-          description: err.detail,
-          variant: "destructive",
-        });
-      } else if ('detail' in err && Array.isArray(err.detail) && err.detail.length > 0) {
-        const errorMessage = err.detail[0].ctx?.expected || err.detail[0].msg;
-        toast({
-          title: "Ошибка при создании просмотра",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Ошибка при создании просмотра",
-          description: "Произошла неизвестная ошибка",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить просмотр",
+        variant: "destructive",
+      });
     }
   };
 
@@ -130,8 +134,8 @@ export function ViewForm() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="SALE">Продажа</SelectItem>
-                    <SelectItem value="RENT">Аренда</SelectItem>
+                    <SelectItem value="sale">Продажа</SelectItem>
+                    <SelectItem value="rent">Аренда</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -217,7 +221,11 @@ export function ViewForm() {
             <FormItem>
               <FormLabel>Время</FormLabel>
               <FormControl>
-                <Input type="time" {...field} />
+                <Input
+                  type="text"
+                  placeholder="Введите время в формате HH:mm"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -231,7 +239,23 @@ export function ViewForm() {
             <FormItem>
               <FormLabel>Район</FormLabel>
               <FormControl>
-                <Input placeholder="Введите район" {...field} />
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите район" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -248,26 +272,6 @@ export function ViewForm() {
                 <Input
                   type="number"
                   placeholder="Введите цену"
-                  {...field}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="commission"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Комиссия</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите комиссию"
                   {...field}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
@@ -350,8 +354,8 @@ export function ViewForm() {
               </FormControl>
               <FormMessage />
             </FormItem>
-          )}
-        />
+            )}
+          />
 
         <FormField
           control={form.control}
@@ -360,15 +364,15 @@ export function ViewForm() {
             <FormItem>
               <FormLabel>Номер владельца</FormLabel>
               <FormControl>
-                <Input placeholder="Введите номер владельца" {...field} />
+                <Input placeholder="Введите номер владельца (необязательно)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Сохранить
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? "Добавление..." : "Добавить"}
         </Button>
       </form>
     </Form>

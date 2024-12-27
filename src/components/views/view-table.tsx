@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   SortingState,
 } from '@tanstack/react-table'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import {
   Table,
@@ -20,8 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { ViewFormData } from '@/store/views/useViewStore';
-import { useViewStore } from "@/store/views/useViewStore";
+import { ViewFormData, useViewStore } from '@/store/views/useViewStore';
 import { useRouter } from "next/navigation";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 import { useToast } from "@/hooks/use-toast";
@@ -159,14 +158,29 @@ const columns: ColumnDef<ViewFormData>[] = [
 ]
 
 interface ViewsTableProps {
-  data: ViewFormData[]
+  data: ViewFormData[];
+  type: 'rent' | 'sale';
 }
 
-export function ViewsTable({ data }: ViewsTableProps) {
+export function ViewsTable({ data, type }: ViewsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
+  const { fetchViews } = useViewStore();
+  const [views, setViews] = useState<ViewFormData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const { views } = await fetchViews(type, 1, 10);
+      setViews(views);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [type, fetchViews]);
 
   const table = useReactTable({
-    data,
+    data: views,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -176,6 +190,10 @@ export function ViewsTable({ data }: ViewsTableProps) {
       sorting,
     },
   })
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="rounded-md border">
