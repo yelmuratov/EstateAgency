@@ -60,7 +60,7 @@ export default function EditClientPage() {
           onClick={() => router.push("/")}
           className="w-full"
         >
-          <ArrowLeft className="mr-2" />
+          <ArrowLeft className="mr-3" />
           Назад
         </Button>
       </div>
