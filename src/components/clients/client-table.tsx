@@ -19,23 +19,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { PropertyFormData } from '@/types/property'
+import { useClientStore } from "@/store/clients/useClientStore";
+import { useRouter } from "next/navigation";
+import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const columns: ColumnDef<PropertyFormData>[] = [
   {
-    accessorKey: 'realtorName',
+    accessorKey: 'responsible',
     header: 'Риэлтор',
   },
   {
-    accessorKey: 'clientName',
+    accessorKey: 'client_name',
     header: 'Клиент',
   },
   {
@@ -45,13 +54,22 @@ const columns: ColumnDef<PropertyFormData>[] = [
   {
     accessorKey: 'district',
     header: 'Район',
+    cell: ({ row }) => (
+      <div className="max-w-[200px] overflow-hidden">
+        <div className="whitespace-normal break-words">
+          {Array.isArray(row.original.district) 
+            ? row.original.district.join(', ')
+            : row.original.district}
+        </div>
+      </div>
+    ),
   },
   {
     accessorKey: 'budget',
     header: 'Бюджет',
   },
   {
-    accessorKey: 'clientStatus',
+    accessorKey: 'client_status',
     header: 'Статус клиента',
     cell: ({ row }) => (
       <div className={`font-medium ${
@@ -62,65 +80,92 @@ const columns: ColumnDef<PropertyFormData>[] = [
     ),
   },
   {
-    accessorKey: 'dealStatus',
+    accessorKey: 'deal_status',
     header: 'Статус сделки',
     cell: ({ row }) => {
-      if (row.original.action_type !== 'sale') return null
-      
+      if (row.original.action_type !== 'sale') return null;
       const statusMap = {
-        initial: 'ПЕРВИЧНЫЙ КОНТАКТ',
+        initial_contact: 'ПЕРВИЧНЫЙ КОНТАКТ',
         negotiation: 'ПЕРЕГОВОРЫ',
-        decision: 'ПРИНИМАЮТ РЕШЕНИЕ',
-        contract: 'СОГЛАСОВАНИЕ ДОГОВОРА',
+        decision_making: 'ПРИНИМАЮТ РЕШЕНИЕ',
+        agreement_contract: 'СОГЛАСОВАНИЕ ДОГОВОРА',
         deal: 'СДЕЛКА',
-      }
-      
-      return statusMap[row.original.deal_status as keyof typeof statusMap] || '-'
+      };
+      return statusMap[row.original.deal_status as keyof typeof statusMap] || '-';
     },
   },
   {
-    accessorKey: 'districts',
-    header: 'Район(ы)',
-    cell: ({ row }) => (
-      <div className="max-w-[200px] truncate">
-        {Array.isArray(row.original.district) 
-          ? row.original.district.join(', ')
-          : row.original.district}
-      </div>
-    ),
-  },
-  {
     id: 'actions',
-    cell: ({ row }) => {
+    cell: function ActionsCell({ row }) {
+      const { deleteClient } = useClientStore();
+      const router = useRouter();
+      const [isSuperUser] = useIsSuperUser();
+      const { toast } = useToast();
+      const [deleteId, setDeleteId] = useState<number | null>(null);
+
+      const handleDelete = async () => {
+        if (deleteId === null) return;
+        try {
+          await deleteClient(deleteId);
+          toast({
+            title: "Клиент удален",
+            description: "Клиент успешно удален",
+          });
+          setDeleteId(null);
+        } catch {
+          toast({
+            title: "Ошибка",
+            description: "Не удалось удалить клиента",
+            variant: "destructive",
+          });
+        }
+      };
+
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Открыть меню</span>
-              <div className="h-4 w-4">⋮</div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Действия</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(row.original.client_name)}
-            >
-              Копировать имя клиента
-            </DropdownMenuItem>
-            <DropdownMenuItem>Редактировать</DropdownMenuItem>
-            <DropdownMenuItem>Удалить</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+        <div className="flex space-x-2">
+          <Button
+            onClick={() => router.push(`/edit-client?id=${row.original.id}`)}
+            variant="default"
+          >
+            Редактировать
+          </Button>
+          {isSuperUser && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  onClick={() => setDeleteId(row.original.id)}
+                  variant="destructive"
+                >
+                  Удалить
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить клиента</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Вы уверены, что хотите удалить этого клиента? Это действие нельзя отменить.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      );
     },
   },
 ]
 
-interface PropertyTableProps {
+interface ClientsTableProps {
   data: PropertyFormData[]
 }
 
-export function PropertyTable({ data }: PropertyTableProps) {
+export function ClientsTable({ data }: ClientsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
 
   const table = useReactTable({

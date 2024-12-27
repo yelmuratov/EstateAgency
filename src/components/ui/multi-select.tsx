@@ -20,7 +20,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import Spinner from "../local-components/spinner"
 
 interface MultiSelectProps {
@@ -84,29 +83,27 @@ export function MultiSelect({ value, onChange }: MultiSelectProps) {
           <CommandEmpty className="py-2 text-center text-sm">
             Нет найденных районов
           </CommandEmpty>
-          <ScrollArea className="h-[200px]">
-            <CommandList>
-              <CommandGroup>
-                {districts.map((district) => (
-                  <CommandItem
-                    key={uuidv4()}
-                    value={district.name}
-                    onSelect={() => handleSetValue(district.name)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value.includes(district.name)
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                    {district.name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </ScrollArea>
+          <CommandList className="h-[200px] overflow-y-auto">
+            <CommandGroup>
+              {districts.map((district) => (
+                <CommandItem
+                  key={uuidv4()}
+                  value={district.name}
+                  onSelect={() => handleSetValue(district.name)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value.includes(district.name)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                  {district.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

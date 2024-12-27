@@ -2,7 +2,7 @@ import api from '@/lib/api';
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 
-interface User {
+export interface User {
     id: string | null;
     full_name: string;
     disabled: boolean;
@@ -34,6 +34,7 @@ interface UserState {
     fetchUserById: (id: string) => void;
     updateUser: (id: string, data: Partial<User>) => void;
     deleteUser: (id: string) => void;
+    getUsers: () => Promise<User[]>;
 }
 
 export const UserStore = create<UserState>((set) => ({
@@ -139,6 +140,21 @@ export const UserStore = create<UserState>((set) => ({
                 error: error instanceof Error ? error.message : "Failed to create user.",
             });
             throw error;
+        }
+    },
+
+    getUsers: async () => {
+        set({ loading: true });
+        try {
+            const response = await api.get('/user');
+            set({ users: response.data, loading: false });
+            return response.data;
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : "Failed to fetch users.",
+                loading: false,
+            });
+            return [];
         }
     },
 }));

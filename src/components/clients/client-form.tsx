@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from 'lucide-react';
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -13,6 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useRouter } from "next/navigation";
 import { useClientStore } from "@/store/clients/useClientStore";
+import { UserStore, User } from "@/store/users/userStore";
 import {
   Form,
   FormControl,
@@ -39,6 +40,7 @@ import { PropertyFormData, PropertyType } from "@/types/property";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { District } from "@/store/MetroDistrict/propertyStore";
 import Spinner from "../local-components/spinner";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   responsible: z.string().min(2, "Минимум 2 символа"),
@@ -51,20 +53,21 @@ const formSchema = z.object({
   }),
   comment: z.string(),
   action_type: z.enum(["rent", "sale"]),
-  deal_status: z
-    .enum(["initial", "negotiation", "decision", "contract", "deal"])
-    .optional(),
+  deal_status: z.enum(["initial_contact", "negotiation", "decision_making", "agreement_contract", "deal"]).optional(),
 });
 
 interface PropertyFormProps {
   type: PropertyType;
 }
 
-export function ViewForm({ type }: PropertyFormProps) {
+export function ClientForm({ type }: PropertyFormProps) {
   const router = useRouter();
   const { postClient } = useClientStore();
   const [districts, setDistricts] = useState<District[]>([]);
   const { returnDistricts, loading, error } = usePropertyStore();
+  const { getUsers } = UserStore();
+  const [users, setUsers] = useState<User[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchDistricts = async () => {
@@ -75,6 +78,15 @@ export function ViewForm({ type }: PropertyFormProps) {
     fetchDistricts();
   }, [returnDistricts]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const fetchedUsers = await getUsers();
+      setUsers(fetchedUsers);
+    };
+
+    fetchUsers();
+  }, [getUsers]);
+
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,10 +94,11 @@ export function ViewForm({ type }: PropertyFormProps) {
       client_name: "",
       date: "",
       district: [],
-      budget: 0,
+      budget: undefined,
       client_status: "cold",
       comment: "",
       action_type: type,
+      deal_status: type === "sale" ? "initial_contact" : undefined,
     },
   });
 
@@ -102,7 +115,27 @@ export function ViewForm({ type }: PropertyFormProps) {
       await postClient(data);
       router.push("/");
     } catch (error) {
-      console.error("Failed to submit form:", error);
+      const err = error as { detail?: { msg: string; ctx?: { expected: string } }[] } | { detail: string; status: number };
+      if ('status' in err && err.status === 400 && typeof err.detail === 'string') {
+        toast({
+          title: "Ошибка при создании клиента",
+          description: err.detail,
+          variant: "destructive",
+        });
+      } else if ('detail' in err && Array.isArray(err.detail) && err.detail.length > 0) {
+        const errorMessage = err.detail[0].ctx?.expected || err.detail[0].msg;
+        toast({
+          title: "Ошибка при создании клиента",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ошибка при создании клиента",
+          description: "Произошла неизвестная ошибка",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -116,7 +149,23 @@ export function ViewForm({ type }: PropertyFormProps) {
             <FormItem>
               <FormLabel>Имя риэлтора</FormLabel>
               <FormControl>
-                <Input placeholder="Введите имя риэлтора" {...field} />
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите риэлтора" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.email} value={user.full_name}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -168,6 +217,7 @@ export function ViewForm({ type }: PropertyFormProps) {
                     selected={field.value ? new Date(field.value) : undefined}
                     onSelect={(date) => field.onChange(date?.toISOString())}
                     initialFocus
+                    disabled={(date) => date > new Date()}
                   />
                 </PopoverContent>
               </Popover>
@@ -188,7 +238,7 @@ export function ViewForm({ type }: PropertyFormProps) {
                 ) : (
                   <Select
                     onValueChange={(value) => field.onChange([value])}
-                    value={field.value?.[0] || ""} // Add fallback empty string
+                    value={field.value?.[0] || ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -221,7 +271,8 @@ export function ViewForm({ type }: PropertyFormProps) {
                   type="number"
                   placeholder="Введите бюджет"
                   {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                 />
               </FormControl>
               <FormMessage />
@@ -289,12 +340,10 @@ export function ViewForm({ type }: PropertyFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="initial">ПЕРВИЧНЫЙ КОНТАКТ</SelectItem>
+                    <SelectItem value="initial_contact">ПЕРВИЧНЫЙ КОНТАКТ</SelectItem>
                     <SelectItem value="negotiation">ПЕРЕГОВОРЫ</SelectItem>
-                    <SelectItem value="decision">ПРИНИМАЮТ РЕШЕНИЕ</SelectItem>
-                    <SelectItem value="contract">
-                      СОГЛАСОВАНИЕ ДОГОВОРА
-                    </SelectItem>
+                    <SelectItem value="decision_making">ПРИНИМАЮТ РЕШЕНИЕ</SelectItem>
+                    <SelectItem value="agreement_contract">СОГЛАСОВАНИЕ ДОГОВОРА</SelectItem>
                     <SelectItem value="deal">СДЕЛКА</SelectItem>
                   </SelectContent>
                 </Select>
@@ -308,14 +357,7 @@ export function ViewForm({ type }: PropertyFormProps) {
           Сохранить
         </Button>
       </form>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full mt-4"
-        onClick={() => router.push("/")}
-      >
-        Назад
-      </Button>
     </Form>
   );
 }
+

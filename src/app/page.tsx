@@ -38,7 +38,7 @@ const CommercialTable = dynamic(() => import('@/components/tables/commercialTabl
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
-const ClientTable = dynamic(() => import('@/app/clients/page'), {
+const ClientTableWrapper = dynamic(() => import('@/components/clients/client-table-wrapper'), {
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
@@ -226,7 +226,7 @@ export default function Dashboard() {
         {selectedType.main === "apartments" && <ApartmentTable type={selectedType.sub} />}
         {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
         {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
-        {selectedType.main === "clients" && <ClientTable />}
+        {selectedType.main === "clients" && <ClientTableWrapper type={selectedType.sub} />}
       </div>
     </DashboardLayout>
   );
@@ -237,6 +237,7 @@ function getLabel(type: string): string {
     apartments: "Квартиры",
     lands: "Участки",
     commercial: "Коммерция",
+    clients: "Клиенты",
   };
   return labels[type] || "Неизвестно";
 }

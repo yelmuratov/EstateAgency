@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
@@ -34,19 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PropertyFormData, PropertyType } from '@/types/property'
-
-const DISTRICTS = [
-  "Алмазарский",
-  "Бектемирский",
-  "Мирабадский",
-  "Мирзо-Улугбекский",
-  "Сергелийский",
-  "Чиланзарский",
-  "Шайхантахурский",
-  "Юнусабадский",
-  "Яккасарайский",
-  "Янгихаётский",
-]
+import usePropertyStore from '@/store/MetroDistrict/propertyStore'
 
 const formSchema = z.object({
   realtorName: z.string().min(2, 'Минимум 2 символа'),
@@ -69,6 +57,17 @@ interface PropertyFormProps {
 
 export function ViewForm({ type, onSubmit }: PropertyFormProps) {
   const [date, setDate] = useState<Date>()
+  const { returnDistricts } = usePropertyStore();
+  const [districts, setDistricts] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      const response = await returnDistricts();
+      setDistricts(response.map((district) => district.name));
+    };
+
+    fetchDistricts();
+  }, [returnDistricts]);
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(formSchema),
@@ -187,7 +186,7 @@ export function ViewForm({ type, onSubmit }: PropertyFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {DISTRICTS.map((district) => (
+                  {districts.map((district) => (
                   <SelectItem key={district} value={district} className="bg-gray-100 text-black">
                     {district}
                   </SelectItem>

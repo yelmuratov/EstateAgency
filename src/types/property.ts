@@ -47,7 +47,7 @@ export interface LoginInfo {
 }
 
 export type ClientStatus = 'hot' | 'cold';
-export type DealStatus = 'initial' | 'negotiation' | 'decision' | 'contract' | 'deal';
+export type DealStatus = 'initial_contact' | 'negotiation' | 'decision_making' | 'agreement_contract' | 'deal';
 export type PropertyType = 'rent' | 'sale';
 
 export interface PropertyFormData {
@@ -55,13 +55,13 @@ export interface PropertyFormData {
   id: number;
   action_type: string;
   district: string[];
-  client_status: string;
+  client_status: ClientStatus;
   created_at: string;
   responsible: string;
   date: string;
   budget: number;
   comment: string;
-  deal_status: string | null;
+  deal_status: DealStatus | undefined; // Use DealStatus enum
   updated_at: string;
 }
 
