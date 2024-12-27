@@ -37,7 +37,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-
 const columns: ColumnDef<PropertyFormData>[] = [
   {
     accessorKey: 'responsible',
@@ -124,7 +123,7 @@ const columns: ColumnDef<PropertyFormData>[] = [
       return (
         <div className="flex space-x-2">
           <Button
-            onClick={() => router.push(`/edit-client?id=${row.original.id}`)}
+            onClick={() => router.push(`/edit-client/${row.original.id}`)}
             variant="default"
           >
             Редактировать

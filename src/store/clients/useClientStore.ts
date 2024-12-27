@@ -9,7 +9,7 @@ interface ClientStore {
     postClient: (client: PropertyFormData) => Promise<void>;
     fetchClients: (type: string) => Promise<{ clients: PropertyFormData[]; total: number }>;
     deleteClient: (id: number) => Promise<void>;
-    updateClient: (client: PropertyFormData) => Promise<void>;
+    updateClient: (clientId: number, client: PropertyFormData) => Promise<void>;
     fetchClientById: (id: number) => Promise<PropertyFormData | null>; // Add fetchClientById method
 }
 
@@ -84,12 +84,12 @@ export const useClientStore = create<ClientStore>((set) => ({
             });
         }
     },
-    updateClient: async (client: PropertyFormData) => {
+    updateClient: async (clientId: number, client: PropertyFormData) => {
         set({ loading: true, error: "" });
         try {
-            await api.put(`/clients/${client.id}`, client);
+            await api.put(`/clients/${clientId}`, client);
             set((state) => ({
-                clients: state.clients.map((c) => (c.id === client.id ? client : c)),
+                clients: state.clients.map((c) => (c.id === clientId ? client : c)),
                 loading: false,
                 error: "",
             }));
