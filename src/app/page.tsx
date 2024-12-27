@@ -42,6 +42,10 @@ const ClientTableWrapper = dynamic(() => import('@/components/clients/client-tab
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
+const ViewTable = dynamic(() => import('@/components/views/view-table'), {
+  ssr: false,
+  loading: () => <Spinner theme="light" />,
+});
 
 type PropertyType = {
   main: string;
@@ -187,6 +191,21 @@ export default function Dashboard() {
               </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                Просмотры
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => handleTypeChange("views", "sale")}>
+                Продажа
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleTypeChange("views", "rent")}>
+                Аренда
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
             {
               isSuperUser && (
                 <>
@@ -227,6 +246,7 @@ export default function Dashboard() {
         {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
         {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
         {selectedType.main === "clients" && <ClientTableWrapper type={selectedType.sub} />}
+        {selectedType.main === "views" && <ViewTable type={selectedType.sub} />}
       </div>
     </DashboardLayout>
   );
@@ -238,6 +258,7 @@ function getLabel(type: string): string {
     lands: "Участки",
     commercial: "Коммерция",
     clients: "Клиенты",
+    views: "Просмотры",
   };
   return labels[type] || "Неизвестно";
 }
