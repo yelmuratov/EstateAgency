@@ -517,11 +517,10 @@ export default function AccountingPage() {
                   className="h-3 w-3 rounded-full"
                   style={{ backgroundColor: "var(--color-desktop)" }}
                 ></div>
-                Рост на 5.2% в этом месяце <TrendingUp className="h-4 w-4" />
               </div>
-              <div className="leading-none text-muted-foreground">
-                Показаны общие данные по объектам за последние 6 месяцев
-              </div>
+                <div className="leading-none text-muted-foreground">
+                Показаны общие данные по объектам за последний год
+                </div>
             </CardFooter>
           </Card>
         </div>
