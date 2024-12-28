@@ -20,7 +20,7 @@ import {
 
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
-import { CalendarIcon, TrendingUp } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
