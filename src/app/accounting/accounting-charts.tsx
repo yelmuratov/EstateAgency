@@ -1,13 +1,33 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Line, LineChart } from "recharts"
+import { CartesianGrid, XAxis, YAxis, Pie, PieChart, Line, LineChart } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { TrendingUp } from 'lucide-react'
 import { Label } from "recharts"
 
+// Define types for metrics and transaction data
+interface Metrics {
+  deals: number
+  views: number
+  objects: number
+  clients: number
+}
+
+interface Transaction {
+  date: string
+  total_amount: number
+  commission: number
+}
+
+interface Trend {
+  date: string
+  amount: number
+  commission: number
+}
+
 // Transform metrics data for the pie chart
-const getMetricsDistribution = (metrics: any) => [
+const getMetricsDistribution = (metrics: Metrics) => [
   { name: "Сделки", value: metrics.deals },
   { name: "Показы", value: metrics.views },
   { name: "Объекты", value: metrics.objects },
@@ -35,8 +55,8 @@ const metricsConfig = {
 }
 
 // Transform transaction data for the trends chart
-const getTransactionTrends = (data: any[]) => {
-  const trends = data.reduce((acc: any, item: any) => {
+const getTransactionTrends = (data: Transaction[]): Trend[] => {
+  const trends = data.reduce((acc: Record<string, Trend>, item: Transaction) => {
     const date = new Date(item.date).toLocaleDateString()
     if (!acc[date]) {
       acc[date] = { date, amount: 0, commission: 0 }
@@ -62,14 +82,9 @@ const trendsConfig = {
 
 interface AccountingChartsProps {
   statistics: {
-    metrics: {
-      deals: number
-      views: number
-      objects: number
-      clients: number
-    }
+    metrics: Metrics
   }
-  data: any[]
+  data: Transaction[]
 }
 
 export default function AccountingCharts({ statistics, data }: AccountingChartsProps) {

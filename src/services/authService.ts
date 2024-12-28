@@ -65,7 +65,6 @@ export const getUser = async (): Promise<ExtendedAuthResponse | null> => {
       clearToken(); 
     }
 
-    console.log("Error fetching user:", apiError.message);
     return null; // Return null in case of an error
   }
 };

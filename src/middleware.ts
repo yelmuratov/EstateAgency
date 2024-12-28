@@ -86,6 +86,42 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  if(pathname.startsWith('/edit-client')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/clients')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/add-view')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/edit-view')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/views')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
+  if(pathname.startsWith('/accounting')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/404', req.url));
+    }
+  }
+
   // Allow requests to proceed
   return NextResponse.next();
 }
@@ -105,5 +141,12 @@ export const config = {
     '/users/:path*', // Matches /users and any subpaths
     '/info/:path*', // Matches /info and any subpaths
     '/change-log/:path*', // Matches /change-log and any subpaths
+    '/add-client/:path*', // Matches /add-client and any subpaths
+    '/edit-client/:path*', // Matches /edit-client and any subpaths
+    '/clients/:path*', // Matches /clients and any subpaths
+    '/add-view/:path*', // Matches /add-view and any subpaths
+    '/edit-view/:path*', // Matches /edit-view and any subpaths
+    '/views/:path*', // Matches /views and any subpaths
+    '/accounting/:path*', // Matches /accounting and any subpaths
   ],
 };

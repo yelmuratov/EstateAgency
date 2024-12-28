@@ -20,8 +20,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { ViewFormData, useViewStore } from '@/store/views/useViewStore';
-import { useRouter } from "next/navigation";
+import { useDealStore } from '@/store/deals/useDealStore';
+import { Deal } from "@/types/deal";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -35,11 +35,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Spinner from '../local-components/spinner'
 
-const columns: ColumnDef<ViewFormData>[] = [
+const actionTypeTranslation: { [key: string]: string } = {
+  rent: "Аренда",
+  sale: "Продажа",
+};
+
+const columns: ColumnDef<Deal>[] = [
   {
     accessorKey: 'action_type',
     header: 'Тип действия',
+    cell: ({ row }) => actionTypeTranslation[row.original.action_type] || row.original.action_type,
   },
   {
     accessorKey: 'responsible',
@@ -50,16 +57,8 @@ const columns: ColumnDef<ViewFormData>[] = [
     header: 'Дата',
   },
   {
-    accessorKey: 'time',
-    header: 'Время',
-  },
-  {
-    accessorKey: 'district',
-    header: 'Район',
-  },
-  {
-    accessorKey: 'price',
-    header: 'Цена',
+    accessorKey: 'object_price',
+    header: 'Цена объекта',
   },
   {
     accessorKey: 'commission',
@@ -70,31 +69,13 @@ const columns: ColumnDef<ViewFormData>[] = [
     header: 'Процент агента',
   },
   {
-    accessorKey: 'status_deal',
-    header: 'Статус сделки',
-    cell: ({ row }) => (
-      <div className={`font-medium ${row.original.status_deal ? 'text-green-500' : 'text-red-500'}`}>
-        {row.original.status_deal ? 'Завершена' : 'Не завершена'}
-      </div>
-    ),
-  },
-  {
     accessorKey: 'crm_id',
     header: 'CRM ID',
   },
   {
-    accessorKey: 'client_number',
-    header: 'Номер клиента',
-  },
-  {
-    accessorKey: 'owner_number',
-    header: 'Номер владельца',
-  },
-  {
     id: 'actions',
     cell: function ActionsCell({ row }) {
-      const { deleteView } = useViewStore();
-      const router = useRouter();
+      const { deleteDeal } = useDealStore();
       const [isSuperUser] = useIsSuperUser();
       const { toast } = useToast();
       const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -102,16 +83,16 @@ const columns: ColumnDef<ViewFormData>[] = [
       const handleDelete = async () => {
         if (deleteId === null) return;
         try {
-          await deleteView(deleteId);
+          await deleteDeal(deleteId);
           toast({
-            title: "Просмотр удален",
-            description: "Просмотр успешно удален",
+            title: "Сделка удалена",
+            description: "Сделка успешно удалена",
           });
           setDeleteId(null);
         } catch {
           toast({
             title: "Ошибка",
-            description: "Не удалось удалить просмотр",
+            description: "Не удалось удалить сделку",
             variant: "destructive",
           });
         }
@@ -119,12 +100,6 @@ const columns: ColumnDef<ViewFormData>[] = [
 
       return (
         <div className="flex space-x-2">
-          <Button
-            onClick={() => router.push(`/edit-view/${row.original.id}`)}
-            variant="default"
-          >
-            Редактировать
-          </Button>
           {isSuperUser && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -137,9 +112,9 @@ const columns: ColumnDef<ViewFormData>[] = [
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Удалить просмотр</AlertDialogTitle>
+                  <AlertDialogTitle>Удалить сделку</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Вы уверены, что хотите удалить этот просмотр? Это действие нельзя отменить.
+                    Вы уверены, что хотите удалить эту сделку? Это действие нельзя отменить.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -157,30 +132,30 @@ const columns: ColumnDef<ViewFormData>[] = [
   },
 ]
 
-interface ViewsTableProps {
-  data: ViewFormData[];
+interface DealsTableProps {
+  data: Deal[];
   type: 'rent' | 'sale';
 }
 
-export function ViewsTable({ type }: ViewsTableProps) {
+export function DealsTable({type }: DealsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
-  const { fetchViews } = useViewStore();
-  const [views, setViews] = useState<ViewFormData[]>([]);
+  const { fetchDeals } = useDealStore();
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { views } = await fetchViews(type, 1, 10);
-      setViews(views);
+      const { deals } = await fetchDeals(type, 1, 10);
+      setDeals(deals);
       setLoading(false);
     };
 
     fetchData();
-  }, [type, fetchViews]);
+  }, [type, fetchDeals]);
 
   const table = useReactTable({
-    data: views,
+    data: deals,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -192,7 +167,7 @@ export function ViewsTable({ type }: ViewsTableProps) {
   })
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Spinner theme='dark' />
   }
 
   return (

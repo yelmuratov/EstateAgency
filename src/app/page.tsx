@@ -58,6 +58,13 @@ const ViewTable = dynamic(
     loading: () => <Spinner theme="light" />,
   }
 );
+const DealsTable = dynamic(
+  () => import("@/components/deals/deal-table").then((mod) => mod.DealsTable),
+  {
+    ssr: false,
+    loading: () => <Spinner theme="light" />,
+  }
+);
 
 type PropertyType = {
   main: string;
@@ -125,13 +132,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const currentPage = localStorage.getItem("currentPage");
-    if (currentPage) {
-      router.push(`/${currentPage}`);
-    } else {
-      fetchUserData();
-    }
-  }, [fetchUserData, router]);
+    fetchUserData();
+  }, [fetchUserData]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -242,6 +244,23 @@ export default function Dashboard() {
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Сделки</DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("deals", "sale")}
+                  >
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("deals", "rent")}
+                  >
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
             {isSuperUser && (
               <>
                 <DropdownMenuItem onClick={() => router.push("/users")}>
@@ -282,6 +301,9 @@ export default function Dashboard() {
         {selectedType.main === "views" && (
           <ViewTable data={[]} type={selectedType.sub} />
         )}
+        {selectedType.main === "deals" && (
+          <DealsTable data={[]} type={selectedType.sub} />
+        )}
       </div>
     </DashboardLayout>
   );
@@ -294,6 +316,7 @@ function getLabel(type: string): string {
     commercial: "Коммерция",
     clients: "Клиенты",
     views: "Показы",
+    deals: "Сделки",
   };
   return labels[type] || "Неизвестно";
 }

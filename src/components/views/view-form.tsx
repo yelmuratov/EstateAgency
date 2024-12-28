@@ -36,8 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { District } from "@/store/MetroDistrict/propertyStore";
-import Spinner from "../local-components/spinner";
 import usePropertyStore  from "@/store/MetroDistrict/propertyStore";
 
 const formSchema = z.object({
@@ -106,14 +104,12 @@ export function ViewForm({ type }: ViewFormProps) {
       router.push("/");
     } catch (error) {
       if (error instanceof AxiosError) {
-      console.log("Axios error:", error.response?.data);
       toast({
         title: "Ошибка",
         description: `Не удалось добавить просмотр: ${error.response?.data?.detail || error.message}`,
         variant: "destructive",
       });
       } else {
-      console.log("Error adding view:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось добавить просмотр",

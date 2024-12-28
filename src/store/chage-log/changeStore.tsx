@@ -19,7 +19,6 @@ const useChangeStore = create<ChangeStoreState>((set) => ({
   fetchChangeLogs: async (page: number, limit: number) => {
     set({ loading: true, error: "" });
     try {
-      console.log("fetching change logs");
       const response = await api.get(`/changes/?limit=${limit}&page=${page}`);
       set({
         changeLogs: response.data.results || [],

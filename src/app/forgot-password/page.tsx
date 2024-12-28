@@ -68,8 +68,7 @@ export default function ForgotPasswordPage() {
 
   const onSubmitPassword = async (data: PasswordSchema) => {
     try {
-      const response = await resetPassword(data?.confirmPassword);
-      console.log(response);
+      await resetPassword(data?.confirmPassword);
       setError(null);
       setSuccess('Пароль успешно сброшен');
     } catch {

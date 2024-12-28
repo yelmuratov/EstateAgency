@@ -17,14 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { CalendarIcon, TrendingUp } from "lucide-react";
@@ -59,7 +52,7 @@ import Spinner from "@/components/local-components/spinner";
 import { useAuthStore } from "@/store/authStore";
 
 export default function AccountingPage() {
-  const { data, statistics, loading, fetchData } = useAccountingStore();
+  const { statistics, fetchData } = useAccountingStore();
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [actionType, setActionType] = useState<string>("sale");
@@ -75,9 +68,6 @@ export default function AccountingPage() {
   const [dealsCount, setDealsCount] = useState(0);
   const [objectsCount, setObjectsCount] = useState(0);
   const [clientsCount, setClientsCount] = useState(0);
-
-  console.log(statistics);
-  // Updated metrics data based on actual statistics
 
   useEffect(() => {
     setViewsCount(statistics.metrics.views);
@@ -105,24 +95,20 @@ export default function AccountingPage() {
     { browser: "Клиенты", visitors: clientsCount, fill: "var(--color-edge)" },
   ];
 
-  // Device usage data
-  const deviceData = [
-    { month: "January", desktop: 186, mobile: 80 },
-    { month: "February", desktop: 305, mobile: 200 },
-    { month: "March", desktop: 237, mobile: 120 },
-    { month: "April", desktop: 73, mobile: 190 },
-    { month: "May", desktop: 209, mobile: 130 },
-    { month: "June", desktop: 214, mobile: 140 },
-  ];
-
   // Objects data for rent and sale in months
   const objectsData = [
-    { month: "January", rent: 50, sale: 30 },
-    { month: "February", rent: 70, sale: 40 },
-    { month: "March", rent: 60, sale: 50 },
-    { month: "April", rent: 80, sale: 60 },
-    { month: "May", rent: 90, sale: 70 },
-    { month: "June", rent: 100, sale: 80 },
+    { month: "January", rent: 0, sale: 0 },
+    { month: "February", rent: 0, sale: 0 },
+    { month: "March", rent: 0, sale: 0 },
+    { month: "April", rent: 0, sale: 0 },
+    { month: "May", rent: 0, sale: 0 },
+    { month: "June", rent: 0, sale: 0 },
+    { month: "July", rent: 0, sale: 0 },
+    { month: "August", rent: 0, sale: 0 },
+    { month: "September", rent: 0, sale: 0 },
+    { month: "October", rent: 0, sale: 0 },
+    { month: "November", rent: 0, sale: 0 },
+    { month: "December", rent: 169, sale: 34 },
   ];
 
   const browserConfig = {
@@ -161,11 +147,6 @@ export default function AccountingPage() {
       color: "hsl(var(--chart-2))",
     },
   };
-
-  const totalBrowserVisitors = browserData.reduce(
-    (acc, curr) => acc + curr.visitors,
-    0
-  );
 
   useEffect(() => {
     fetchUsers();

@@ -156,25 +156,6 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
         status: 'completed',
       }));
 
-      // Calculate monthly data from the API response
-      const monthlyData: MonthlyData[] = [];
-      const monthMap: { [key: string]: { rent: number; sale: number } } = {};
-
-      data.deals.forEach((deal) => {
-        const month = new Date(deal.date).toLocaleString('default', { month: 'long' });
-        if (!monthMap[month]) {
-          monthMap[month] = { rent: 0, sale: 0 };
-        }
-        if (deal.action_type === 'rent') {
-          monthMap[month].rent += 1;
-        } else if (deal.action_type === 'sale') {
-          monthMap[month].sale += 1;
-        }
-      });
-
-      for (const [month, counts] of Object.entries(monthMap)) {
-        monthlyData.push({ month, rent: counts.rent, sale: counts.sale });
-      }
 
       // Calculate statistics from the API response
       const statistics: Statistics = {
@@ -193,7 +174,7 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
           objects: data.all_objects,
           clients: data.clients_count,
         },
-        monthlyData,
+        monthlyData: data.monthly_data,
       };
 
       set({

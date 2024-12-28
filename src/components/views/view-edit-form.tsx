@@ -35,7 +35,7 @@ const formSchema = z.object({
   action_type: z.enum(["sale", "rent"]),
   responsible: z.string().min(2, "Минимум 2 символа"),
   date: z.string().min(1, "Выберите дату"),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Введите время в формате HH:mm"),
+  time: z.string().min(1, "Выберите время"),
   district: z.string().min(2, "Минимум 2 символа"),
   price: z.number().min(1, "Введите цену"),
   agent_percent: z.number().min(1, "Введите процент агента"),
@@ -51,7 +51,7 @@ interface EditViewFormProps {
   onSubmit: (data: ViewFormData) => Promise<void>;
 }
 
-export function EditViewForm({ viewId, initialData, onSubmit }: EditViewFormProps) {
+export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
   const router = useRouter();
   const { updateView } = useViewStore();
   const { getUsers } = UserStore();
@@ -79,12 +79,6 @@ export function EditViewForm({ viewId, initialData, onSubmit }: EditViewFormProp
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
   });
-
-  useEffect(() => {
-    if (Object.keys(form.formState.errors).length > 0) {
-      console.log("Form errors:", form.formState.errors);
-    }
-  }, [form.formState.errors]);
 
   const handleSubmit = async (data: ViewFormData) => {
     try {

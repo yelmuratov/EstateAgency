@@ -95,19 +95,12 @@ export function EditClientForm({ clientId, initialData }: EditClientFormProps) {
     defaultValues: initialData,
   });
 
-  useEffect(() => {
-    if (Object.keys(form.formState.errors).length > 0) {
-      console.log("Form errors:", form.formState.errors);
-    }
-  }, [form.formState.errors]);
-
   if (loading) return <Spinner theme="dark" />;
 
   if (error) return <div>Failed to fetch districts: {error}</div>;
 
   const handleSubmit = async (data: PropertyFormData) => {
     try {
-      console.log("Submitting data:", data); // Debugging log
       data.date = format(new Date(data.date), "yyyy-MM-dd");
       // Ensure district is an array or string
       if (typeof data.district === 'string') {
@@ -248,7 +241,6 @@ export function EditClientForm({ clientId, initialData }: EditClientFormProps) {
                   <MultiSelect
                     value={field.value}
                     onChange={(value) => {
-                      console.log("MultiSelect value:", value); // Debugging log
                       field.onChange(value);
                     }}
                   />

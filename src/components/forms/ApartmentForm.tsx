@@ -196,14 +196,6 @@ export default function ApartmentForm() {
         params.append("second_agent_percent", data.second_agent_percent.toString());
       }
 
-      console.log("Query parameters:", params.toString());
-      if (mediaFiles && mediaFiles.length > 0) {
-        console.log("FormData content (media only):");
-        for (const [key, value] of formData.entries()) {
-          console.log(`${key}:`, value);
-        }
-      }
-
       setIsSubmitting(true);
       await api.post(
         `/apartment/?${params.toString()}`,

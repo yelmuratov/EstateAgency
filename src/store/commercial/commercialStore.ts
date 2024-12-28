@@ -89,7 +89,6 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
     set({ searchLoading: true, searchError: null });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=commercial`);
-      console.log(Array.isArray(response.data) ? response.data : []);
       set({
         commercials: Array.isArray(response.data) ? response.data : [], // Use `data` key
         total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
@@ -100,7 +99,6 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         message?: string;
         response?: { data?: { detail?: string } };
       };
-      console.log(apiError);
       set({
         searchError:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",

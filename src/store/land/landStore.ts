@@ -120,7 +120,6 @@ export const useLandStore = create<LandStore>((set) => ({
     set({ searchLoading: true, searchError: null });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=land`);
-      console.log(Array.isArray(response.data) ? response.data : []);
       set({
         lands: Array.isArray(response.data) ? response.data : [], // Use `data` key
         total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
@@ -131,7 +130,6 @@ export const useLandStore = create<LandStore>((set) => ({
         message?: string;
         response?: { data?: { detail?: string } };
       };
-      console.log(apiError);
       set({
         searchError:
           apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
