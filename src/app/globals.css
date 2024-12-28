@@ -86,3 +86,14 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+:root {
+  --color-rent: hsl(var(--primary));
+  --color-sale: hsl(var(--secondary));
+}
+
+.dark {
+  --color-rent: hsl(var(--primary));
+  --color-sale: hsl(var(--secondary));
+}
+

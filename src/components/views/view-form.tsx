@@ -10,10 +10,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { useRouter } from "next/navigation";
 import { useViewStore, ViewFormData } from "@/store/views/useViewStore";
 import { UserStore, User } from "@/store/users/userStore";
+import { AxiosError } from "axios";
 import {
   Form,
   FormControl,
@@ -28,7 +28,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -100,17 +99,27 @@ export function ViewForm({ type }: ViewFormProps) {
       data.time = data.time; // Ensure time is in "HH:mm" format
       await postView(data);
       toast({
-        title: "Просмотр добавлен",
-        description: "Новый просмотр успешно добавлен",
-        variant: "default",
+      title: "Просмотр добавлен",
+      description: "Новый просмотр успешно добавлен",
+      variant: "default",
       });
       router.push("/");
     } catch (error) {
+      if (error instanceof AxiosError) {
+      console.log("Axios error:", error.response?.data);
+      toast({
+        title: "Ошибка",
+        description: `Не удалось добавить просмотр: ${error.response?.data?.detail || error.message}`,
+        variant: "destructive",
+      });
+      } else {
+      console.log("Error adding view:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось добавить просмотр",
         variant: "destructive",
       });
+      }
     }
   };
 

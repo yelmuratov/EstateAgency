@@ -119,6 +119,7 @@ export const useViewStore = create<ViewStore>((set) => ({
                 error: apiError.response?.data?.detail || apiError.message || "Failed to update view",
                 loading: false,
             });
+            throw error;
         }
     },
     fetchViewById: async (id: number) => {

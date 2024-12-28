@@ -346,6 +346,31 @@ export function EditClientForm({ clientId, initialData }: EditClientFormProps) {
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="action_type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Тип действия</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value ?? undefined}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите тип действия" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="rent">Аренда</SelectItem>
+                  <SelectItem value="sale">Продажа</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         {initialData.action_type === "sale" && (
           <FormField
             control={form.control}

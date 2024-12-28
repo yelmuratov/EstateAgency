@@ -221,24 +221,6 @@ export function ClientsTable({ data }: ClientsTableProps) {
           )}
         </TableBody>
       </Table>
-      <div className="flex items-center justify-end space-x-2 p-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Предыдущая
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Следующая
-        </Button>
-      </div>
     </div>
   )
 }

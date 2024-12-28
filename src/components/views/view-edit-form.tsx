@@ -29,15 +29,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import usePropertyStore  from "@/store/MetroDistrict/propertyStore";
 
 const formSchema = z.object({
-  action_type: z.enum(["SALE", "RENT"]),
+  action_type: z.enum(["sale", "rent"]),
   responsible: z.string().min(2, "Минимум 2 символа"),
   date: z.string().min(1, "Выберите дату"),
-  time: z.string().min(1, "Выберите время"),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Введите время в формате HH:mm"),
   district: z.string().min(2, "Минимум 2 символа"),
   price: z.number().min(1, "Введите цену"),
-  commission: z.number().min(1, "Введите комиссию"),
   agent_percent: z.number().min(1, "Введите процент агента"),
   status_deal: z.boolean(),
   crm_id: z.string().min(1, "Введите CRM ID"),
@@ -48,14 +48,16 @@ const formSchema = z.object({
 interface EditViewFormProps {
   viewId: number;
   initialData: ViewFormData;
+  onSubmit: (data: ViewFormData) => Promise<void>;
 }
 
-export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
+export function EditViewForm({ viewId, initialData, onSubmit }: EditViewFormProps) {
   const router = useRouter();
   const { updateView } = useViewStore();
   const { getUsers } = UserStore();
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
+  const { fetchDistricts, districts } = usePropertyStore();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -65,6 +67,13 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
 
     fetchUsers();
   }, [getUsers]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchDistricts();
+    };
+    fetchData();
+  }, [fetchDistricts]);
 
   const form = useForm<ViewFormData>({
     resolver: zodResolver(formSchema),
@@ -82,33 +91,35 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
       data.date = format(new Date(data.date), "yyyy-MM-dd");
       await updateView(viewId, data);
       toast({
-        title: "Просмотр обновлен",
-        description: "Данные просмотра успешно обновлены",
-        variant: "default",
+      title: "Просмотр обновлен",
+      description: "Данные просмотра успешно обновлены",
+      variant: "default",
       });
       router.push("/");
     } catch (error) {
-      console.error("Error updating view:", error);
-      const err = error as { detail?: { msg: string; ctx?: { expected: string } }[] } | { detail: string; status: number };
-      if ('status' in err && err.status === 400 && typeof err.detail === 'string') {
+      const err = error as { response?: { data?: { detail?: string | { msg: string; ctx?: { expected: string } }[] } }; message?: string; status?: number };
+      if (err.response?.data?.detail) {
+      const detail = err.response.data.detail;
+      if (typeof detail === 'string') {
         toast({
-          title: "Ошибка при обновлении просмотра",
-          description: err.detail,
-          variant: "destructive",
+        title: "Ошибка при обновлении просмотра",
+        description: detail,
+        variant: "destructive",
         });
-      } else if ('detail' in err && Array.isArray(err.detail) && err.detail.length > 0) {
-        const errorMessage = err.detail[0].ctx?.expected || err.detail[0].msg;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        const errorMessage = detail[0].ctx?.expected || detail[0].msg;
         toast({
-          title: "Ошибка при обновлении просмотра",
-          description: errorMessage,
-          variant: "destructive",
+        title: "Ошибка при обновлении просмотра",
+        description: errorMessage,
+        variant: "destructive",
         });
+      }
       } else {
-        toast({
-          title: "Ошибка при обновлении просмотра",
-          description: "Произошла неизвестная ошибка",
-          variant: "destructive",
-        });
+      toast({
+        title: "Ошибка при обновлении просмотра",
+        description: err.message || "Произошла неизвестная ошибка",
+        variant: "destructive",
+      });
       }
     }
   };
@@ -133,8 +144,8 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="SALE">Продажа</SelectItem>
-                    <SelectItem value="RENT">Аренда</SelectItem>
+                    <SelectItem value="sale">Продажа</SelectItem>
+                    <SelectItem value="rent">Аренда</SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -220,7 +231,11 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
             <FormItem>
               <FormLabel>Время</FormLabel>
               <FormControl>
-                <Input type="time" {...field} />
+                <Input
+                  type="text"
+                  placeholder="Введите время в формате HH:mm"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -234,7 +249,23 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
             <FormItem>
               <FormLabel>Район</FormLabel>
               <FormControl>
-                <Input placeholder="Введите район" {...field} />
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ?? undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите район" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -251,26 +282,6 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
                 <Input
                   type="number"
                   placeholder="Введите цену"
-                  {...field}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="commission"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Комиссия</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Введите комиссию"
                   {...field}
                   value={field.value ?? ""}
                   onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
@@ -374,6 +385,6 @@ export function EditViewForm({ viewId, initialData }: EditViewFormProps) {
           {form.formState.isSubmitting ? "Обновление..." : "Обновить"}
         </Button>
       </form>
-        </Form>
-      );
-    }
+    </Form>
+  );
+}

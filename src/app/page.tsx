@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
@@ -26,43 +26,57 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Lazy-load heavy components
-const ApartmentTable = dynamic(() => import('@/components/tables/apartmentTabel'), {
+const ApartmentTable = dynamic(
+  () => import("@/components/tables/apartmentTabel"),
+  {
+    ssr: false,
+    loading: () => <Spinner theme="light" />,
+  }
+);
+const LandTable = dynamic(() => import("@/components/tables/landTable"), {
   ssr: false,
   loading: () => <Spinner theme="light" />,
 });
-const LandTable = dynamic(() => import('@/components/tables/landTable'), {
-  ssr: false,
-  loading: () => <Spinner theme="light" />,
-});
-const CommercialTable = dynamic(() => import('@/components/tables/commercialTable'), {
-  ssr: false,
-  loading: () => <Spinner theme="light" />,
-});
-const ClientTableWrapper = dynamic(() => import('@/components/clients/client-table-wrapper'), {
-  ssr: false,
-  loading: () => <Spinner theme="light" />,
-});
-const ViewTable = dynamic(() => import('@/components/views/view-table').then(mod => mod.ViewsTable), {
-  ssr: false,
-  loading: () => <Spinner theme="light" />,
-});
+const CommercialTable = dynamic(
+  () => import("@/components/tables/commercialTable"),
+  {
+    ssr: false,
+    loading: () => <Spinner theme="light" />,
+  }
+);
+const ClientTableWrapper = dynamic(
+  () => import("@/components/clients/client-table-wrapper"),
+  {
+    ssr: false,
+    loading: () => <Spinner theme="light" />,
+  }
+);
+const ViewTable = dynamic(
+  () => import("@/components/views/view-table").then((mod) => mod.ViewsTable),
+  {
+    ssr: false,
+    loading: () => <Spinner theme="light" />,
+  }
+);
 
 type PropertyType = {
   main: string;
-  sub: 'rent' | 'sale';
+  sub: "rent" | "sale";
 };
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isSuperUser] = useIsSuperUser();
   const [selectedType, setSelectedType] = useState<PropertyType>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const savedType = localStorage.getItem("selectedType");
-      return savedType ? JSON.parse(savedType) : { main: "apartments", sub: 'sale' };
+      return savedType
+        ? JSON.parse(savedType)
+        : { main: "apartments", sub: "sale" };
     }
-    return { main: "apartments", sub: 'sale' };
+    return { main: "apartments", sub: "sale" };
   });
-  
+
   const router = useRouter();
   const { token } = useAuthStore();
   const { toast } = useToast();
@@ -75,14 +89,14 @@ export default function Dashboard() {
       router.push("/login");
       return;
     }
-  
+
     try {
       const userData = await getUser();
-  
+
       if (!userData) {
         throw new Error("Не удалось получить данные пользователя.");
       }
-  
+
       setUser({ ...userData.user, id: userData.user.id.toString() });
       setAuthToken(userData.token);
     } catch (error) {
@@ -99,23 +113,28 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [token, router, toast, setUser]); 
+  }, [token, router, toast, setUser]);
 
-  const handleTypeChange = (main: string, sub: 'rent' | 'sale') => {
+  const handleTypeChange = (main: string, sub: "rent" | "sale") => {
     const newType = { main, sub };
     setSelectedType(newType);
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem("selectedType", JSON.stringify(newType));
     }
   };
 
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    const currentPage = localStorage.getItem("currentPage");
+    if (currentPage) {
+      router.push(`/${currentPage}`);
+    } else {
+      fetchUserData();
+    }
+  }, [fetchUserData, router]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.setItem("selectedType", JSON.stringify(selectedType));
     }
   }, [selectedType]);
@@ -131,7 +150,8 @@ export default function Dashboard() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
-              {getLabel(selectedType.main)} - {selectedType.sub === 'rent' ? 'Аренда' : 'Продажа'}
+              {getLabel(selectedType.main)} -{" "}
+              {selectedType.sub === "rent" ? "Аренда" : "Продажа"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -139,10 +159,14 @@ export default function Dashboard() {
               <DropdownMenuSubTrigger>Квартиры</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleTypeChange("apartments", "sale")}>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("apartments", "sale")}
+                  >
                     Продажа
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleTypeChange("apartments", "rent")}>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("apartments", "rent")}
+                  >
                     Аренда
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
@@ -153,10 +177,14 @@ export default function Dashboard() {
               <DropdownMenuSubTrigger>Участки</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleTypeChange("lands", "sale")}>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("lands", "sale")}
+                  >
                     Продажа
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleTypeChange("lands", "rent")}>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("lands", "rent")}
+                  >
                     Аренда
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
@@ -166,87 +194,94 @@ export default function Dashboard() {
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>Коммерция</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleTypeChange("commercial", "sale")}>
-                Продажа
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleTypeChange("commercial", "rent")}>
-                Аренда
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("commercial", "sale")}
+                  >
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("commercial", "rent")}
+                  >
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                Клиенты
-              </DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger>Клиенты</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleTypeChange("clients", "sale")}>
-                Продажа
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleTypeChange("clients", "rent")}>
-                Аренда
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("clients", "sale")}
+                  >
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("clients", "rent")}
+                  >
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                Просмотры
-              </DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger>Показы</DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleTypeChange("views", "sale")}>
-                Продажа
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleTypeChange("views", "rent")}>
-                Аренда
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("views", "sale")}
+                  >
+                    Продажа
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleTypeChange("views", "rent")}
+                  >
+                    Аренда
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
-            {
-              isSuperUser && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => router.push("/users")}
-                  >
-                    Пользователи
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => router.push("/districts")}
-                  >
-                    Районы
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => router.push("/metros")}
-                  >
-                    Метро
-                  </DropdownMenuItem>
-                  {/* change log */}
-                  <DropdownMenuItem
-                    onClick={() => router.push("/change-log")}
-                  >
-                    Лог изменений
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => router.push("/info")}
-                  >
-                    Информация о входах
-                  </DropdownMenuItem>
-                </>
-              )
-            }
+            {isSuperUser && (
+              <>
+                <DropdownMenuItem onClick={() => router.push("/users")}>
+                  Пользователи
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/districts")}>
+                  Районы
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/metros")}>
+                  Метро
+                </DropdownMenuItem>
+                {/* change log */}
+                <DropdownMenuItem onClick={() => router.push("/change-log")}>
+                  Лог изменений
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/info")}>
+                  Информация о входах
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/accounting")}>
+                  Отчетность
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       <div>
-        {selectedType.main === "apartments" && <ApartmentTable type={selectedType.sub} />}
+        {selectedType.main === "apartments" && (
+          <ApartmentTable type={selectedType.sub} />
+        )}
         {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
-        {selectedType.main === "commercial" && <CommercialTable type={selectedType.sub} />}
-        {selectedType.main === "clients" && <ClientTableWrapper type={selectedType.sub} />}
-        {selectedType.main === "views" && <ViewTable data={[]} type={selectedType.sub} />}
+        {selectedType.main === "commercial" && (
+          <CommercialTable type={selectedType.sub} />
+        )}
+        {selectedType.main === "clients" && (
+          <ClientTableWrapper type={selectedType.sub} />
+        )}
+        {selectedType.main === "views" && (
+          <ViewTable data={[]} type={selectedType.sub} />
+        )}
       </div>
     </DashboardLayout>
   );
@@ -258,7 +293,7 @@ function getLabel(type: string): string {
     lands: "Участки",
     commercial: "Коммерция",
     clients: "Клиенты",
-    views: "Просмотры",
+    views: "Показы",
   };
   return labels[type] || "Неизвестно";
 }

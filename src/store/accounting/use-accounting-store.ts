@@ -1,10 +1,56 @@
 import api from "@/lib/api";
 import { create } from "zustand";
 
+export interface Deal {
+  date: string;
+  id: number;
+  action_type: string;
+  object_price: number;
+  agent_percent: number;
+  updated_at: string;
+  crm_id: string;
+  responsible: string;
+  commission: number;
+  created_at: string;
+  monthly_data: MonthlyData[];
+}
+
+export interface View {
+  id: number;
+  date: string;
+  district: string;
+  commission: number;
+  status_deal: boolean;
+  client_number: string;
+  created_at: string;
+  time: string;
+  action_type: string;
+  responsible: string;
+  price: number;
+  agent_percent: number;
+  crm_id: string;
+  owner_number: string;
+  updated_at: string;
+}
+
+export interface Client {
+  client_name: string;
+  id: number;
+  action_type: string;
+  district: string[];
+  client_status: 'hot' | 'cold';
+  created_at: string;
+  responsible: string;
+  date: string;
+  budget: number;
+  comment: string;
+  deal_status: string | null;
+  updated_at: string;
+}
+
 interface Statistics {
   transactions: number;
   views: number;
-  calls: number;
   income: number;
   activeClients: number;
   coldClients: number;
@@ -13,11 +59,18 @@ interface Statistics {
   performance: number;
   metrics: {
     deals: number;
-    calls: number;
     views: number;
     objects: number;
     clients: number;
   };
+  monthlyData: MonthlyData[];
+  lastUpdated: string; // Add this line
+}
+
+interface MonthlyData {
+  month: string;
+  rent: number;
+  sale: number;
 }
 
 interface AccountingData {
@@ -28,6 +81,20 @@ interface AccountingData {
   total_amount: number;
   commission: number;
   status: string;
+}
+
+export interface ApiResponse {
+  deals: Deal[];
+  deals_count: number;
+  views: View[];
+  views_count: number;
+  clients: Client[];
+  clients_count: number;
+  commission_count: number;
+  hot_count: number;
+  cold_count: number;
+  all_objects: number;
+  monthly_data: MonthlyData[];
 }
 
 interface AccountingStore {
@@ -48,8 +115,8 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
   data: [],
   statistics: {
     transactions: 0,
+    lastUpdated: '',
     views: 0,
-    calls: 0,
     income: 0,
     activeClients: 0,
     coldClients: 0,
@@ -58,11 +125,11 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
     performance: 0,
     metrics: {
       deals: 0,
-      calls: 0,
       views: 0,
       objects: 0,
       clients: 0,
     },
+    monthlyData: [],
   },
   loading: false,
   error: null,
@@ -75,14 +142,63 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
         if (value) queryParams.append(key, value);
       });
 
-      const [dataResponse, statsResponse] = await Promise.all([
-        api.get(`/accounting/overall_data?${queryParams}`),
-        api.get(`/accounting/statistics?${queryParams}`),
-      ]);
+      const response = await api.get<ApiResponse>(`/accounting/overall_data?${queryParams}`);
+      const data = response.data;
+
+      // Transform the API response into the expected AccountingData format
+      const transformedData: AccountingData[] = data.deals.map(deal => ({
+        id: deal.id,
+        date: deal.date,
+        responsible: deal.responsible,
+        action_type: deal.action_type,
+        total_amount: deal.object_price,
+        commission: deal.commission,
+        status: 'completed',
+      }));
+
+      // Calculate monthly data from the API response
+      const monthlyData: MonthlyData[] = [];
+      const monthMap: { [key: string]: { rent: number; sale: number } } = {};
+
+      data.deals.forEach((deal) => {
+        const month = new Date(deal.date).toLocaleString('default', { month: 'long' });
+        if (!monthMap[month]) {
+          monthMap[month] = { rent: 0, sale: 0 };
+        }
+        if (deal.action_type === 'rent') {
+          monthMap[month].rent += 1;
+        } else if (deal.action_type === 'sale') {
+          monthMap[month].sale += 1;
+        }
+      });
+
+      for (const [month, counts] of Object.entries(monthMap)) {
+        monthlyData.push({ month, rent: counts.rent, sale: counts.sale });
+      }
+
+      // Calculate statistics from the API response
+      const statistics: Statistics = {
+        transactions: data.deals_count,
+        views: data.views_count,
+        income: data.commission_count,
+        activeClients: data.hot_count,
+        coldClients: data.cold_count,
+        savedObjects: data.all_objects,
+        totalClients: data.clients_count,
+        performance: Math.round((data.hot_count / data.clients_count) * 100) || 0,
+        lastUpdated: new Date().toISOString(), // Ensure valid date string
+        metrics: {
+          deals: data.deals_count,
+          views: data.views_count,
+          objects: data.all_objects,
+          clients: data.clients_count,
+        },
+        monthlyData,
+      };
 
       set({
-        data: Array.isArray(dataResponse.data) ? dataResponse.data : [],
-        statistics: statsResponse.data,
+        data: transformedData,
+        statistics,
         loading: false,
       });
     } catch (error) {
@@ -99,3 +215,4 @@ export const useAccountingStore = create<AccountingStore>((set) => ({
     }
   },
 }));
+
