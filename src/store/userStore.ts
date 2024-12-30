@@ -35,6 +35,7 @@ export const UserStore = create<UserState>((set) => ({
       set({ loading: true });
       await api.post('/auth/logout'); // Call logout API
       set({ user: null, loading: false }); // Reset user state
+      window.location.href = '/login'; // Redirect to login page
     } catch (error) {
       set({ loading: false, error: error instanceof Error ? error.message : "Logout failed." });
       throw error; // Re-throw for handling in the calling function
