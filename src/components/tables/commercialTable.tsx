@@ -105,7 +105,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     localStorage.setItem("currentPageCommercial", String(currentPage));
   }, [currentPage]);
 
-  const { commercials, loading, error, filterCommercials } =
+  const { commercials, error, filterCommercials } =
     useCommercialStore();
 
   useEffect(() => {
@@ -175,10 +175,6 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
     );
   };
   
-
-  if (loading) {
-    return <Spinner theme="dark" />;
-  }
 
   if (error) {
     return <div>Error: {error}</div>;
@@ -356,45 +352,46 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
                       {commercial.responsible}
                     </td>
                     <td className="p-2">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/edit-commercial/${commercial.id}`);
-                        }}
-                        variant="default"
-                      >
-                        Редактировать
-                      </Button>
-                      {isSuperUser && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteId(commercial.id);
-                              }}
-                              variant="destructive"
-                              className="ml-2"
-                            >
-                              Удалить
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить коммерческую недвижимость</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Вы уверены, что хотите удалить эту коммерческую недвижимость? Это действие нельзя отменить.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/edit-commercial/${commercial.id}`);
+                          }}
+                          variant="default"
+                        >
+                          Редактировать
+                        </Button>
+                        {isSuperUser && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteId(commercial.id);
+                                }}
+                                variant="destructive"
+                              >
                                 Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить коммерческую недвижимость</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Вы уверены, что хотите удалить эту коммерческую недвижимость? Это действие нельзя отменить.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                  Удалить
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   {expandedRow === commercial.id && (

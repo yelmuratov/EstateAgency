@@ -429,45 +429,46 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
                       {land.responsible}
                     </td>
                     <td className="p-2">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/edit-land/${land.id}`);
-                        }}
-                        variant="default"
-                      >
-                        Редактировать
-                      </Button>
-                      {isSuperUser && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteId(land.id);
-                              }}
-                              variant="destructive"
-                              className="ml-2"
-                            >
-                              Удалить
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить участок</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Вы уверены, что хотите удалить этот участок? Это действие нельзя отменить.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/edit-land/${land.id}`);
+                          }}
+                          variant="default"
+                        >
+                          Редактировать
+                        </Button>
+                        {isSuperUser && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteId(land.id);
+                                }}
+                                variant="destructive"
+                              >
                                 Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить участок</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Вы уверены, что хотите удалить этот участок? Это действие нельзя отменить.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                  Удалить
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   {expandedRow === land.id && (

@@ -11,19 +11,21 @@ import { useToast } from "@/hooks/use-toast";
 import useAuth from "@/hooks/useAuth";
 import { setAuthToken } from "@/lib/tokenHelper";
 import { UserStore } from "@/store/userStore";
-import { Button } from "@/components/ui/button";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
+import {AppSidebar} from "@/components/dashboard-nav";
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-} from "@/components/ui/dropdown-menu";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@/components/ui/breadcrumb";
 
 // Lazy-load heavy components
 const ApartmentTable = dynamic(
@@ -142,169 +144,53 @@ export default function Dashboard() {
   }, [selectedType]);
 
   if (loading || !token) {
-    return <Spinner theme="light" />;
+    return <Spinner theme="light" />
   }
 
   return (
     <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold">Выберите тип недвижимости</h1>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              {getLabel(selectedType.main)} -{" "}
-              {selectedType.sub === "rent" ? "Аренда" : "Продажа"}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Квартиры</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("apartments", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("apartments", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Участки</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("lands", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("lands", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Коммерция</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("commercial", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("commercial", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Клиенты</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("clients", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("clients", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Показы</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("views", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("views", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Сделки</DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("deals", "sale")}
-                  >
-                    Продажа
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleTypeChange("deals", "rent")}
-                  >
-                    Аренда
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-            {isSuperUser && (
-              <>
-                <DropdownMenuItem onClick={() => router.push("/users")}>
-                  Пользователи
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/districts")}>
-                  Районы
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/metros")}>
-                  Метро
-                </DropdownMenuItem>
-                {/* change log */}
-                <DropdownMenuItem onClick={() => router.push("/change-log")}>
-                  Лог изменений
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/info")}>
-                  Информация о входах
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/accounting")}>
-                  Отчетность
-                </DropdownMenuItem>
-              </>
+      <SidebarProvider defaultOpen={false}>
+        <AppSidebar
+          selectedType={selectedType}
+          onTypeChange={handleTypeChange}
+          isSuperUser={isSuperUser}
+        />
+        <SidebarInset className="flex-shrink-0">
+          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-4">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>
+                      {getLabel(selectedType.main)} - {selectedType.sub === "rent" ? "Аренда" : "Продажа"}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            {selectedType.main === "apartments" && (
+              <ApartmentTable type={selectedType.sub} />
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div>
-        {selectedType.main === "apartments" && (
-          <ApartmentTable type={selectedType.sub} />
-        )}
-        {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
-        {selectedType.main === "commercial" && (
-          <CommercialTable type={selectedType.sub} />
-        )}
-        {selectedType.main === "clients" && (
-          <ClientTableWrapper type={selectedType.sub} />
-        )}
-        {selectedType.main === "views" && (
-          <ViewTable data={[]} type={selectedType.sub} />
-        )}
-        {selectedType.main === "deals" && (
-          <DealsTable data={[]} type={selectedType.sub} />
-        )}
-      </div>
+            {selectedType.main === "lands" && <LandTable type={selectedType.sub} />}
+            {selectedType.main === "commercial" && (
+              <CommercialTable type={selectedType.sub} />
+            )}
+            {selectedType.main === "clients" && (
+              <ClientTableWrapper type={selectedType.sub} />
+            )}
+            {selectedType.main === "views" && (
+              <ViewTable data={[]} type={selectedType.sub} />
+            )}
+            {selectedType.main === "deals" && (
+              <DealsTable data={[]} type={selectedType.sub} />
+            )}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     </DashboardLayout>
   );
 }

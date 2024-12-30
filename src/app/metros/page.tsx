@@ -33,7 +33,6 @@ import { useToast } from "@/hooks/use-toast";
 import CreateMetroForm from "@/components/forms/create-metro-form";
 import EditMetroForm from "@/components/forms/edit-metro-form";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
-import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useRouter } from "next/navigation";
 import { useIsSuperUser } from "@/hooks/useIsSuperUser";
 import Spinner from "@/components/local-components/spinner";
@@ -46,6 +45,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
 
 interface Metro {
   name: string;
@@ -170,7 +170,8 @@ export default function MetrosTable() {
   };
 
   return (
-    <DashboardLayout>
+<DashboardLayout>
+<div>
       <div>
         <div className="flex justify-between items-center mb-4">
           <Button onClick={() => router.push("/")}>Назад</Button>
@@ -282,6 +283,7 @@ export default function MetrosTable() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
+</DashboardLayout>
   );
 }

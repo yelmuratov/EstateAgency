@@ -4,8 +4,6 @@ import { useEffect, useState } from "react"
 import { PropertyTable } from "@/components/change-log/property-table"
 import useChangeStore from "@/store/chage-log/changeStore"
 import { IChangeLog } from "@/types/property"
-import Spinner from "@/components/local-components/spinner"
-import { useIsSuperUser } from "@/hooks/useIsSuperUser"
 import DashboardLayout from "@/components/layouts/DashboardLayout"
 import {Button} from "@/components/ui/button"
 import {useRouter} from "next/navigation"
@@ -16,7 +14,6 @@ export default function Page() {
   const { loading, error, fetchChangeLogs } = useChangeStore();
   const [changeLogs, setChangeLogs] = useState<IChangeLog[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [isSuperUser,isSuperUserLoading] = useIsSuperUser();
   const [total, setTotal] = useState(0);
   const router = useRouter();
 
@@ -33,14 +30,6 @@ export default function Page() {
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  if(isSuperUserLoading){ 
-    return <Spinner theme="dark"/>
-  }
-
-  if(!isSuperUser){
-    return router.push("/404");
   }
 
   return (

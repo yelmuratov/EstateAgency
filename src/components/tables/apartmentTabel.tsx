@@ -34,6 +34,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { ImprovedImageSlider } from "@/components/ui/improved-image-slider";
+import Spinner from "../local-components/spinner";
 
 interface Media {
   media_type: string;
@@ -135,7 +136,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const router = useRouter();
   const [isSuperUser] = useIsSuperUser();
 
-  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment } = useApartmentStore();
+  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment,loading } = useApartmentStore();
 
   useEffect(() => {
     localStorage.setItem("currentPageApartment", String(currentPage));
@@ -200,6 +201,10 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const handleRowClick = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
+
+  if(loading) {
+    return <Spinner theme="dark" />;
+  }
 
   const renderPreviewCell = (media: Media[]) => {
     if (!media || media.length === 0) {
@@ -440,45 +445,46 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                       {apartment.square_area} м²
                     </td>
                     <td className="p-2">
+                      <div className="flex space-x-2">
                         <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/edit-apartment/${apartment.id}`);
-                        }}
-                        variant="default"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/edit-apartment/${apartment.id}`);
+                          }}
+                          variant="default"
                         >
-                        Редактировать
+                          Редактировать
                         </Button>
                         {isSuperUser && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                          <Button
-                            onClick={(e) => e.stopPropagation()}
-                            variant="destructive"
-                            className="ml-2"
-                          >
-                            Удалить
-                          </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить квартиру</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Вы уверены, что хотите удалить эту квартиру? Это действие нельзя отменить.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(apartment.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                onClick={(e) => e.stopPropagation()}
+                                variant="destructive"
                               >
                                 Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Удалить квартиру</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Вы уверены, что хотите удалить эту квартиру? Это действие нельзя отменить.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(apartment.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Удалить
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   {expandedRow === apartment.id && (

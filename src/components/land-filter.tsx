@@ -129,13 +129,14 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
       status_date_max: filters.status_date_max ? format(new Date(filters.status_date_max), "yyyy-MM-dd") : filters.status_date_max,
     };
 
-    // Filter out empty fields
     const changedFilters = Object.fromEntries(
       Object.entries(updatedFilters).filter(([, value]) => value !== "")
     );
 
-    localStorage.setItem("landFilters", JSON.stringify(updatedFilters));
-    filterLands({ table: "land", ...changedFilters });
+    if (Object.keys(changedFilters).length > 1) { // Check if any filters are selected
+      localStorage.setItem("landFilters", JSON.stringify(updatedFilters));
+      filterLands({ table: "land", ...changedFilters });
+    }
     onOpenChange(false);
   };
 

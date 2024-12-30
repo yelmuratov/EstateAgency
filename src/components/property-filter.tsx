@@ -87,7 +87,9 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
       Object.entries(filters).filter(([, value]) => value.trim() !== "")
     );
 
-    filterApartments(changedFilters);
+    if (Object.keys(changedFilters).length > 1) { // Check if any filters are selected
+      filterApartments(changedFilters);
+    }
     onOpenChange(false);
   };
 

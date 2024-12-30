@@ -69,13 +69,14 @@ export function CommercialFilter({
   };
 
   const handleSubmit = () => {
-    // Filter out empty fields
     const changedFilters = Object.fromEntries(
       Object.entries(filters).filter(([, value]) => value.trim() !== "")
     );
 
-    localStorage.setItem("commercialFilters", JSON.stringify(filters));
-    filterCommercials(changedFilters, "commercial");
+    if (Object.keys(changedFilters).length > 1) { // Check if any filters are selected
+      localStorage.setItem("commercialFilters", JSON.stringify(filters));
+      filterCommercials(changedFilters, "commercial");
+    }
     onOpenChange(false); // Close modal
   };
 
