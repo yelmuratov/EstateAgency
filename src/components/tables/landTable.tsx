@@ -741,7 +741,7 @@ const LandTable: React.FC<LandTableProps> = ({ type }) => {
         </PaginationContent>
       </Pagination>
 
-      <LandFilter open={filterOpen} onOpenChange={setFilterOpen} />
+      <LandFilter open={filterOpen} onOpenChange={setFilterOpen} type={type} />
     </div>
   );
 };

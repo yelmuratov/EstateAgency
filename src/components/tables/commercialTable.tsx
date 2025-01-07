@@ -682,6 +682,7 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
       <CommercialFilter
         open={filterOpen}
         onOpenChange={() => setFilterOpen(false)}
+        type={type}
       />
     </div>
   );

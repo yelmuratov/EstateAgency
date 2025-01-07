@@ -26,6 +26,7 @@ import {
 interface PropertyFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  type:"rent" | "sale";
 }
 
 const BATHROOM_OPTIONS: IBathroom = {
@@ -46,10 +47,12 @@ interface IBathroom {
   many: string;
 }
 
-export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
+export function PropertyFilter({ open, onOpenChange,type }: PropertyFilterProps) {
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
   const { filterApartments } = useApartmentStore();
   const { fetchUsers, users } = UserStore();
+
+  console.log(type);
 
   useEffect(() => {
     fetchMetros();
@@ -59,6 +62,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
 
   const [filters, setFilters] = useState<Record<string, string>>({
     table: "apartment",
+    action_type: type,
     district: "",
     metro_st: "",
     furniture: "",
@@ -96,6 +100,7 @@ export function PropertyFilter({ open, onOpenChange }: PropertyFilterProps) {
   const clearFilters = () => {
     setFilters({
       table: "apartment",
+      action_type: type,
       district: "",
       metro_st: "",
       furniture: "",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, act } from "react";
 import usePropertyStore from "@/store/MetroDistrict/propertyStore";
 import { useCommercialStore } from "@/store/commercial/commercialStore";
 import {
@@ -24,11 +24,13 @@ import {
 interface CommercialFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  type:"rent" | "sale";
 }
 
 export function CommercialFilter({
   open,
   onOpenChange,
+  type,
 }: CommercialFilterProps) {
   const {districts, fetchDistricts } = usePropertyStore();
   const { filterCommercials } = useCommercialStore();
@@ -48,7 +50,7 @@ export function CommercialFilter({
   const [filters, setFilters] = useState<Record<string, string>>({
     table: "commercial",
     district: "",
-    action_type: "",
+    action_type: type,
     price_min: "",
     price_max: "",
     area_min: "",
@@ -84,7 +86,7 @@ export function CommercialFilter({
     const emptyFilters = {
       table: "commercial",
       district: "",
-      action_type: "",
+      action_type: type,
       price_min: "",
       price_max: "",
       area_min: "",

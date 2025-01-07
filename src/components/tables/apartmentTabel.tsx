@@ -104,7 +104,7 @@ const houseTypeTranslation: { [key: string]: string } = {
   house: "Дом",
   townhouse: "Таунхаус",
   normal: "Обычное",
-  repair: "Требует Требует ремонтаа",
+  repair: "Требует ремонта",
   euro: "Евро ремонт",
   rent: "Аренда",
   sale: "Продажа",
@@ -116,7 +116,6 @@ const houseTypeTranslation: { [key: string]: string } = {
 interface PropertyTableProps {
   type: "rent" | "sale";
 }
-
 
 export default function PropertyTable({ type }: PropertyTableProps) {
   const [itemsPerPage] = useState(15);
@@ -136,7 +135,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   const router = useRouter();
   const [isSuperUser] = useIsSuperUser();
 
-  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment,loading } = useApartmentStore();
+  const { apartments, filteredApartments, searchedApartments, error, filterApartments, searchApartments, deleteApartment, loading } = useApartmentStore();
 
   useEffect(() => {
     localStorage.setItem("currentPageApartment", String(currentPage));
@@ -147,17 +146,17 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   }, [searchQuery]);
 
   useEffect(() => {
-    if (type === "rent") {
-      filterApartments({ action_type: "rent" });
-    } else {
-      filterApartments({ action_type: "sale" });
-    }
+    // Fix: Pass the correct filter parameters
+    filterApartments({
+      table: "apartment",
+      action_type: type // This ensures action_type is passed correctly
+    });
   }, [type, filterApartments]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       searchApartments(searchQuery);
-    }, 300); // Debounced
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery, searchApartments]);
@@ -172,7 +171,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
       : apartments;
     
     setLocalFilteredApartments(source.slice(startIndex, endIndex));
-    // Reset current page if we switch to a different data source and current page is out of bounds
+    
     const maxPage = Math.ceil(source.length / itemsPerPage);
     if (currentPage > maxPage) {
       setCurrentPage(1);
@@ -312,7 +311,6 @@ export default function PropertyTable({ type }: PropertyTableProps) {
 
   return (
     <div className="space-y-4">
-      {/* Table View for Medium and Larger Screens */}
       <div className="flex items-center justify-between">
         <div className="relative flex-grow sm:max-w-md w-full">
           <Input
@@ -333,14 +331,12 @@ export default function PropertyTable({ type }: PropertyTableProps) {
         </Button>
       </div>
       <div className="hidden sm:block rounded-md border bg-white dark:bg-gray-800 overflow-x-auto">
-        {/* search input with shadcn */}
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
             <tr>
               <th className="w-[50px] p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 #
               </th>
-              {/* crm id */}
               <th className="p-2 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                 CRM ID
               </th>
@@ -436,7 +432,6 @@ export default function PropertyTable({ type }: PropertyTableProps) {
                           apartment.current_status as keyof typeof statusConfig
                         ]?.label || "Неизвестно"}
                       </Badge>
-                      {/* status date */}
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {apartment.status_date && new Date(apartment.status_date).toLocaleDateString()}
                       </div>
@@ -772,7 +767,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
         </PaginationContent>
       </Pagination>
 
-      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} />
+      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} type={type} />
     </div>
   );
 }

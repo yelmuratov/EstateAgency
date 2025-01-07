@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, act } from "react";
 import { format } from "date-fns";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -55,6 +55,7 @@ const STATUS_OPTIONS = {
 interface LandFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  type:"rent" | "sale";
 }
 
 const FormSchema = z.object({
@@ -72,7 +73,7 @@ const FormSchema = z.object({
     .optional(),
 });
 
-export function LandFilter({ open, onOpenChange }: LandFilterProps) {
+export function LandFilter({ open, onOpenChange,type }: LandFilterProps) {
   const { districts, fetchDistricts } = usePropertyStore();
   const { filterLands } = useLandStore();
   const { fetchUsers, users } = UserStore();
@@ -100,6 +101,7 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
 
   const [filters, setFilters] = useState<Record<string, string>>({
     table: "land",
+    action_type: type,
     district: "",
     price_min: "",
     price_max: "",
@@ -143,6 +145,7 @@ export function LandFilter({ open, onOpenChange }: LandFilterProps) {
   const clearFilters = () => {
     const emptyFilters = {
       table: "land",
+      action_type: type,
       district: "",
       price_min: "",
       price_max: "",
