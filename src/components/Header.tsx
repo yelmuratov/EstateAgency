@@ -21,8 +21,8 @@ import api from "@/lib/api";
 import { useIsSuperUser } from '@/hooks/useIsSuperUser';
 
 interface HeaderProps {
-  type: string;
-  action_type: "rent" | "sale";
+  type?: string;
+  action_type?: "rent" | "sale";
 }
 
 interface IObjectCount {
