@@ -37,6 +37,7 @@ export function AppSidebar({ selectedType, onTypeChange, isSuperUser }: AppSideb
     { title: "Клиенты", value: "clients", icon: Users },
     { title: "Показы", value: "views", icon: Eye },
     { title: "Сделки", value: "deals", icon: FileCheck },
+    { title: "Отчетность", value: "accounting", icon: Calculator },
   ]
 
   const superUserItems = [
@@ -44,7 +45,6 @@ export function AppSidebar({ selectedType, onTypeChange, isSuperUser }: AppSideb
     { title: "Районы", path: "/districts", icon: MapPin },
     { title: "Метро", path: "/metros", icon: Train },
     { title: "Информация о входах", path: "/info", icon: Info },
-    { title: "Отчетность", path: "/accounting", icon: Calculator },
   ]
 
   return (
@@ -64,8 +64,25 @@ export function AppSidebar({ selectedType, onTypeChange, isSuperUser }: AppSideb
       </SidebarHeader>
       <SidebarContent className="flex-shrink-0">
         <SidebarMenu>
-          {navigationItems.map((item) => (
-            <Collapsible
+          {navigationItems.map((item) =>{
+            if(item.title == "Отчетность"){
+              return (
+                // return sidebar menu item without collapsible
+                <SidebarMenuItem key={item.value}>
+                  <SidebarMenuButton
+                    asChild
+                    onClick={() => router.push("/accounting")}
+                  >
+                    <button>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      <span>{item.title}</span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            }else{
+              return(
+                <Collapsible
               key={item.value}
               defaultOpen={false} // Set to false to keep the sidebar closed by default
               className="group/collapsible"
@@ -102,7 +119,9 @@ export function AppSidebar({ selectedType, onTypeChange, isSuperUser }: AppSideb
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-          ))}
+              )
+            }
+          })}
 
           <SidebarMenuItem>
             <SidebarMenuButton

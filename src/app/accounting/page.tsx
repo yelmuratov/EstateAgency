@@ -47,9 +47,6 @@ import {
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useIsSuperUser } from "@/hooks/useIsSuperUser";
-import Spinner from "@/components/local-components/spinner";
-import { useAuthStore } from "@/store/authStore";
 
 export default function AccountingPage() {
   const { statistics, fetchData } = useAccountingStore();
@@ -59,10 +56,8 @@ export default function AccountingPage() {
   const [responsible, setResponsible] = useState<string>("");
   const { users, fetchUsers } = UserStore();
   const router = useRouter();
-  const [isSuperUser, isSuperUserLoading] = useIsSuperUser();
   const [showMonthFilter, setShowMonthFilter] = useState(false);
   const [showTodayFilter, setShowTodayFilter] = useState(false);
-  const { token } = useAuthStore();
 
   const [viewsCount, setViewsCount] = useState(0);
   const [dealsCount, setDealsCount] = useState(0);
@@ -169,22 +164,8 @@ export default function AccountingPage() {
   }, [startDate, endDate, actionType, responsible, fetchData]);
 
   useEffect(() => {
-    if (!token) {
-      router.push("/login");
-    }
-  }, [token, router]);
-
-  useEffect(() => {
     localStorage.setItem("currentPage", "accounting");
   }, []);
-
-  if (isSuperUserLoading) {
-    return <Spinner theme="dark" />;
-  }
-
-  if (!isSuperUser) {
-    return null;
-  }
 
   // Update metrics data with actual values
   metricsData[0].value = statistics.metrics.deals;
