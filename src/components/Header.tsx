@@ -17,12 +17,30 @@ import { UserStore } from "@/store/userStore";
 import { toast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useAuthStore } from "@/store/authStore";
-import api from "@/lib/api"; // Assuming you have an API helper
+import api from "@/lib/api"; 
 import { useIsSuperUser } from '@/hooks/useIsSuperUser';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  type: string;
+  action_type: "rent" | "sale";
+}
+
+interface IObjectCount {
+  total: number;
+  land: number;
+  apartment: number;
+  commercial: number;
+  land_rent: number;
+  apartment_rent: number;
+  commercial_rent: number;
+  land_sale: number;
+  apartment_sale: number;
+  commercial_sale: number;
+}
+
+const Header: React.FC<HeaderProps> = ({action_type,type}) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [objectCount, setObjectCount] = useState<number | null>(null);
+  const [objectCount, setObjectCount] = useState<IObjectCount>();
   const pathname = usePathname();
   const router = useRouter();
   const { user, logoutUser } = UserStore();
@@ -39,7 +57,7 @@ const Header: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        setObjectCount(response.data.total);
+        setObjectCount(response.data);
       } catch {
         toast({
           title: "Error",
@@ -111,9 +129,19 @@ const Header: React.FC = () => {
             {!isAddPropertyPage && (
               <>
                 <span className="text-sm text-muted-foreground hidden md:block">
-                  {objectCount !== null
-                    ? `${objectCount} объектов`
-                    : "Загрузка..."}
+                    {objectCount ? (
+                    action_type === "rent" ? (
+                      type === "lands" ? `${objectCount.land_rent} участков в аренду` :
+                      type === "apartments" ? `${objectCount.apartment_rent} квартир в аренду` :
+                      type === "commercial" ? `${objectCount.commercial_rent} коммерческих объектов в аренду` :
+                      `${objectCount.total} объектов в аренду`
+                    ) : (
+                      type === "lands" ? `${objectCount.land_sale} участков на продажу` :
+                      type === "apartments" ? `${objectCount.apartment_sale} квартир на продажу` :
+                      type === "commercial" ? `${objectCount.commercial_sale} коммерческих объектов на продажу` :
+                      `${objectCount.total} объектов на продажу`
+                    )
+                    ) : "Загрузка..."}
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

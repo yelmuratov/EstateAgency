@@ -148,7 +148,7 @@ export default function Dashboard() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout type={selectedType.main} action_type={selectedType.sub}>
       <SidebarProvider defaultOpen={false}>
         <AppSidebar
           selectedType={selectedType}

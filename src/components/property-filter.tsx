@@ -52,8 +52,6 @@ export function PropertyFilter({ open, onOpenChange,type }: PropertyFilterProps)
   const { filterApartments } = useApartmentStore();
   const { fetchUsers, users } = UserStore();
 
-  console.log(type);
-
   useEffect(() => {
     fetchMetros();
     fetchDistricts();
