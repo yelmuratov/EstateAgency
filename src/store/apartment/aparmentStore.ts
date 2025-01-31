@@ -56,6 +56,8 @@ interface ApartmentStore {
   searchLoading: boolean;
   filterError: string | null;
   isSearching: boolean; // Add this flag
+  currentPage: number; // Add this state
+  setCurrentPage: (page: number) => void; // Add this action
   fetchApartments: (page: number, limit: number) => Promise<void>;
   fetchApartmentById: (id: number) => Promise<Apartment | null>;
   hydrateApartments: (apartments: Apartment[], total: number) => void; // SSR Hydration
@@ -75,9 +77,11 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   searchLoading: false,
   filterError: null,
   isSearching: false, // Initialize the flag
+  currentPage: 1, // Initialize the state
+  setCurrentPage: (page: number) => set({ currentPage: page }), // Define the action
 
   fetchApartments: async (page: number, limit: number) => {
-    const { isSearching } = get();
+    const { isSearching, setCurrentPage } = get();
     if (isSearching) return; // Skip fetching if searching
 
     set({ loading: true, error: null });
@@ -88,6 +92,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
         total: response.data.total_count || 0, // Use `total_count` key
         loading: false,
       });
+      setCurrentPage(page); // Update the current page
     } catch (error) {
       const apiError = error as {
         message?: string;
@@ -152,7 +157,6 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
       return null;
     }
   },
-
   hydrateApartments: (apartments, total) => {
     set({
       apartments,
@@ -161,15 +165,18 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
     });
   },
   filterApartments: async (filters) => {
+    const { currentPage, setCurrentPage } = get();
     set({ loading: true, filterError: null });
     try {
-      const response = await api.get(`/additional/filter/?table=apartment&${filters}`, {
-        params: filters,
+      const response = await api.get(`/additional/filter`, {
+        params: { ...filters, page: currentPage },
       });
       set({
-        filteredApartments: Array.isArray(response.data) ? response.data : [],
+        filteredApartments: Array.isArray(response.data.objects) ? response.data.objects : [],
+        total: response.data.filtered_count || 0, // Ensure total is set correctly
         loading: false,
       });
+      setCurrentPage(currentPage); // Update the current page
     } catch (error) {
       const apiError = error as {
         message?: string;

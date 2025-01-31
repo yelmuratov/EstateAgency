@@ -26,7 +26,9 @@ import {
 interface PropertyFilterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type:"rent" | "sale";
+  type: "rent" | "sale";
+  page: number; // Add page parameter
+  limit: number; // Add limit parameter
 }
 
 const BATHROOM_OPTIONS: IBathroom = {
@@ -47,7 +49,7 @@ interface IBathroom {
   many: string;
 }
 
-export function PropertyFilter({ open, onOpenChange,type }: PropertyFilterProps) {
+export function PropertyFilter({ open, onOpenChange, type, page, limit }: PropertyFilterProps) {
   const { metros, districts, fetchMetros, fetchDistricts } = usePropertyStore();
   const { filterApartments } = useApartmentStore();
   const { fetchUsers, users } = UserStore();
@@ -58,45 +60,9 @@ export function PropertyFilter({ open, onOpenChange,type }: PropertyFilterProps)
     fetchUsers();
   }, [fetchMetros, fetchDistricts, fetchUsers]);
 
-  const [filters, setFilters] = useState<Record<string, string>>({
-    table: "apartment",
-    action_type: type,
-    district: "",
-    metro_st: "",
-    furniture: "",
-    bathroom: "",
-    price_min: "",
-    price_max: "",
-    room_min: "",
-    room_max: "",
-    area_min: "",
-    area_max: "",
-    floor_min: "",
-    floor_max: "",
-    responsible: "",
-    date_min: "",
-    date_max: "",
-    status_date_min: "",
-    status_date_max: "",
-  });
-
-  const handleChange = (name: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = () => {
-    const changedFilters = Object.fromEntries(
-      Object.entries(filters).filter(([, value]) => value.trim() !== "")
-    );
-
-    if (Object.keys(changedFilters).length > 1) { // Check if any filters are selected
-      filterApartments(changedFilters);
-    }
-    onOpenChange(false);
-  };
-
-  const clearFilters = () => {
-    setFilters({
+  const [filters, setFilters] = useState<Record<string, string>>(() => {
+    const savedFilters = localStorage.getItem("apartmentFilters");
+    return savedFilters ? JSON.parse(savedFilters) : {
       table: "apartment",
       action_type: type,
       district: "",
@@ -116,8 +82,37 @@ export function PropertyFilter({ open, onOpenChange,type }: PropertyFilterProps)
       date_max: "",
       status_date_min: "",
       status_date_max: "",
-    });
-    filterApartments({ table: "apartment" });
+    };
+  });
+
+  const handleChange = (name: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    const changedFilters = Object.fromEntries(
+      Object.entries(filters).filter(([, value]) => value.trim() !== "")
+    );
+
+    if (Object.keys(changedFilters).length > 1) { // Check if any filters are selected
+      filterApartments({ ...changedFilters, page: String(page), limit: String(limit) });
+      localStorage.setItem("apartmentFilters", JSON.stringify(changedFilters));
+    } else {
+      filterApartments({ table: "apartment", action_type: type, page: String(page), limit: String(limit) });
+    }
+    onOpenChange(false);
+  };
+
+  const clearFilters = () => {
+    const defaultFilters = {
+      table: "apartment",
+      action_type: type,
+      page: String(page),
+      limit: String(limit),
+    };
+    setFilters(defaultFilters);
+    filterApartments(defaultFilters);
+    localStorage.setItem("apartmentFilters", JSON.stringify(defaultFilters));
     onOpenChange(false);
   };
 
