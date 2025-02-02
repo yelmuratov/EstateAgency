@@ -143,6 +143,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     deleteApartment,
     loading,
     total,
+    currentFilters, // Add this state
   } = useApartmentStore()
 
   useEffect(() => {
@@ -154,13 +155,22 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   }, [searchQuery])
 
   useEffect(() => {
-    // Pass all required parameters including pagination
-    filterApartments({
-      table: "apartment",
-      action_type: type,
-      limit: itemsPerPage.toString(),
-      page: currentPage.toString(),
-    })
+    const savedFilters = localStorage.getItem("apartmentFilters")
+    if (savedFilters) {
+      const parsedFilters = JSON.parse(savedFilters)
+      filterApartments({
+        ...parsedFilters,
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+      })
+    } else {
+      filterApartments({
+        table: "apartment",
+        action_type: type,
+        limit: itemsPerPage.toString(),
+        page: currentPage.toString(),
+      })
+    }
   }, [type, filterApartments, currentPage, itemsPerPage])
 
   useEffect(() => {
@@ -191,12 +201,12 @@ export default function PropertyTable({ type }: PropertyTableProps) {
       searchApartments(searchQuery)
     } else {
       // If filtering, update filtered results with pagination
-      filterApartments({
-        table: "apartment",
-        action_type: type,
-        limit: itemsPerPage.toString(),
-        page: page.toString(),
-      })
+      const currentFiltersWithPage = {
+        ...currentFilters,
+        limit: String(itemsPerPage),
+        page: String(page),
+      }
+      filterApartments(currentFiltersWithPage)
     }
   }
 

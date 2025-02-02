@@ -58,6 +58,8 @@ interface ApartmentStore {
   isSearching: boolean // Add this flag
   currentPage: number // Add this state
   setCurrentPage: (page: number) => void // Add this action
+  currentFilters: Record<string, string> // Add this state
+  setFilters: (filters: Record<string, string>) => void // Add this action
   fetchApartments: (page: number, limit: number) => Promise<void>
   fetchApartmentById: (id: number) => Promise<Apartment | null>
   hydrateApartments: (apartments: Apartment[], total: number) => void // SSR Hydration
@@ -78,7 +80,9 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
   filterError: null,
   isSearching: false, // Initialize the flag
   currentPage: 1, // Initialize the state
+  currentFilters: {}, // Initialize the state
   setCurrentPage: (page: number) => set({ currentPage: page }), // Define the action
+  setFilters: (filters: Record<string, string>) => set({ currentFilters: filters }), // Define the action
 
   fetchApartments: async (page: number, limit: number) => {
     const { isSearching } = get()
@@ -163,16 +167,20 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
     })
   },
   filterApartments: async (filters) => {
-    set({ loading: true, filterError: null })
+    set({ loading: true, filterError: null, currentFilters: filters })
     try {
-      // Ensure we're passing the page and limit parameters correctly
       const response = await api.get(`/additional/filter`, {
-        params: filters, // Use the filters object directly as it now contains page and limit
+        params: {
+          ...filters,
+          page: filters.page || "1", // Ensure page is always present
+          limit: filters.limit || "15", // Ensure limit is always present
+        },
       })
       set({
         filteredApartments: Array.isArray(response.data.objects) ? response.data.objects : [],
         total: response.data.filtered_count || 0,
         loading: false,
+        currentPage: Number.parseInt(filters.page || "1"), // Update current page
       })
     } catch (error) {
       const apiError = error as {
@@ -182,7 +190,7 @@ export const useApartmentStore = create<ApartmentStore>((set, get) => ({
       set({
         filterError: apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
         loading: false,
-        filteredApartments: [], // Reset to an empty array in case of error
+        filteredApartments: [],
       })
     }
   },
