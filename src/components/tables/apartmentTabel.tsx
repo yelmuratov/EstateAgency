@@ -154,24 +154,24 @@ export default function PropertyTable({ type }: PropertyTableProps) {
   }, [searchQuery])
 
   useEffect(() => {
-    // Fix: Pass the correct filter parameters
+    // Pass all required parameters including pagination
     filterApartments({
       table: "apartment",
       action_type: type,
-      limit: `${itemsPerPage}`,
-      page: `${currentPage}`, // This ensures action_type is passed correctly
-    });
-  }, [type, filterApartments, currentPage, itemsPerPage]);
+      limit: itemsPerPage.toString(),
+      page: currentPage.toString(),
+    })
+  }, [type, filterApartments, currentPage, itemsPerPage])
 
   useEffect(() => {
-    setSearchLoading(true); // Set loading state to true before search
+    setSearchLoading(true) // Set loading state to true before search
     const timer = setTimeout(() => {
-      searchApartments(searchQuery);
-      setSearchLoading(false); // Set loading state to false after search completes
-    }, 300);
+      searchApartments(searchQuery)
+      setSearchLoading(false) // Set loading state to false after search completes
+    }, 300)
 
-    return () => clearTimeout(timer);
-  }, [searchQuery, searchApartments]);
+    return () => clearTimeout(timer)
+  }, [searchQuery, searchApartments])
 
   useEffect(() => {
     const source =
@@ -179,25 +179,26 @@ export default function PropertyTable({ type }: PropertyTableProps) {
         ? searchedApartments
         : filteredApartments.length > 0
           ? filteredApartments
-          : apartments;
+          : apartments
 
-    setLocalFilteredApartments(source);
-
-    const maxPage = Math.ceil(total / itemsPerPage); // Use total for maxPage calculation
-    if (currentPage > maxPage) {
-      setCurrentPage(1);
-    }
-  }, [apartments, filteredApartments, searchedApartments, currentPage, itemsPerPage, total]);
+    setLocalFilteredApartments(source)
+  }, [apartments, filteredApartments, searchedApartments])
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    filterApartments({
-      table: "apartment",
-      action_type: type,
-      limit: `${itemsPerPage}`,
-      page: `${page}`, // Update the page parameter
-    });
-  };
+    setCurrentPage(page)
+    if (searchQuery) {
+      // If searching, update search results with pagination
+      searchApartments(searchQuery)
+    } else {
+      // If filtering, update filtered results with pagination
+      filterApartments({
+        table: "apartment",
+        action_type: type,
+        limit: itemsPerPage.toString(),
+        page: page.toString(),
+      })
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -318,9 +319,9 @@ export default function PropertyTable({ type }: PropertyTableProps) {
     }
   }
 
-  const totalItems =
-    total? total :
-    searchedApartments.length > 0
+  const totalItems = total
+    ? total
+    : searchedApartments.length > 0
       ? searchedApartments.length
       : filteredApartments.length > 0
         ? filteredApartments.length
@@ -343,7 +344,7 @@ export default function PropertyTable({ type }: PropertyTableProps) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           {searchLoading && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Spinner theme="dark"/>
+              <Spinner theme="dark" />
             </div>
           )}
         </div>
@@ -667,7 +668,13 @@ export default function PropertyTable({ type }: PropertyTableProps) {
           )}
         </PaginationContent>
       </Pagination>
-      <PropertyFilter open={filterOpen} onOpenChange={setFilterOpen} type={type} page={currentPage} limit={itemsPerPage} />
+      <PropertyFilter
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        type={type}
+        page={currentPage}
+        limit={itemsPerPage}
+      />
     </div>
   )
 }
