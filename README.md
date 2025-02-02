@@ -2,7 +2,7 @@
 
 A modern property management system built with Next.js and TypeScript, featuring advanced filtering, real-time search, and responsive design.
 
-![Property Management System](placeholder.svg)
+![Property Management System](https://github.com/yelmuratov/EstateAgency/blob/main/Estate.png)
 
 ## Features
 
