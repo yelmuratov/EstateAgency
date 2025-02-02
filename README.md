@@ -24,6 +24,8 @@ A modern property management system built with Next.js and TypeScript, featuring
 - 💾 **State Persistence**: Maintains filter and search state across sessions
 - 🌙 **Dark Mode Support**: Comfortable viewing in any lighting condition
 
+![Filtering](https://github.com/yelmuratov/EstateAgency/blob/main/Screenshot%202025-02-02%20115422.png)
+
 ## Tech Stack
 
 - **Frontend**:
