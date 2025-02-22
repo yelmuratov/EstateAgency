@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import {
   Table,
   TableBody,
@@ -90,7 +90,7 @@ export default function UsersTable() {
   }
 
   if (!isSuperUser) {
-    return null
+    return redirect('/');
   }
 
   const handleDelete = async (userId: string) => {

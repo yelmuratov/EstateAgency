@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +32,8 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const { toast } = useToast()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const emailForm = useForm<EmailSchema>({
     resolver: zodResolver(emailSchema),
@@ -179,45 +181,53 @@ export default function ForgotPasswordPage() {
 
           {step === 'password' && (
             <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Новый пароль</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password">Новый пароль</Label>
+              <div className="relative">
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   {...passwordForm.register('password')}
                   placeholder="Введите новый пароль"
                 />
-                {passwordForm.formState.errors.password && (
-                  <p className="text-sm text-red-500">
-                    {passwordForm.formState.errors.password.message}
-                  </p>
-                )}
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+                </button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+              <div className="relative">
                 <Input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   {...passwordForm.register('confirmPassword')}
                   placeholder="Подтвердите новый пароль"
                 />
-                {passwordForm.formState.errors.confirmPassword && (
-                  <p className="text-sm text-red-500">
-                    {passwordForm.formState.errors.confirmPassword.message}
-                  </p>
-                )}
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+                </button>
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={passwordForm.formState.isSubmitting}
-              >
-                {passwordForm.formState.isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Сбросить пароль
-              </Button>
-            </form>
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={passwordForm.formState.isSubmitting}
+            >
+              {passwordForm.formState.isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Сбросить пароль
+            </Button>
+          </form>
           )}
         </CardContent>
         <CardFooter className="flex justify-center">

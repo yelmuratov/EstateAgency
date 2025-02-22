@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react'
 import { loginSchema, type LoginFormData } from '@/schemas/authSchema'
 import { useAuthStore } from '@/store/authStore'
 import { login } from '@/services/authService'
@@ -28,6 +28,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [shouldRedirect, setShouldRedirect] = useState<boolean>(false)
+  const [showPassword, setShowPassword] = useState<boolean>(false)
   const router = useRouter()
   const { setToken } = useAuthStore()
 
@@ -112,7 +113,6 @@ export default function LoginForm() {
                   href="/forgot-password"
                   className="text-sm text-muted-foreground hover:text-primary"
                   onClick={(e) => {
-                    // Prevent form submission when clicking the forgot password link
                     e.preventDefault()
                     router.push('/forgot-password')
                   }}
@@ -120,11 +120,24 @@ export default function LoginForm() {
                   Забыли пароль?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                {...register('password')}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
+              </div>
               {errors.password?.message && (
                 <p className="text-sm font-medium text-destructive">
                   {errors.password.message}

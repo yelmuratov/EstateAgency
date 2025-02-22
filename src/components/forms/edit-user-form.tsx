@@ -1,50 +1,49 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { UserStore } from "@/store/users/userStore";
-import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { useRouter } from "next/navigation"
+import { Loader2, Eye, EyeOff } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import { UserStore } from "@/store/users/userStore"
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select"
 
 interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  phone: string;
-  is_superuser: boolean;
-  disabled: boolean;
-  created_at: string;
-  updated_at: string;
-  hashed_password: string;
+  id: string
+  email: string
+  full_name: string
+  phone: string
+  is_superuser: boolean
+  disabled: boolean
+  created_at: string
+  updated_at: string
+  hashed_password: string
 }
 
 interface EditUserFormProps {
-  user: User;
-  setIsEditOpen: (isOpen: boolean) => void;
+  user: User
+  setIsEditOpen: (isOpen: boolean) => void
 }
 
 interface ApiError {
   response?: {
-    status: number;
+    status: number
     data: {
-      detail: string;
-    };
-  };
+      detail: string
+    }
+  }
 }
 
-export default function EditUserForm({
-  user,
-  setIsEditOpen,
-}: EditUserFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-  const { updateUser } = UserStore();
+export default function EditUserForm({ user, setIsEditOpen }: EditUserFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [password, setPassword] = useState("");
+  const router = useRouter()
+  const { toast } = useToast()
+  const { updateUser } = UserStore()
 
   const {
     register,
@@ -53,74 +52,51 @@ export default function EditUserForm({
     watch,
     setError,
     formState: { errors },
-  } = useForm<User>();
+  } = useForm<User>()
 
   useEffect(() => {
     if (user) {
-      reset(user);
+      reset(user)
     }
-  }, [user, reset]);
+  }, [user, reset])
 
   const onSubmit = async (data: User) => {
     try {
-      setIsLoading(true);
+      setIsLoading(true)
+      const changedFields: Record<string, string | boolean> = {}
+      
+      if (data.full_name !== user.full_name) changedFields.full_name = data.full_name
+      if (data.email !== user.email) changedFields.email = data.email
+      if (data.phone !== user.phone) changedFields.phone = data.phone
+      if (data.is_superuser !== user.is_superuser) changedFields.is_superuser = data.is_superuser
+      if (password) changedFields.hashed_password = password
 
-      // Create an object with only the changed fields
-      const changedFields = Object.keys(data).reduce((acc, key) => {
-        const k = key as keyof User;
-        if (data[k] !== user[k]) {
-          // Only include fields that we actually want to update
-          if (["full_name", "email", "phone", "is_superuser"].includes(k)) {
-            acc[k] = data[k] as string | boolean;
-          }
-        }
-        return acc;
-      }, {} as Record<string, string | boolean>);
-
-      // If no fields changed, show a message and return
       if (Object.keys(changedFields).length === 0) {
-        toast({
-          title: "Без изменений",
-          description: "Поля не были изменены",
-        });
-        setIsEditOpen(false);
-        return;
+        toast({ title: "Без изменений", description: "Поля не были изменены" })
+        setIsEditOpen(false)
+        return
       }
 
-      // Only send changed fields to the API
-      await updateUser(user.id, changedFields);
+      await updateUser(user.id, changedFields)
 
-      toast({
-        title: "Успех",
-        description: "Пользователь успешно обновлен",
-      });
-      router.refresh();
-      setIsEditOpen(false);
+      toast({ title: "Успех", description: "Пользователь успешно обновлен" })
+      router.refresh()
+      setIsEditOpen(false)
     } catch (error: unknown) {
-      const apiError = error as ApiError;
+      const apiError = error as ApiError
       if (apiError.response?.status === 400) {
         if (apiError.response.data.detail === "Already exists user with this phone") {
-          setError("phone", {
-            type: "manual",
-            message: "Пользователь с таким номером телефона уже существует",
-          });
+          setError("phone", { type: "manual", message: "Пользователь с таким номером телефона уже существует" })
         } else if (apiError.response.data.detail === "Already exists user with this email") {
-          setError("email", {
-            type: "manual",
-            message: "Пользователь с таким адресом электронной почты уже существует",
-          });
+          setError("email", { type: "manual", message: "Пользователь с таким адресом электронной почты уже существует" })
         }
       } else {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось обновить пользователя",
-          variant: "destructive",
-        });
+        toast({ title: "Ошибка", description: "Не удалось обновить пользователя", variant: "destructive" })
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -136,9 +112,7 @@ export default function EditUserForm({
             },
           })}
         />
-        {errors.full_name && (
-          <p className="text-sm text-red-500">{errors.full_name.message}</p>
-        )}
+        {errors.full_name && <p className="text-sm text-red-500">{errors.full_name.message}</p>}
       </div>
 
       <div className="space-y-2">
@@ -154,9 +128,7 @@ export default function EditUserForm({
             },
           })}
         />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-2">
@@ -171,9 +143,21 @@ export default function EditUserForm({
             },
           })}
         />
-        {errors.phone && (
-          <p className="text-sm text-red-500">{errors.phone.message}</p>
-        )}
+        {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <div className="relative">
+          <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -181,14 +165,14 @@ export default function EditUserForm({
         <Select
           defaultValue={user.is_superuser ? "true" : "false"} // Set initial value from db
           onValueChange={(value) => {
-        const isSuperuser = value === "true";
-        reset({ ...watch(), is_superuser: isSuperuser });
+            const isSuperuser = value === "true"
+            reset({ ...watch(), is_superuser: isSuperuser })
           }}
         >
           <SelectTrigger id="is_superuser" />
           <SelectContent>
-        <SelectItem value="true">Да</SelectItem>
-        <SelectItem value="false">Нет</SelectItem>
+            <SelectItem value="true">Да</SelectItem>
+            <SelectItem value="false">Нет</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -204,5 +188,6 @@ export default function EditUserForm({
         )}
       </Button>
     </form>
-  );
+  )
 }
+
