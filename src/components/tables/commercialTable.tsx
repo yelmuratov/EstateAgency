@@ -108,17 +108,18 @@ const CommercialTable: React.FC<CommercialTableProps> = ({type}) => {
   const { commercials, error, filterCommercials } =
     useCommercialStore();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery.trim() !== "") {
-        useCommercialStore.getState().searchCommercial(searchQuery);
-      } else if (filterCommercials) {
-        filterCommercials({}, type);
-      }
-    }, 300); // Debounced input
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, filterCommercials, type]);
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (searchQuery.trim()) {
+          useCommercialStore.getState().searchCommercial(searchQuery);
+          setCurrentPage(1);
+        } else {
+          filterCommercials({}, type);
+        }
+      }, 300);
+    
+      return () => clearTimeout(timer);
+    }, [searchQuery]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {

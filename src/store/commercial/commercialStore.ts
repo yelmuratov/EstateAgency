@@ -62,36 +62,34 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
   searchError: null,
   searchLoading: false,
   filterError: null,
-  // ...existing code...
-  // Removed fetchCommercials method
-  // Fetch a single commercial by ID
+
   fetchCommercialById: async (id: number) => {
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/commercial/${id}`);
+      set({ loading: false });
       return response.data as Commercial;
     } catch (error) {
       const apiError = error as {
         message?: string;
         response?: { data?: { detail?: string } };
       };
-
       set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercial",
+        error: apiError.response?.data?.detail || apiError.message || "Failed to fetch commercial",
         loading: false,
       });
       return null;
     }
   },
-  // Search for commercials
+
   searchCommercial: async (query: string) => {
     set({ searchLoading: true, searchError: null });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=commercial`);
+      
       set({
-        commercials: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        commercials: Array.isArray(response.data) ? response.data : [],
+        total: Array.isArray(response.data) ? response.data.length : 0,
         searchLoading: false,
       });
     } catch (error) {
@@ -101,22 +99,24 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
       };
       set({
         searchError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+          apiError.response?.data?.detail || apiError.message || "Failed to search commercials",
         searchLoading: false,
-        commercials: [], // Reset to an empty array in case of error
+        commercials: [],
       });
     }
-  },
-  // Filter commercials
+  }
+,   
+
   filterCommercials: async (filters, type) => {
     set({ loading: true, filterError: null });
     try {
       const response = await api.get(`/additional/filter/?table=commercial&action_type=${type}`, {
         params: filters,
       });
+      const { objects, filtered_count } = response.data;
       set({
-        commercials: Array.isArray(response.data) ? response.data : [],
-        total: Array.isArray(response.data) ? response.data.length : 0,
+        commercials: objects,
+        total: filtered_count || objects.length,
         loading: false,
       });
     } catch (error) {
@@ -125,13 +125,13 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         response?: { data?: { detail?: string } };
       };
       set({
-        filterError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
+        filterError: apiError.response?.data?.detail || apiError.message || "Failed to fetch commercials",
         loading: false,
         commercials: [],
       });
     }
   },
+
   deleteCommercial: async (id: number) => {
     set({ loading: true, error: null });
     try {
@@ -146,10 +146,10 @@ export const useCommercialStore = create<CommercialStore>((set) => ({
         response?: { data?: { detail?: string } };
       };
       set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to delete commercial",
+        error: apiError.response?.data?.detail || apiError.message || "Failed to delete commercial",
         loading: false,
       });
     }
   },
 }));
+

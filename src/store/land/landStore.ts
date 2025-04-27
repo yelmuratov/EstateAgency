@@ -63,66 +63,56 @@ export const useLandStore = create<LandStore>((set) => ({
   searchError: null,
   searchLoading: false,
   filterError: null,
+
   fetchLands: async (page: number, limit: number) => {
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/land/?limit=${limit}&page=${page}`);
-      const { data, total_count } = response.data; // Assuming API provides `data` and `total_count`
+      const { objects, filtered_count } = response.data; // <-- THIS IS CORRECT
       set({
-        lands: data, // Using `data` array from the response
-        total: total_count || data.length, // Update total based on `total_count`
+        lands: objects, // Correct
+        total: filtered_count || objects.length, // Correct
         loading: false,
       });
     } catch (error) {
-      // Define the type of the error
       const apiError = error as {
         message?: string;
-        response?: {
-          data?: {
-            detail?: string;
-          };
-        };
+        response?: { data?: { detail?: string } };
       };
-  
       set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
+        error: apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
         loading: false,
       });
     }
   },
+
   fetchLandById: async (id: number) => {
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/land/${id}`);
       set({ loading: false });
-      return response.data; // Return the data
+      return response.data;
     } catch (error) {
-      // Define the type of the error
       const apiError = error as {
         message?: string;
-        response?: {
-          data?: {
-            detail?: string;
-          };
-        };
+        response?: { data?: { detail?: string } };
       };
-  
       set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch land",
+        error: apiError.response?.data?.detail || apiError.message || "Failed to fetch land",
         loading: false,
       });
-      return null; // Return null in case of error
+      return null;
     }
   },
+
   searchLands: async (query: string) => {
     set({ searchLoading: true, searchError: null });
     try {
       const response = await api.get(`/additional/search/?text=${query}&table=land`);
+      
       set({
-        lands: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of apartments array
+        lands: Array.isArray(response.data) ? response.data : [],
+        total: Array.isArray(response.data) ? response.data.length : 0,
         searchLoading: false,
       });
     } catch (error) {
@@ -131,22 +121,23 @@ export const useLandStore = create<LandStore>((set) => ({
         response?: { data?: { detail?: string } };
       };
       set({
-        searchError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch apartments",
+        searchError: apiError.response?.data?.detail || apiError.message || "Failed to search lands",
         searchLoading: false,
-        lands: [], // Reset to an empty array in case of error
+        lands: [],
       });
     }
-  },
+  },  
+
   filterLands: async (filters) => {
     set({ loading: true, filterError: null });
     try {
-      const response = await api.get(`/additional/filter/?table=land&${filters}`, {
+      const response = await api.get(`/additional/filter/?table=land`, {
         params: filters,
       });
+      const { objects, filtered_count } = response.data;
       set({
-        lands: Array.isArray(response.data) ? response.data : [], // Use `data` key
-        total: Array.isArray(response.data) ? response.data.length : 0, // Use length of lands array
+        lands: objects,
+        total: filtered_count || objects.length,
         loading: false,
       });
     } catch (error) {
@@ -155,13 +146,13 @@ export const useLandStore = create<LandStore>((set) => ({
         response?: { data?: { detail?: string } };
       };
       set({
-        filterError:
-          apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
+        filterError: apiError.response?.data?.detail || apiError.message || "Failed to fetch lands",
         loading: false,
-        lands: [], // Reset to an empty array in case of error
+        lands: [],
       });
     }
   },
+
   deleteLand: async (id: number) => {
     set({ loading: true, error: null });
     try {
@@ -176,8 +167,7 @@ export const useLandStore = create<LandStore>((set) => ({
         response?: { data?: { detail?: string } };
       };
       set({
-        error:
-          apiError.response?.data?.detail || apiError.message || "Failed to delete land",
+        error: apiError.response?.data?.detail || apiError.message || "Failed to delete land",
         loading: false,
       });
     }
